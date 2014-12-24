@@ -4,7 +4,7 @@ CXXFLAGS := -O2 -Wall
 INCLUDES := -I.
 LIBS     := -lyaml
 
-OBJECTS  := config.o list.o main.o
+OBJECTS  := $(patsubst %.c,%.o,$(wildcard *.c))
 DEPS     := $(OBJECTS:.o=.d)
 
 -include $(DEPS)
@@ -24,3 +24,5 @@ clean:
 	@rm -rf *.o
 	@rm -rf *.d
 	@rm -f nyx
+
+.PHONY: all clean

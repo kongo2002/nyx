@@ -1,4 +1,5 @@
 #include "config.h"
+#include "event.h"
 
 #include <stdio.h>
 
@@ -15,6 +16,8 @@ main(int argc, char **argv)
 
     if (!parse_config(argv[1]))
         return 1;
+
+    event_loop();
 
     return 0;
 }
