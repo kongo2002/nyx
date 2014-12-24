@@ -1,6 +1,7 @@
 #ifndef __NYX_LIST_H__
 #define __NYX_LIST_H__
 
+#include <stdio.h>
 #include <stdlib.h>
 
 typedef struct list_t
@@ -20,6 +21,10 @@ typedef struct list_node_t
 list_t *list_new(void);
 
 void list_destroy(list_t *list);
+
+void list_clear_destroy(list_t *list);
+
+void list_clear(list_t *list);
 
 void list_add(list_t *list, void *data);
 

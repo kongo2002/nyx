@@ -2,12 +2,26 @@
 
 list_t *list_new(void)
 {
-    return calloc(1, sizeof(list_t));
+    list_t *list = calloc(1, sizeof(list_t));
+
+    if (list == NULL)
+    {
+        perror("nyx: calloc");
+        exit(EXIT_FAILURE);
+    }
+
+    return list;
 }
 
 void list_add(list_t *list, void *data)
 {
     list_node_t *node = calloc(1, sizeof(list_node_t));
+
+    if (node == NULL)
+    {
+        perror("nyx: calloc");
+        exit(EXIT_FAILURE);
+    }
 
     node->data = data;
 
@@ -42,6 +56,24 @@ void list_destroy(list_t *list)
 
     free(list);
     list = NULL;
+}
+
+void list_clear(list_t *list)
+{
+    list_node_t *node = list->head;
+
+    while (node)
+    {
+        if (node->data)
+            free(node->data);
+        node = node->next;
+    }
+}
+
+void list_clear_destroy(list_t *list)
+{
+    list_clear(list);
+    list_destroy(list);
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

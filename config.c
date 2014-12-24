@@ -8,6 +8,49 @@ handle_stream(struct parse_info *info, yaml_event_t *event)
     return 1;
 }
 
+parse_state *
+parse_state_new(const char *filename)
+{
+    parse_state *state = calloc(1, sizeof(parse_state));
+
+    if (state == NULL)
+    {
+        perror("nyx: calloc");
+        exit(EXIT_FAILURE);
+    }
+
+    state->filename = filename;
+    state->watches = list_new();
+
+    return state;
+}
+
+void
+parse_state_destroy(parse_state *state)
+{
+    if (state == NULL)
+        return;
+
+    list_clear_destroy(state->watches);
+
+    free(state);
+    state = NULL;
+}
+
+parse_info *
+parse_info_new(void)
+{
+    parse_info *info = calloc(1, sizeof(parse_info));
+
+    if (info == NULL)
+    {
+        perror("nyx: calloc");
+        exit(EXIT_FAILURE);
+    }
+
+    return info;
+}
+
 int
 parse_config(const char *config_file)
 {
