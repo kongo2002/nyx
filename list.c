@@ -1,6 +1,7 @@
 #include "list.h"
 
-list_t *list_new(void)
+list_t *
+list_new(void)
 {
     list_t *list = calloc(1, sizeof(list_t));
 
@@ -13,7 +14,8 @@ list_t *list_new(void)
     return list;
 }
 
-void list_add(list_t *list, void *data)
+void
+list_add(list_t *list, void *data)
 {
     list_node_t *node = calloc(1, sizeof(list_node_t));
 
@@ -41,7 +43,8 @@ void list_add(list_t *list, void *data)
     list->count++;
 }
 
-void list_destroy(list_t *list)
+void
+list_destroy(list_t *list)
 {
     list_node_t *next = NULL;
     list_node_t *node = list->head;
@@ -58,7 +61,8 @@ void list_destroy(list_t *list)
     list = NULL;
 }
 
-void list_clear(list_t *list)
+void
+list_clear(list_t *list)
 {
     list_node_t *node = list->head;
 
@@ -70,7 +74,8 @@ void list_clear(list_t *list)
     }
 }
 
-void list_clear_destroy(list_t *list)
+void
+list_clear_destroy(list_t *list)
 {
     list_clear(list);
     list_destroy(list);

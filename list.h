@@ -18,15 +18,20 @@ typedef struct list_node_t
     void *data;
 } list_node_t;
 
-list_t *list_new(void);
+list_t *
+list_new(void);
 
-void list_destroy(list_t *list);
+void
+list_destroy(list_t *list);
 
-void list_clear_destroy(list_t *list);
+void
+list_clear_destroy(list_t *list);
 
-void list_clear(list_t *list);
+void
+list_clear(list_t *list);
 
-void list_add(list_t *list, void *data);
+void
+list_add(list_t *list, void *data);
 
 #endif
 
