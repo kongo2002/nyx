@@ -25,4 +25,4 @@ clean:
 	@rm -rf *.d
 	@rm -f nyx
 
-.PHONY: all clean
+.PHONY: all clean run

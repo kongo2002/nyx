@@ -55,7 +55,7 @@ netlink_connect(void)
  * Subscribe on process events
  */
 static int
-set_process_event_listen(int nl_sock, bool enable)
+set_process_event_listen(int socket, bool enable)
 {
     int rc;
 
@@ -85,7 +85,7 @@ set_process_event_listen(int nl_sock, bool enable)
         ? PROC_CN_MCAST_LISTEN
         : PROC_CN_MCAST_IGNORE;
 
-    rc = send(nl_sock, &nlcn_msg, sizeof(nlcn_msg), 0);
+    rc = send(socket, &nlcn_msg, sizeof(nlcn_msg), 0);
 
     if (rc == -1)
     {
@@ -108,13 +108,76 @@ unsubscribe_event_listen(int socket)
     return set_process_event_listen(socket, false);
 }
 
+static process_event_data_t *
+new_event_data(void)
+{
+    process_event_data_t *data = calloc(1, sizeof(process_event_data_t));
+
+    if (data == NULL)
+    {
+        perror("nyx: calloc");
+        exit(EXIT_FAILURE);
+    }
+
+    return data;
+}
+
+static int
+set_event_data(process_event_data_t *data, struct proc_event *event)
+{
+    switch (event->what)
+    {
+        case PROC_EVENT_FORK:
+            data->type = EVENT_FORK;
+
+            data->fork.parent_pid = event->event_data.fork.parent_pid;
+            data->fork.parent_thread_group_id = event->event_data.fork.parent_tgid;
+            data->fork.child_pid = event->event_data.fork.child_pid;
+            data->fork.child_thread_group_id = event->event_data.fork.child_tgid;
+
+            printf("fork: parent tid=%d pid=%d -> child tid=%d pid=%d\n",
+                    event->event_data.fork.parent_pid,
+                    event->event_data.fork.parent_tgid,
+                    event->event_data.fork.child_pid,
+                    event->event_data.fork.child_tgid);
+
+            return data->fork.parent_pid;
+
+        case PROC_EVENT_EXIT:
+            data->type = EVENT_EXIT;
+
+            data->exit.pid = event->event_data.exit.process_pid;
+            data->exit.exit_code = event->event_data.exit.exit_code;
+            data->exit.exit_signal = event->event_data.exit.exit_signal;
+            data->exit.thread_group_id = event->event_data.exit.process_tgid;
+
+            printf("exit: tid=%d pid=%d exit_code=%d\n",
+                    event->event_data.exit.process_pid,
+                    event->event_data.exit.process_tgid,
+                    event->event_data.exit.exit_code);
+
+            return data->exit.pid;
+
+        /* unhandled events */
+        case PROC_EVENT_NONE:
+        case PROC_EVENT_EXEC:
+        case PROC_EVENT_UID:
+        case PROC_EVENT_GID:
+        default:
+            break;
+    }
+
+    return 0;
+}
+
 /**
  * Handle a single process event
  */
 static int
-handle_proc_ev(int nl_sock)
+handle_process_event(int nl_sock, process_handler_t handler)
 {
-    int rc;
+    int pid = 0, rc = 0;
+    process_event_data_t *event_data = new_event_data();
 
     struct __attribute__ ((aligned(NLMSG_ALIGNTO)))
     {
@@ -130,47 +193,38 @@ handle_proc_ev(int nl_sock)
     {
         rc = recv(nl_sock, &nlcn_msg, sizeof(nlcn_msg), 0);
 
+        /* socket shutdown */
         if (rc == 0)
         {
-            /* shutdown? */
-            return 0;
+            rc = 1;
+            break;
         }
         else if (rc == -1)
         {
+            /* interrupted by a signal */
             if (errno == EINTR)
+            {
+                rc = 1;
                 continue;
+            }
 
             perror("nyx: recv");
-            return -1;
+            break;
         }
 
-        switch (nlcn_msg.proc_ev.what)
-        {
-            /* we are interested in fork and exit only */
-            case PROC_EVENT_FORK:
-                printf("fork: parent tid=%d pid=%d -> child tid=%d pid=%d\n",
-                        nlcn_msg.proc_ev.event_data.fork.parent_pid,
-                        nlcn_msg.proc_ev.event_data.fork.parent_tgid,
-                        nlcn_msg.proc_ev.event_data.fork.child_pid,
-                        nlcn_msg.proc_ev.event_data.fork.child_tgid);
-                break;
-            case PROC_EVENT_EXIT:
-                printf("exit: tid=%d pid=%d exit_code=%d\n",
-                        nlcn_msg.proc_ev.event_data.exit.process_pid,
-                        nlcn_msg.proc_ev.event_data.exit.process_tgid,
-                        nlcn_msg.proc_ev.event_data.exit.exit_code);
-                break;
-            case PROC_EVENT_NONE:
-            case PROC_EVENT_EXEC:
-            case PROC_EVENT_UID:
-            case PROC_EVENT_GID:
-            default:
-                /* unhandled events */
-                break;
-        }
+        pid = set_event_data(event_data, &nlcn_msg.proc_ev);
+
+        if (pid > 0)
+            handler(pid, event_data);
     }
 
-    return 0;
+    if (event_data != NULL)
+    {
+        free(event_data);
+        event_data = NULL;
+    }
+
+    return rc;
 }
 
 static void
@@ -181,11 +235,12 @@ on_sigint(int unused)
 }
 
 int
-event_loop(void)
+event_loop(process_handler_t handler)
 {
     int socket;
     int rc = 1;
 
+    /* TODO: does this belong in here? */
     signal(SIGINT, &on_sigint);
     siginterrupt(SIGINT, true);
 
@@ -200,7 +255,7 @@ event_loop(void)
         goto out;
     }
 
-    rc = handle_proc_ev(socket);
+    rc = handle_process_event(socket, handler);
     if (rc == -1)
     {
         rc = 0;
