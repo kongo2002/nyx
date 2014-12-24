@@ -7,9 +7,9 @@ LIBS     := -lyaml
 OBJECTS  := $(patsubst %.c,%.o,$(wildcard *.c))
 DEPS     := $(OBJECTS:.o=.d)
 
--include $(DEPS)
-
 all: nyx
+
+-include $(DEPS)
 
 nyx: $(OBJECTS)
 	$(CXX) $(OBJECTS) -o nyx $(LIBS)
