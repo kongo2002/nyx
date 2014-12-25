@@ -8,11 +8,68 @@ reset_handlers(parse_info_t *info)
 }
 
 static parse_info_t *
+parser_up(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    if (info->parent == NULL)
+    {
+        fputs("topmost parser without parent - invalid config\n", stderr);
+
+        /* TODO: return NULL instead? */
+        return info;
+    }
+
+    parse_info_t *parent = info->parent;
+    free(info);
+
+    return parent;
+}
+
+static parse_info_t *
+handle_stream_end(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    puts("handle_stream: end");
+
+    return parser_up(info, event, data);
+}
+
+static parse_info_t *
 handle_document_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
     puts("handle_document: end");
 
+    reset_handlers(info);
+    info->handler[YAML_STREAM_END_EVENT] = &handle_stream_end;
+
     return info;
+}
+
+static parse_info_t *
+handler_scalar(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    printf("handle_scalar: '%s'\n", event->data.scalar.value);
+
+    return info;
+}
+
+static parse_info_t *
+handle_mapping_end(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    puts("handle_mapping: end");
+
+    return parser_up(info, event, data);
+}
+
+static parse_info_t *
+handle_mapping(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    puts("handle_mapping: start");
+
+    parse_info_t *new = parse_info_new_child(info);
+
+    new->handler[YAML_SCALAR_EVENT] = &handler_scalar;
+    new->handler[YAML_MAPPING_END_EVENT] = &handle_mapping_end;
+
+    return new;
 }
 
 static parse_info_t *
@@ -21,15 +78,8 @@ handle_document(parse_info_t *info, yaml_event_t *event, void *data)
     puts("handle_document: start");
 
     reset_handlers(info);
+    info->handler[YAML_MAPPING_START_EVENT] = &handle_mapping;
     info->handler[YAML_DOCUMENT_END_EVENT] = &handle_document_end;
-
-    return info;
-}
-
-static parse_info_t *
-handle_stream_end(parse_info_t *info, yaml_event_t *event, void *data)
-{
-    puts("handle_stream: end");
 
     return info;
 }
@@ -104,7 +154,7 @@ parse_info_new_child(parse_info_t *parent)
     }
 
     info->state = parent->state;
-    parent->parent = info;
+    info->parent = parent;
 
     return info;
 }
@@ -113,13 +163,10 @@ int
 parse_config(const char *config_file)
 {
     int success = 1;
-    FILE *cfg;
+    FILE *cfg = NULL;
     yaml_parser_t parser;
     yaml_event_t event;
     handler_func_t handler = NULL;
-
-    parse_state_t *state = parse_state_new(config_file);
-    parse_info_t *info = parse_info_new(state);
 
     /* read input file */
     cfg = fopen(config_file, "r");
@@ -136,6 +183,9 @@ parse_config(const char *config_file)
         return 0;
     }
 
+    parse_state_t *state = parse_state_new(config_file);
+    parse_info_t *info = parse_info_new(state);
+
     yaml_parser_set_input_file(&parser, cfg);
 
     /* start parsing */
@@ -148,6 +198,7 @@ parse_config(const char *config_file)
            break;
         }
 
+#if 0
         switch (event.type)
         {
             case YAML_NO_EVENT: puts("No event!"); break;
@@ -165,11 +216,13 @@ parse_config(const char *config_file)
             case YAML_ALIAS_EVENT:  printf("Got alias (anchor %s)\n", event.data.alias.anchor); break;
             case YAML_SCALAR_EVENT: printf("Got scalar (value %s)\n", event.data.scalar.value); break;
         }
+#endif
 
         handler = info->handler[event.type];
         if (handler != NULL)
         {
-            if (!handler(info, &event, NULL))
+            info = handler(info, &event, NULL);
+            if (info == NULL)
             {
                 puts("handler returned without success");
                 break;
