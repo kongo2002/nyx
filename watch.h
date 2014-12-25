@@ -4,6 +4,10 @@
 typedef struct watch_t
 {
     const char *name;
+    const char *uid;
+    const char *gid;
+    const char *start;
+    const char *dir;
 } watch_t;
 
 watch_t *
