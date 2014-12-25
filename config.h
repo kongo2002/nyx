@@ -33,7 +33,6 @@ struct parse_info_t
     void *data;
 };
 
-
 parse_state_t *
 parse_state_new(const char *filename);
 

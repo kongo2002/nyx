@@ -184,7 +184,7 @@ unexpected_element(yaml_event_t *event)
     if (event->start_mark.column > 0)
     {
         fprintf(stderr,
-                "Unexpected element '%s' [line %lu, col %lu]\n",
+                "Unexpected element '%s' [line %zu, col %zu]\n",
                 type,
                 event->start_mark.line,
                 event->start_mark.column);
@@ -192,7 +192,7 @@ unexpected_element(yaml_event_t *event)
     else
     {
         fprintf(stderr,
-                "Unexpected element '%s' [line %lu]\n",
+                "Unexpected element '%s' [line %zu]\n",
                 type,
                 event->start_mark.line);
     }
