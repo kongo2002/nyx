@@ -2,6 +2,7 @@
 #define __NYX_CONFIG_H__
 
 #include "list.h"
+#include "map.h"
 
 #include <stdio.h>
 #include <yaml.h>
@@ -15,7 +16,7 @@ typedef parse_info_t* (*handler_func_t)(parse_info_t*, yaml_event_t*, void*);
 struct parse_state_t
 {
     const char *filename;
-    list_t *watches;
+    hash_t *watches;
 };
 
 struct parse_info_t

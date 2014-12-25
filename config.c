@@ -39,9 +39,7 @@ parser_up(parse_info_t *info, yaml_event_t *event, void *data)
         fprintf(stderr,
                 "topmost parser without parent - invalid config [%s]\n",
                 yaml_event_names[event->type]);
-
-        /* TODO: return NULL instead? */
-        return info;
+        return NULL;
     }
 
     parse_info_t *parent = info->parent;
@@ -76,7 +74,7 @@ handle_scalar_value(parse_info_t *info, yaml_event_t *event, void *data)
     {
         fprintf(stderr, "Expecting scalar value, but found '%s'\n",
                 yaml_event_names[event->type]);
-        return info;
+        return NULL;
     }
 
     printf("handle_scalar_value: '%s'\n", event->data.scalar.value);
@@ -93,7 +91,7 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
     {
         fprintf(stderr, "Expecting scalar value, but found '%s'\n",
                 yaml_event_names[event->type]);
-        return info;
+        return NULL;
     }
 
     printf("handle_scalar_key: '%s'\n", event->data.scalar.value);
@@ -161,7 +159,7 @@ parse_state_new(const char *filename)
     }
 
     state->filename = filename;
-    state->watches = list_new();
+    state->watches = hash_new(8);
 
     return state;
 }
@@ -172,7 +170,7 @@ parse_state_destroy(parse_state_t *state)
     if (state == NULL)
         return;
 
-    list_clear_destroy(state->watches);
+    hash_destroy(state->watches);
 
     free(state);
     state = NULL;
@@ -210,6 +208,20 @@ parse_info_new_child(parse_info_t *parent)
     info->parent = parent;
 
     return info;
+}
+
+static void
+parse_info_destroy(parse_info_t *info)
+{
+    parse_info_t *next = info;
+
+    while (next)
+    {
+        next = info->parent;
+
+        free(info);
+        info = next;
+    }
 }
 
 static void
@@ -260,6 +272,7 @@ parse_config(const char *config_file)
 
     parse_state_t *state = parse_state_new(config_file);
     parse_info_t *info = parse_info_new(state);
+    parse_info_t *new_info = NULL;
 
     yaml_parser_set_input_file(&parser, cfg);
 
@@ -276,12 +289,16 @@ parse_config(const char *config_file)
         handler = info->handler[event.type];
         if (handler != NULL)
         {
-            info = handler(info, &event, NULL);
-            if (info == NULL)
+            new_info = handler(info, &event, NULL);
+            if (new_info == NULL)
             {
-                puts("handler returned without success");
+                fprintf(stderr, "Invalid configuration '%s'",
+                        config_file);
+                success = 0;
                 break;
             }
+
+            info = new_info;
         }
         else
             unexpected_element(&event);
@@ -293,9 +310,9 @@ parse_config(const char *config_file)
 
     /* cleanup */
     parse_state_destroy(state);
-    free(info);
     yaml_parser_delete(&parser);
 
+    parse_info_destroy(info);
     fclose(cfg);
 
     return success;
