@@ -8,28 +8,31 @@
 
 #define PARSE_HANDLER_SIZE (YAML_MAPPING_END_EVENT+1)
 
-typedef struct parse_state_t
+typedef struct parse_state_t parse_state_t;
+typedef struct parse_info_t parse_info_t;
+typedef parse_info_t* (*handler_func_t)(parse_info_t*, yaml_event_t*, void*);
+
+struct parse_state_t
 {
     const char *filename;
     list_t *watches;
-} parse_state_t;
+};
 
-typedef struct parse_info_t
+struct parse_info_t
 {
     /** array of handler functions */
-    struct parse_info_t* (*handler[PARSE_HANDLER_SIZE])(struct parse_info_t*, yaml_event_t*, void*);
+    handler_func_t handler[PARSE_HANDLER_SIZE];
 
     /** basic parse state */
     parse_state_t *state;
 
     /** optional parent parsing information */
-    struct parse_info_t *parent;
+    parse_info_t *parent;
 
     /** arbitrary data */
     void *data;
-} parse_info_t;
+};
 
-typedef parse_info_t* (*handler_func_t)(parse_info_t*, yaml_event_t*, void*);
 
 parse_state_t *
 parse_state_new(const char *filename);
