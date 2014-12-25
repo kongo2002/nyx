@@ -1,5 +1,20 @@
 #include "config.h"
 
+static const char * yaml_event_names[] =
+{
+    "YAML_NO_EVENT",
+    "YAML_STREAM_START_EVENT",
+    "YAML_STREAM_END_EVENT",
+    "YAML_DOCUMENT_START_EVENT",
+    "YAML_DOCUMENT_END_EVENT",
+    "YAML_ALIAS_EVENT",
+    "YAML_SCALAR_EVENT",
+    "YAML_SEQUENCE_START_EVENT",
+    "YAML_SEQUENCE_END_EVENT",
+    "YAML_MAPPING_START_EVENT",
+    "YAML_MAPPING_END_EVENT"
+};
+
 static void
 reset_handlers(parse_info_t *info)
 {
@@ -12,7 +27,9 @@ parser_up(parse_info_t *info, yaml_event_t *event, void *data)
 {
     if (info->parent == NULL)
     {
-        fputs("topmost parser without parent - invalid config\n", stderr);
+        fprintf(stderr,
+                "topmost parser without parent - invalid config [%s]\n",
+                yaml_event_names[event->type]);
 
         /* TODO: return NULL instead? */
         return info;
@@ -29,7 +46,7 @@ handle_stream_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
     puts("handle_stream: end");
 
-    return parser_up(info, event, data);
+    return info;
 }
 
 static parse_info_t *
@@ -198,26 +215,6 @@ parse_config(const char *config_file)
            break;
         }
 
-#if 0
-        switch (event.type)
-        {
-            case YAML_NO_EVENT: puts("No event!"); break;
-            /* Stream start/end */
-            case YAML_STREAM_START_EVENT: puts("STREAM START"); break;
-            case YAML_STREAM_END_EVENT:   puts("STREAM END");   break;
-            /* Block delimeters */
-            case YAML_DOCUMENT_START_EVENT: puts("Start Document"); break;
-            case YAML_DOCUMENT_END_EVENT:   puts("End Document");   break;
-            case YAML_SEQUENCE_START_EVENT: puts("Start Sequence"); break;
-            case YAML_SEQUENCE_END_EVENT:   puts("End Sequence");   break;
-            case YAML_MAPPING_START_EVENT:  puts("Start Mapping");  break;
-            case YAML_MAPPING_END_EVENT:    puts("End Mapping");    break;
-            /* Data */
-            case YAML_ALIAS_EVENT:  printf("Got alias (anchor %s)\n", event.data.alias.anchor); break;
-            case YAML_SCALAR_EVENT: printf("Got scalar (value %s)\n", event.data.scalar.value); break;
-        }
-#endif
-
         handler = info->handler[event.type];
         if (handler != NULL)
         {
@@ -230,7 +227,9 @@ parse_config(const char *config_file)
         }
         else
         {
-            fprintf(stderr, "No handler for event %d found\n", event.type);
+            fprintf(stderr,
+                    "No handler for event '%s'found\n",
+                    yaml_event_names[event.type]);
         }
 
         if (event.type != YAML_STREAM_END_EVENT)
