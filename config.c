@@ -1,5 +1,14 @@
 #include "config.h"
 
+static parse_info_t *
+handle_mapping(parse_info_t *info, yaml_event_t *event, void *data);
+
+static parse_info_t *
+handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data);
+
+static parse_info_t *
+handle_scalar_value(parse_info_t *info, yaml_event_t *event, void *data);
+
 static const char * yaml_event_names[] =
 {
     "YAML_NO_EVENT",
@@ -61,9 +70,36 @@ handle_document_end(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handler_scalar(parse_info_t *info, yaml_event_t *event, void *data)
+handle_scalar_value(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    printf("handle_scalar: '%s'\n", event->data.scalar.value);
+    if (event->type != YAML_SCALAR_EVENT)
+    {
+        fprintf(stderr, "Expecting scalar value, but found '%s'\n",
+                yaml_event_names[event->type]);
+        return info;
+    }
+
+    printf("handle_scalar_value: '%s'\n", event->data.scalar.value);
+
+    info->handler[YAML_SCALAR_EVENT] = &handle_scalar_key;
+
+    return info;
+}
+
+static parse_info_t *
+handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    if (event->type != YAML_SCALAR_EVENT)
+    {
+        fprintf(stderr, "Expecting scalar value, but found '%s'\n",
+                yaml_event_names[event->type]);
+        return info;
+    }
+
+    printf("handle_scalar_key: '%s'\n", event->data.scalar.value);
+
+    info->handler[YAML_SCALAR_EVENT] = &handle_scalar_value;
+    info->handler[YAML_MAPPING_START_EVENT] = &handle_mapping;
 
     return info;
 }
@@ -83,7 +119,7 @@ handle_mapping(parse_info_t *info, yaml_event_t *event, void *data)
 
     parse_info_t *new = parse_info_new_child(info);
 
-    new->handler[YAML_SCALAR_EVENT] = &handler_scalar;
+    new->handler[YAML_SCALAR_EVENT] = &handle_scalar_key;
     new->handler[YAML_MAPPING_END_EVENT] = &handle_mapping_end;
 
     return new;
