@@ -176,6 +176,28 @@ parse_info_new_child(parse_info_t *parent)
     return info;
 }
 
+static void
+unexpected_element(yaml_event_t *event)
+{
+    const char *type = yaml_event_names[event->type];
+
+    if (event->start_mark.column > 0)
+    {
+        fprintf(stderr,
+                "Unexpected element '%s' [line %lu, col %lu]\n",
+                type,
+                event->start_mark.line,
+                event->start_mark.column);
+    }
+    else
+    {
+        fprintf(stderr,
+                "Unexpected element '%s' [line %lu]\n",
+                type,
+                event->start_mark.line);
+    }
+}
+
 int
 parse_config(const char *config_file)
 {
@@ -226,11 +248,7 @@ parse_config(const char *config_file)
             }
         }
         else
-        {
-            fprintf(stderr,
-                    "No handler for event '%s'found\n",
-                    yaml_event_names[event.type]);
-        }
+            unexpected_element(&event);
 
         if (event.type != YAML_STREAM_END_EVENT)
             yaml_event_delete(&event);
