@@ -6,32 +6,35 @@
 #include <stdio.h>
 #include <yaml.h>
 
-typedef struct parse_info
-{
-    /** array of handler functions */
-    int (*handler[YAML_MAPPING_END_EVENT+1])(struct parse_info*, yaml_event_t*);
-
-    /** arbitrary data */
-    void *data;
-} parse_info;
-
-typedef struct parse_state
+typedef struct parse_state_t
 {
     const char *filename;
     list_t *watches;
-} parse_state;
+} parse_state_t;
 
-parse_state *
+typedef struct parse_info_t
+{
+    /** array of handler functions */
+    int (*handler[YAML_MAPPING_END_EVENT+1])(struct parse_info_t*, yaml_event_t*);
+
+    /** basic parse state */
+    parse_state_t *state;
+
+    /** arbitrary data */
+    void *data;
+} parse_info_t;
+
+parse_state_t *
 parse_state_new(const char *filename);
 
 void
-parse_state_destroy(parse_state *state);
+parse_state_destroy(parse_state_t *state);
 
-parse_info *
-parse_info_new(void);
+parse_info_t *
+parse_info_new(parse_state_t *state);
 
 int
-handle_stream(struct parse_info *info, yaml_event_t *event);
+handle_stream(struct parse_info_t *info, yaml_event_t *event);
 
 int
 parse_config(const char *config_file);
