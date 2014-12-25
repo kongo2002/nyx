@@ -1,5 +1,5 @@
 CXX      := gcc
-CXXFLAGS := -O2 -Wall
+CXXFLAGS := -O2 -Wall -ggdb
 
 INCLUDES := -I.
 LIBS     := -lyaml
