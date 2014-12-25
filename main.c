@@ -1,5 +1,6 @@
 #include "config.h"
 #include "event.h"
+#include "map.h"
 
 #include <stdio.h>
 
