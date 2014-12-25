@@ -4,7 +4,8 @@ CXXFLAGS := -O2 -Wall
 INCLUDES := -I.
 LIBS     := -lyaml
 
-OBJECTS  := $(patsubst %.c,%.o,$(wildcard *.c))
+SRCS     := $(wildcard *.c)
+OBJECTS  := $(patsubst %.c,%.o,$(SRCS))
 DEPS     := $(OBJECTS:.o=.d)
 
 all: nyx
@@ -19,6 +20,9 @@ nyx: $(OBJECTS)
 
 run: nyx
 	./nyx config.yaml
+
+tags: $(SRCS)
+	ctags -R --c-kinds=+lp --fields=+iaS --extra=+q --language-force=C .
 
 clean:
 	@rm -rf *.o
