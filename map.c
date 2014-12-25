@@ -209,9 +209,9 @@ hash_from_array(key_value_t key_values[], int size)
     kv = key_values;
     hash = hash_new(size);
 
-    while (kv && kv->key)
+    while (kv && kv->k)
     {
-        hash_add(hash, kv->key, kv->value);
+        hash_add(hash, kv->k, kv->v);
         kv++;
     }
 

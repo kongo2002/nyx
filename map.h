@@ -22,8 +22,8 @@ typedef struct hash_t
 
 typedef struct key_value_t
 {
-    const char *key;
-    void *value;
+    const char *k;
+    void *v;
 } key_value_t;
 
 hash_t *
