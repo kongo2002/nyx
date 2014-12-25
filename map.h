@@ -20,6 +20,12 @@ typedef struct hash_t
 
 } hash_t;
 
+typedef struct key_value_t
+{
+    const char *key;
+    void *value;
+} key_value_t;
+
 hash_t *
 hash_new(int size);
 
@@ -31,6 +37,9 @@ hash_add(hash_t *hash, const char *key, void *data);
 
 void *
 hash_get(hash_t *hash, const char* key);
+
+hash_t *
+hash_from_array(key_value_t key_values[], int size);
 
 #endif
 

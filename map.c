@@ -197,4 +197,25 @@ hash_get(hash_t *hash, const char* key)
     return pair->data;
 }
 
+hash_t *
+hash_from_array(key_value_t key_values[], int size)
+{
+    hash_t *hash = NULL;
+    key_value_t *kv = NULL;
+
+    if (key_values == NULL)
+        return NULL;
+
+    kv = key_values;
+    hash = hash_new(size);
+
+    while (kv && kv->key)
+    {
+        hash_add(hash, kv->key, kv->value);
+        kv++;
+    }
+
+    return hash;
+}
+
 /* vim: set et sw=4 sts=4 tw=80: */
