@@ -1,4 +1,5 @@
 #include "list.h"
+#include "log.h"
 
 list_t *
 list_new(void)
@@ -7,7 +8,7 @@ list_new(void)
 
     if (list == NULL)
     {
-        perror("nyx: calloc");
+        log_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 
@@ -21,7 +22,7 @@ list_add(list_t *list, void *data)
 
     if (node == NULL)
     {
-        perror("nyx: calloc");
+        log_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 

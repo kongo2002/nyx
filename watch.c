@@ -1,3 +1,4 @@
+#include "log.h"
 #include "watch.h"
 
 #include <stdio.h>
@@ -10,7 +11,7 @@ watch_new(const char *name)
 
     if (watch == NULL)
     {
-        perror("nyx: calloc");
+        log_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 

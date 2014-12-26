@@ -1,4 +1,5 @@
 #include "config.h"
+#include "log.h"
 #include "map.h"
 #include "nyx.h"
 #include "watch.h"
@@ -40,7 +41,7 @@ check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
 {
     if (event->type != event_type)
     {
-        fprintf(stderr, "Expecting '%s', but found '%s'\n",
+        log_debug("Expecting '%s', but found '%s'",
                 yaml_event_names[event_type],
                 yaml_event_names[event->type]);
         return 0;
@@ -82,7 +83,7 @@ get_handler_from_map_fallback(struct config_parser_map *map, const char *key, ha
     if (handler != NULL)
         return handler;
 
-    fprintf(stderr, "Unknown config key '%s'\n", key);
+    log_warn("Unknown config key '%s'", key);
 
     return fallback;
 }
@@ -99,8 +100,7 @@ parser_up(parse_info_t *info, yaml_event_t *event, void *data)
 {
     if (info->parent == NULL)
     {
-        fprintf(stderr,
-                "topmost parser without parent - invalid config [%s]\n",
+        log_debug("topmost parser without parent - invalid config [%s]",
                 yaml_event_names[event->type]);
         return NULL;
     }
@@ -114,7 +114,7 @@ parser_up(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_stream_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    puts("handle_stream: end");
+    log_debug("handle_stream: end");
 
     return info;
 }
@@ -122,7 +122,7 @@ handle_stream_end(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_document_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    puts("handle_document: end");
+    log_debug("handle_document: end");
 
     reset_handlers(info);
     info->handler[YAML_STREAM_END_EVENT] = &handle_stream_end;
@@ -135,12 +135,12 @@ handle_scalar_value(parse_info_t *info, yaml_event_t *event, void *data)
 {
     if (event->type != YAML_SCALAR_EVENT)
     {
-        fprintf(stderr, "Expecting scalar value, but found '%s'\n",
+        log_debug("Expecting scalar value, but found '%s'",
                 yaml_event_names[event->type]);
         return NULL;
     }
 
-    printf("handle_scalar_value: '%s'\n", event->data.scalar.value);
+    log_debug("handle_scalar_value: '%s'", event->data.scalar.value);
 
     info->handler[YAML_SCALAR_EVENT] = &handle_scalar_key;
 
@@ -168,15 +168,13 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 
     if (handler == NULL)
     {
-        fprintf(stderr, "Unknown config key '%s'\n", key);
+        log_warn("Unknown config key '%s'", key);
 
         info->handler[YAML_SCALAR_EVENT] = &handle_scalar_value;
         info->handler[YAML_MAPPING_START_EVENT] = &handle_mapping;
     }
     else
     {
-        printf("found handler for key '%s'\n", key);
-
         info->handler[YAML_SCALAR_EVENT] = handler;
         info->handler[YAML_MAPPING_START_EVENT] = handler;
         info->handler[YAML_SEQUENCE_START_EVENT] = handler;
@@ -188,7 +186,7 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_mapping_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    puts("handle_mapping: end");
+    log_debug("handle_mapping: end");
 
     return parser_up(info, event, data);
 }
@@ -196,7 +194,7 @@ handle_mapping_end(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_mapping(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    puts("handle_mapping: start");
+    log_debug("handle_mapping: start");
 
     parse_info_t *new = parse_info_new_child(info);
 
@@ -209,7 +207,7 @@ handle_mapping(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_document(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    puts("handle_document: start");
+    log_debug("handle_document: start");
 
     reset_handlers(info);
     info->handler[YAML_MAPPING_START_EVENT] = &handle_mapping;
@@ -221,7 +219,7 @@ handle_document(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_stream(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    puts("handle_stream: start");
+    log_debug("handle_stream: start");
 
     reset_handlers(info);
     info->handler[YAML_DOCUMENT_START_EVENT] = &handle_document;
@@ -234,7 +232,6 @@ handle_stream(parse_info_t *info, yaml_event_t *event, void *data)
     static parse_info_t * \
     handle_watch_map_value_##name_(parse_info_t *info, yaml_event_t *event, void *data) \
     { \
-        puts("handle_watch_map_value_"); \
         watch_t *watch = data; \
         const char *value = get_scalar_value(event); \
         if (value == NULL || watch == NULL) \
@@ -276,7 +273,7 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
     watch_t *watch = data;
     handler_func_t handler = NULL;
 
-    puts("handle_watch_map_key");
+    log_debug("handle_watch_map_key");
 
     key = get_scalar_value(event);
 
@@ -308,7 +305,7 @@ handle_watch_map(parse_info_t *info, yaml_event_t *event, void *data)
 {
     parse_info_t *new = NULL;
 
-    puts("handle_watch_map");
+    log_debug("handle_watch_map");
 
     new = parse_info_new_child(info);
 
@@ -321,7 +318,7 @@ handle_watch_map(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_watch(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    puts("handle watch");
+    log_debug("handle watch");
 
     const char *name = get_scalar_value(event);
 
@@ -350,7 +347,7 @@ handle_watch(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_watches(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    puts("handle watches");
+    log_debug("handle watches");
 
     reset_handlers(info);
 
@@ -432,16 +429,14 @@ unexpected_element(yaml_event_t *event)
 
     if (event->start_mark.column > 0)
     {
-        fprintf(stderr,
-                "Unexpected element '%s' [line %zu, col %zu]\n",
+        log_warn("Unexpected element '%s' [line %zu, col %zu]",
                 type,
                 event->start_mark.line,
                 event->start_mark.column);
     }
     else
     {
-        fprintf(stderr,
-                "Unexpected element '%s' [line %zu]\n",
+        log_warn("Unexpected element '%s' [line %zu]",
                 type,
                 event->start_mark.line);
     }
@@ -467,7 +462,7 @@ parse_config(nyx_t *nyx)
     /* initialize yaml parser */
     if (!yaml_parser_initialize(&parser))
     {
-        fprintf(stderr, "Failed to parse config file %s\n", nyx->config_file);
+        log_warn("Failed to parse config file %s", nyx->config_file);
         return 0;
     }
 
@@ -481,7 +476,7 @@ parse_config(nyx_t *nyx)
     {
         if (!yaml_parser_parse(&parser, &event))
         {
-           printf("Parser error %d\n", parser.error);
+           log_error("Parser error: %d", parser.error);
            success = 0;
            break;
         }
@@ -492,7 +487,7 @@ parse_config(nyx_t *nyx)
             new_info = handler(info, &event, info->data);
             if (new_info == NULL)
             {
-                fprintf(stderr, "Invalid configuration '%s'\n",
+                log_warn("Invalid configuration '%s'",
                         nyx->config_file);
                 success = 0;
                 break;
@@ -515,7 +510,7 @@ parse_config(nyx_t *nyx)
     fclose(cfg);
 
     if (success)
-        printf("Parsed %d watch definitions\n", hash_count(nyx->watches));
+        log_info("Parsed %d watch definitions", hash_count(nyx->watches));
 
     return success;
 }

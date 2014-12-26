@@ -1,3 +1,4 @@
+#include "log.h"
 #include "nyx.h"
 #include "map.h"
 
@@ -11,7 +12,7 @@ nyx_initialize(const char *config)
 
     if (nyx == NULL)
     {
-        perror("nyx: calloc");
+        log_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 

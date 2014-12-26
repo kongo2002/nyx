@@ -1,4 +1,5 @@
 #include "event.h"
+#include "log.h"
 
 #include <sys/socket.h>
 #include <linux/netlink.h>
@@ -31,7 +32,7 @@ netlink_connect(void)
 
     if (netlink_socket == -1)
     {
-        perror("nyx: socket");
+        log_perror("nyx: socket");
         return -1;
     }
 
@@ -43,7 +44,7 @@ netlink_connect(void)
 
     if (rc == -1)
     {
-        perror("nyx: bind");
+        log_perror("nyx: bind");
         close(netlink_socket);
         return -1;
     }
@@ -89,7 +90,7 @@ set_process_event_listen(int socket, bool enable)
 
     if (rc == -1)
     {
-        perror("nyx: send");
+        log_perror("nyx: send");
         return -1;
     }
 
@@ -115,7 +116,7 @@ new_event_data(void)
 
     if (data == NULL)
     {
-        perror("nyx: calloc");
+        log_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 
@@ -135,7 +136,7 @@ set_event_data(process_event_data_t *data, struct proc_event *event)
             data->fork.child_pid = event->event_data.fork.child_pid;
             data->fork.child_thread_group_id = event->event_data.fork.child_tgid;
 
-            printf("fork: parent tid=%d pid=%d -> child tid=%d pid=%d\n",
+            log_debug("fork: parent tid=%d pid=%d -> child tid=%d pid=%d",
                     event->event_data.fork.parent_pid,
                     event->event_data.fork.parent_tgid,
                     event->event_data.fork.child_pid,
@@ -151,7 +152,7 @@ set_event_data(process_event_data_t *data, struct proc_event *event)
             data->exit.exit_signal = event->event_data.exit.exit_signal;
             data->exit.thread_group_id = event->event_data.exit.process_tgid;
 
-            printf("exit: tid=%d pid=%d exit_code=%d\n",
+            log_debug("exit: tid=%d pid=%d exit_code=%d",
                     event->event_data.exit.process_pid,
                     event->event_data.exit.process_tgid,
                     event->event_data.exit.exit_code);
@@ -208,7 +209,7 @@ handle_process_event(int nl_sock, process_handler_t handler)
                 continue;
             }
 
-            perror("nyx: recv");
+            log_perror("nyx: recv");
             break;
         }
 
@@ -230,7 +231,7 @@ handle_process_event(int nl_sock, process_handler_t handler)
 static void
 on_sigint(int unused)
 {
-    puts("SIGINT - exiting event loop");
+    log_debug("SIGINT - exiting event loop");
     need_exit = true;
 }
 

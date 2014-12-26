@@ -1,12 +1,13 @@
 #include "config.h"
 #include "event.h"
+#include "log.h"
 
 #include <stdio.h>
 
 static int
 handle_process_event(int pid, process_event_data_t *event)
 {
-    printf("Got process event of type: %d (pid %d)\n", event->type, pid);
+    log_debug("Got process event of type: %d (pid %d)", event->type, pid);
     return 0;
 }
 
@@ -16,11 +17,11 @@ main(int argc, char **argv)
     const char *config;
     nyx_t *nyx = NULL;
 
-    puts("Starting nyx");
+    log_info("Starting nyx");
 
     if (argc < 2)
     {
-        fputs("No config file given\n", stderr);
+        log_warn("No config file given");
         return 1;
     }
 
