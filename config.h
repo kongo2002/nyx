@@ -34,6 +34,40 @@ struct parse_info_t
     void *data;
 };
 
+typedef struct config_t config_t;
+typedef struct config_value_t config_value_t;
+
+typedef enum config_value_e
+{
+    CONFIG_MAP,
+    CONFIG_LIST,
+    CONFIG_NUMBER,
+    CONFIG_STRING,
+    CONFIG_SIZE
+} config_value_e;
+
+struct config_value_t
+{
+    config_value_e type;
+    union
+    {
+        config_t *map;
+        config_value_t *list_type;
+    };
+};
+
+struct config_t
+{
+    const char *key;
+    config_value_t value;
+};
+
+#define CFG_NUMBER(x) \
+    { .key = (x), .value = { .type = CONFIG_NUMBER } }
+
+#define CFG_STRING(x) \
+    { .key = (x), .value = { .type = CONFIG_STRING } }
+
 parse_state_t *
 parse_state_new(const char *filename);
 
