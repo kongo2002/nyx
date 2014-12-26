@@ -1,6 +1,5 @@
 #include "config.h"
 #include "event.h"
-#include "map.h"
 
 #include <stdio.h>
 
@@ -14,6 +13,9 @@ handle_process_event(int pid, process_event_data_t *event)
 int
 main(int argc, char **argv)
 {
+    const char *config;
+    nyx_t *nyx = NULL;
+
     puts("Starting nyx");
 
     if (argc < 2)
@@ -22,7 +24,10 @@ main(int argc, char **argv)
         return 1;
     }
 
-    if (!parse_config(argv[1]))
+    config = argv[1];
+    nyx = nyx_initialize(config);
+
+    if (!parse_config(nyx))
         return 1;
 
     event_loop(&handle_process_event);

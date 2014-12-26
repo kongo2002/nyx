@@ -147,37 +147,8 @@ handle_stream(parse_info_t *info, yaml_event_t *event, void *data)
     return info;
 }
 
-parse_state_t *
-parse_state_new(const char *filename)
-{
-    parse_state_t *state = calloc(1, sizeof(parse_state_t));
-
-    if (state == NULL)
-    {
-        perror("nyx: calloc");
-        exit(EXIT_FAILURE);
-    }
-
-    state->filename = filename;
-    state->watches = hash_new(8);
-
-    return state;
-}
-
-void
-parse_state_destroy(parse_state_t *state)
-{
-    if (state == NULL)
-        return;
-
-    hash_destroy(state->watches);
-
-    free(state);
-    state = NULL;
-}
-
 parse_info_t *
-parse_info_new(parse_state_t *state)
+parse_info_new(nyx_t *nyx)
 {
     parse_info_t *info = calloc(1, sizeof(parse_info_t));
 
@@ -187,7 +158,7 @@ parse_info_new(parse_state_t *state)
         exit(EXIT_FAILURE);
     }
 
-    info->state = state;
+    info->nyx = nyx;
     info->handler[YAML_STREAM_START_EVENT] = handle_stream;
 
     return info;
@@ -204,7 +175,7 @@ parse_info_new_child(parse_info_t *parent)
         exit(EXIT_FAILURE);
     }
 
-    info->state = parent->state;
+    info->nyx = parent->nyx;
     info->parent = parent;
 
     return info;
@@ -247,7 +218,7 @@ unexpected_element(yaml_event_t *event)
 }
 
 int
-parse_config(const char *config_file)
+parse_config(nyx_t *nyx)
 {
     int success = 1;
     FILE *cfg = NULL;
@@ -256,7 +227,7 @@ parse_config(const char *config_file)
     handler_func_t handler = NULL;
 
     /* read input file */
-    cfg = fopen(config_file, "r");
+    cfg = fopen(nyx->config_file, "r");
     if (cfg == NULL)
     {
         perror("nyx: fopen");
@@ -266,12 +237,11 @@ parse_config(const char *config_file)
     /* initialize yaml parser */
     if (!yaml_parser_initialize(&parser))
     {
-        fprintf(stderr, "Failed to parse config file %s\n", config_file);
+        fprintf(stderr, "Failed to parse config file %s\n", nyx->config_file);
         return 0;
     }
 
-    parse_state_t *state = parse_state_new(config_file);
-    parse_info_t *info = parse_info_new(state);
+    parse_info_t *info = parse_info_new(nyx);
     parse_info_t *new_info = NULL;
 
     yaml_parser_set_input_file(&parser, cfg);
@@ -293,7 +263,7 @@ parse_config(const char *config_file)
             if (new_info == NULL)
             {
                 fprintf(stderr, "Invalid configuration '%s'",
-                        config_file);
+                        nyx->config_file);
                 success = 0;
                 break;
             }
@@ -309,7 +279,6 @@ parse_config(const char *config_file)
     while (event.type != YAML_STREAM_END_EVENT);
 
     /* cleanup */
-    parse_state_destroy(state);
     yaml_parser_delete(&parser);
 
     parse_info_destroy(info);

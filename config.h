@@ -1,6 +1,7 @@
 #ifndef __NYX_CONFIG_H__
 #define __NYX_CONFIG_H__
 
+#include "nyx.h"
 #include "list.h"
 #include "map.h"
 
@@ -9,23 +10,16 @@
 
 #define PARSE_HANDLER_SIZE (YAML_MAPPING_END_EVENT+1)
 
-typedef struct parse_state_t parse_state_t;
 typedef struct parse_info_t parse_info_t;
 typedef parse_info_t* (*handler_func_t)(parse_info_t*, yaml_event_t*, void*);
-
-struct parse_state_t
-{
-    const char *filename;
-    hash_t *watches;
-};
 
 struct parse_info_t
 {
     /** array of handler functions */
     handler_func_t handler[PARSE_HANDLER_SIZE];
 
-    /** basic parse state */
-    parse_state_t *state;
+    /** main application data */
+    nyx_t *nyx;
 
     /** optional parent parsing information */
     parse_info_t *parent;
@@ -68,20 +62,14 @@ struct config_t
 #define CFG_STRING(x) \
     { .key = (x), .value = { .type = CONFIG_STRING } }
 
-parse_state_t *
-parse_state_new(const char *filename);
-
-void
-parse_state_destroy(parse_state_t *state);
-
 parse_info_t *
-parse_info_new(parse_state_t *state);
+parse_info_new(nyx_t *nyx);
 
 parse_info_t *
 parse_info_new_child(parse_info_t *parent);
 
 int
-parse_config(const char *config_file);
+parse_config(nyx_t *nyx);
 
 #endif
 
