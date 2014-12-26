@@ -16,6 +16,7 @@ typedef struct bucket_t
 typedef struct hash_t
 {
     unsigned int count;
+    unsigned int bucket_count;
     bucket_t *buckets;
 
 } hash_t;

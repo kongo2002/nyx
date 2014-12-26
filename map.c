@@ -31,7 +31,7 @@ hash_new(int size)
 
     size = size > 0 ? size : 4;
 
-    hash->count = size;
+    hash->bucket_count = size;
     hash->buckets = calloc(size, sizeof(bucket_t));
 
     if (hash->buckets == NULL)
@@ -100,7 +100,7 @@ hash_destroy(hash_t *hash)
         return;
 
     bucket = hash->buckets;
-    count = hash->count;
+    count = hash->bucket_count;
 
     while (i < count)
     {
@@ -111,6 +111,7 @@ hash_destroy(hash_t *hash)
 
     free(hash->buckets);
     free(hash);
+    hash = NULL;
 }
 
 static bucket_t *
@@ -118,7 +119,7 @@ get_bucket(hash_t *hash, const char *key)
 {
     unsigned long keyhash = hash_string(key);
 
-    return &(hash->buckets[keyhash % hash->count]);
+    return &(hash->buckets[keyhash % hash->bucket_count]);
 }
 
 int
@@ -175,6 +176,7 @@ hash_add(hash_t *hash, const char *key, void *data)
     pair->data = data;
 
     bucket->count++;
+    hash->count++;
 
     return 1;
 }

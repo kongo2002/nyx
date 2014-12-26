@@ -45,7 +45,7 @@ struct config_value_t
     config_value_e type;
     union
     {
-        config_t *map;
+        hash_t *map;
         config_value_t *list_type;
     };
 };
@@ -56,11 +56,12 @@ struct config_t
     config_value_t value;
 };
 
-#define CFG_NUMBER(x) \
-    { .key = (x), .value = { .type = CONFIG_NUMBER } }
-
-#define CFG_STRING(x) \
-    { .key = (x), .value = { .type = CONFIG_STRING } }
+struct config_parser_map
+{
+    const char *key;
+    handler_func_t handler;
+    void *data;
+};
 
 parse_info_t *
 parse_info_new(nyx_t *nyx);

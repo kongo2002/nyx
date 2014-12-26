@@ -1,13 +1,9 @@
 #include "config.h"
+#include "map.h"
+#include "nyx.h"
+#include "watch.h"
 
-static parse_info_t *
-handle_mapping(parse_info_t *info, yaml_event_t *event, void *data);
-
-static parse_info_t *
-handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data);
-
-static parse_info_t *
-handle_scalar_value(parse_info_t *info, yaml_event_t *event, void *data);
+#include <string.h>
 
 static const char * yaml_event_names[] =
 {
@@ -23,6 +19,60 @@ static const char * yaml_event_names[] =
     "YAML_MAPPING_START_EVENT",
     "YAML_MAPPING_END_EVENT"
 };
+
+static parse_info_t *
+handle_mapping(parse_info_t *info, yaml_event_t *event, void *data);
+
+static parse_info_t *
+handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data);
+
+static parse_info_t *
+handle_scalar_value(parse_info_t *info, yaml_event_t *event, void *data);
+
+static parse_info_t *
+handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data);
+
+static parse_info_t *
+handle_watch(parse_info_t *info, yaml_event_t *event, void *data);
+
+static int
+check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
+{
+    if (event->type != event_type)
+    {
+        fprintf(stderr, "Expecting '%s', but found '%s'\n",
+                yaml_event_names[event_type],
+                yaml_event_names[event->type]);
+        return 0;
+    }
+
+    return 1;
+}
+
+static const char *
+get_scalar_value(yaml_event_t *event)
+{
+    if (!check_event_type(event, YAML_SCALAR_EVENT))
+        return NULL;
+
+    return (char *)event->data.scalar.value;
+}
+
+static struct config_parser_map *
+get_handler_from_map(struct config_parser_map *map, const char *key)
+{
+    struct config_parser_map *mapping = map;
+
+    while (mapping && mapping->key)
+    {
+        if (!strcmp(mapping->key, key))
+            return mapping;
+
+        mapping++;
+    }
+
+    return NULL;
+}
 
 static void
 reset_handlers(parse_info_t *info)
@@ -87,6 +137,10 @@ handle_scalar_value(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 {
+    const char *key;
+    struct config_parser_map *map = NULL;
+    struct config_parser_map *handler = NULL;
+
     if (event->type != YAML_SCALAR_EVENT)
     {
         fprintf(stderr, "Expecting scalar value, but found '%s'\n",
@@ -94,10 +148,32 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
         return NULL;
     }
 
-    printf("handle_scalar_key: '%s'\n", event->data.scalar.value);
+    key = (char *)event->data.scalar.value;
 
-    info->handler[YAML_SCALAR_EVENT] = &handle_scalar_value;
-    info->handler[YAML_MAPPING_START_EVENT] = &handle_mapping;
+    printf("handle_scalar_key: '%s'\n", key);
+
+    /* handler lookup */
+    if (data != NULL)
+    {
+        map = data;
+        handler = get_handler_from_map(map, key);
+    }
+
+    if (handler == NULL)
+    {
+        printf("did not find handler for key '%s'\n", key);
+
+        info->handler[YAML_SCALAR_EVENT] = &handle_scalar_value;
+        info->handler[YAML_MAPPING_START_EVENT] = &handle_mapping;
+    }
+    else
+    {
+        printf("found handler for key '%s'\n", key);
+
+        info->handler[YAML_SCALAR_EVENT] = handler->handler;
+        info->handler[YAML_MAPPING_START_EVENT] = handler->handler;
+        info->handler[YAML_SEQUENCE_START_EVENT] = handler->handler;
+    }
 
     return info;
 }
@@ -147,6 +223,143 @@ handle_stream(parse_info_t *info, yaml_event_t *event, void *data)
     return info;
 }
 
+#define DECLARE_WATCH_VALUE_FUNC(name_) \
+    static parse_info_t * \
+    handle_watch_map_value_##name_(parse_info_t *info, yaml_event_t *event, void *data) \
+    { \
+        puts("handle_watch_map_value_"); \
+        watch_t *watch = data; \
+        const char *value = get_scalar_value(event); \
+        if (value == NULL || watch == NULL) \
+            return NULL; \
+        watch->name_ = value; \
+        info->handler[YAML_SCALAR_EVENT] = &handle_watch_map_key; \
+        return info; \
+    }
+
+DECLARE_WATCH_VALUE_FUNC(name)
+DECLARE_WATCH_VALUE_FUNC(uid)
+DECLARE_WATCH_VALUE_FUNC(gid)
+DECLARE_WATCH_VALUE_FUNC(start)
+DECLARE_WATCH_VALUE_FUNC(dir)
+
+#undef DECLARE_WATCH_VALUE_FUNC
+
+static struct config_parser_map watch_value_map[] =
+{
+    { .key = "name", .handler = handle_watch_map_value_name },
+    { .key = "uid", .handler = handle_watch_map_value_uid },
+    { .key = "gid", .handler = handle_watch_map_value_gid },
+    { .key = "start", .handler = handle_watch_map_value_start },
+    { .key = "dir", .handler = handle_watch_map_value_dir },
+    { NULL }
+};
+
+static parse_info_t *
+handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    const char *key;
+    watch_t *watch = data;
+    struct config_parser_map *handler = NULL;
+
+    puts("handle_watch_map_key");
+
+    key = get_scalar_value(event);
+
+    /* empty key or not a scalar at all */
+    if (key == NULL || watch == NULL)
+        return NULL;
+
+    handler = get_handler_from_map(watch_value_map, key);
+
+    info->handler[YAML_SCALAR_EVENT] =
+        handler != NULL ? handler->handler : NULL;
+
+    return info;
+}
+
+static parse_info_t *
+handle_watch_map_end(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    parse_info_t *parent = parser_up(info, event, data);
+
+    /* reset data (last watch instance) */
+    parent->data = NULL;
+    parent->handler[YAML_SCALAR_EVENT] = &handle_watch;
+
+    return parent;
+}
+
+static parse_info_t *
+handle_watch_map(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    parse_info_t *new = NULL;
+
+    puts("handle_watch_map");
+
+    new = parse_info_new_child(info);
+
+    new->handler[YAML_SCALAR_EVENT] = &handle_watch_map_key;
+    new->handler[YAML_MAPPING_END_EVENT] = &handle_watch_map_end;
+
+    return new;
+}
+
+static parse_info_t *
+handle_watch(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    puts("handle watch");
+
+    const char *name = get_scalar_value(event);
+
+    if (name == NULL)
+        return NULL;
+
+    watch_t *watch = calloc(1, sizeof(watch_t));
+
+    if (watch == NULL)
+    {
+        perror("nyx: calloc");
+        exit(EXIT_FAILURE);
+    }
+
+    hash_add(info->nyx->watches, name, watch);
+
+    reset_handlers(info);
+    info->handler[YAML_MAPPING_START_EVENT] = &handle_watch_map;
+    info->handler[YAML_MAPPING_END_EVENT] = &handle_mapping_end;
+
+    info->data = watch;
+
+    return info;
+}
+
+static parse_info_t *
+handle_watches(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    puts("handle watches");
+
+    reset_handlers(info);
+
+    /* either name of the watch
+     * or a sequence of watches */
+    info->handler[YAML_SCALAR_EVENT] = &handle_watch;
+
+    return info;
+}
+
+static struct config_parser_map root_map[] =
+{
+    { .key = "watches", .handler = &handle_watches },
+    { NULL }
+};
+
+void *
+config_initialize(nyx_t *nyx)
+{
+    return NULL;
+}
+
 parse_info_t *
 parse_info_new(nyx_t *nyx)
 {
@@ -160,6 +373,7 @@ parse_info_new(nyx_t *nyx)
 
     info->nyx = nyx;
     info->handler[YAML_STREAM_START_EVENT] = handle_stream;
+    info->data = &root_map;
 
     return info;
 }
@@ -177,6 +391,9 @@ parse_info_new_child(parse_info_t *parent)
 
     info->nyx = parent->nyx;
     info->parent = parent;
+
+    /* migrate data to child if given */
+    info->data = parent->data;
 
     return info;
 }
@@ -259,10 +476,10 @@ parse_config(nyx_t *nyx)
         handler = info->handler[event.type];
         if (handler != NULL)
         {
-            new_info = handler(info, &event, NULL);
+            new_info = handler(info, &event, info->data);
             if (new_info == NULL)
             {
-                fprintf(stderr, "Invalid configuration '%s'",
+                fprintf(stderr, "Invalid configuration '%s'\n",
                         nyx->config_file);
                 success = 0;
                 break;
@@ -283,6 +500,9 @@ parse_config(nyx_t *nyx)
 
     parse_info_destroy(info);
     fclose(cfg);
+
+    if (success)
+        printf("Parsed %d watch definitions\n", nyx->watches->count);
 
     return success;
 }
