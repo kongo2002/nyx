@@ -58,7 +58,7 @@ get_scalar_value(yaml_event_t *event)
     return (char *)event->data.scalar.value;
 }
 
-static struct config_parser_map *
+static handler_func_t
 get_handler_from_map(struct config_parser_map *map, const char *key)
 {
     struct config_parser_map *mapping = map;
@@ -66,12 +66,25 @@ get_handler_from_map(struct config_parser_map *map, const char *key)
     while (mapping && mapping->key)
     {
         if (!strcmp(mapping->key, key))
-            return mapping;
+            return mapping->handler;
 
         mapping++;
     }
 
     return NULL;
+}
+
+static handler_func_t
+get_handler_from_map_fallback(struct config_parser_map *map, const char *key, handler_func_t fallback)
+{
+    handler_func_t handler = get_handler_from_map(map, key);
+
+    if (handler != NULL)
+        return handler;
+
+    fprintf(stderr, "Unknown config key '%s'\n", key);
+
+    return fallback;
 }
 
 static void
@@ -139,18 +152,12 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 {
     const char *key;
     struct config_parser_map *map = NULL;
-    struct config_parser_map *handler = NULL;
+    handler_func_t handler = NULL;
 
-    if (event->type != YAML_SCALAR_EVENT)
-    {
-        fprintf(stderr, "Expecting scalar value, but found '%s'\n",
-                yaml_event_names[event->type]);
+    key = get_scalar_value(event);
+
+    if (key == NULL)
         return NULL;
-    }
-
-    key = (char *)event->data.scalar.value;
-
-    printf("handle_scalar_key: '%s'\n", key);
 
     /* handler lookup */
     if (data != NULL)
@@ -161,7 +168,7 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 
     if (handler == NULL)
     {
-        printf("did not find handler for key '%s'\n", key);
+        fprintf(stderr, "Unknown config key '%s'\n", key);
 
         info->handler[YAML_SCALAR_EVENT] = &handle_scalar_value;
         info->handler[YAML_MAPPING_START_EVENT] = &handle_mapping;
@@ -170,9 +177,9 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
     {
         printf("found handler for key '%s'\n", key);
 
-        info->handler[YAML_SCALAR_EVENT] = handler->handler;
-        info->handler[YAML_MAPPING_START_EVENT] = handler->handler;
-        info->handler[YAML_SEQUENCE_START_EVENT] = handler->handler;
+        info->handler[YAML_SCALAR_EVENT] = handler;
+        info->handler[YAML_MAPPING_START_EVENT] = handler;
+        info->handler[YAML_SEQUENCE_START_EVENT] = handler;
     }
 
     return info;
@@ -256,11 +263,18 @@ static struct config_parser_map watch_value_map[] =
 };
 
 static parse_info_t *
+unknown_watch_key(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    /* no op */
+    return info;
+}
+
+static parse_info_t *
 handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
 {
     const char *key;
     watch_t *watch = data;
-    struct config_parser_map *handler = NULL;
+    handler_func_t handler = NULL;
 
     puts("handle_watch_map_key");
 
@@ -270,10 +284,9 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
     if (key == NULL || watch == NULL)
         return NULL;
 
-    handler = get_handler_from_map(watch_value_map, key);
+    handler = get_handler_from_map_fallback(watch_value_map, key, unknown_watch_key);
 
-    info->handler[YAML_SCALAR_EVENT] =
-        handler != NULL ? handler->handler : NULL;
+    info->handler[YAML_SCALAR_EVENT] = handler;
 
     return info;
 }
