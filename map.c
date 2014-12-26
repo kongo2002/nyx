@@ -114,6 +114,15 @@ hash_destroy(hash_t *hash)
     hash = NULL;
 }
 
+unsigned int
+hash_count(hash_t *hash)
+{
+    if (hash == NULL)
+        return 0;
+
+    return hash->count;
+}
+
 static bucket_t *
 get_bucket(hash_t *hash, const char *key)
 {

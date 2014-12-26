@@ -502,7 +502,7 @@ parse_config(nyx_t *nyx)
     fclose(cfg);
 
     if (success)
-        printf("Parsed %d watch definitions\n", nyx->watches->count);
+        printf("Parsed %d watch definitions\n", hash_count(nyx->watches));
 
     return success;
 }

@@ -42,6 +42,9 @@ hash_get(hash_t *hash, const char* key);
 hash_t *
 hash_from_array(key_value_t key_values[], int size);
 
+unsigned int
+hash_count(hash_t *hash);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */
