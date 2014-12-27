@@ -42,6 +42,9 @@ hash_get(hash_t *hash, const char* key);
 hash_t *
 hash_from_array(key_value_t key_values[], int size);
 
+void
+hash_foreach(hash_t *hash, void (*func)(void *));
+
 unsigned int
 hash_count(hash_t *hash);
 

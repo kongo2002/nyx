@@ -236,7 +236,7 @@ handle_stream(parse_info_t *info, yaml_event_t *event, void *data)
         const char *value = get_scalar_value(event); \
         if (value == NULL || watch == NULL) \
             return NULL; \
-        watch->name_ = value; \
+        watch->name_ = strdup(value); \
         info->handler[YAML_SCALAR_EVENT] = &handle_watch_map_key; \
         return info; \
     }
@@ -320,20 +320,16 @@ handle_watch(parse_info_t *info, yaml_event_t *event, void *data)
 {
     log_debug("handle watch");
 
+    const char *w_name;
     const char *name = get_scalar_value(event);
 
     if (name == NULL)
         return NULL;
 
-    watch_t *watch = calloc(1, sizeof(watch_t));
+    w_name = strdup(name);
+    watch_t *watch = watch_new(w_name);
 
-    if (watch == NULL)
-    {
-        log_critical_perror("nyx: calloc");
-        exit(EXIT_FAILURE);
-    }
-
-    hash_add(info->nyx->watches, name, watch);
+    hash_add(info->nyx->watches, w_name, watch);
 
     reset_handlers(info);
     info->handler[YAML_MAPPING_START_EVENT] = &handle_watch_map;
@@ -442,6 +438,12 @@ unexpected_element(yaml_event_t *event)
     }
 }
 
+static void
+dump_watch(void *data)
+{
+    watch_dump((watch_t *) data);
+}
+
 int
 parse_config(nyx_t *nyx)
 {
@@ -510,7 +512,11 @@ parse_config(nyx_t *nyx)
     fclose(cfg);
 
     if (success)
+    {
         log_info("Parsed %d watch definitions", hash_count(nyx->watches));
+
+        hash_foreach(nyx->watches, dump_watch);
+    }
 
     return success;
 }

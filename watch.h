@@ -13,6 +13,9 @@ typedef struct watch_t
 watch_t *
 watch_new(const char *name);
 
+void
+watch_dump(watch_t *watch);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

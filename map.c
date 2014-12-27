@@ -209,6 +209,33 @@ hash_get(hash_t *hash, const char* key)
     return pair->data;
 }
 
+void
+hash_foreach(hash_t *hash, void (*func)(void *))
+{
+    unsigned int i = 0, j = 0, pairs = 0;
+    unsigned int bucket_count = hash->bucket_count;
+
+    bucket_t *bucket = hash->buckets;
+    pair_t *pair = NULL;
+
+    while (i < bucket_count)
+    {
+        j = 0;
+        pairs = bucket->count;
+        pair = bucket->pairs;
+
+        while (j < pairs)
+        {
+            if (pair->data != NULL)
+                func(pair->data);
+
+            pair++; j++;
+        }
+
+        bucket++; i++;
+    }
+}
+
 hash_t *
 hash_from_array(key_value_t key_values[], int size)
 {
