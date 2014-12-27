@@ -1,5 +1,5 @@
 CXX      := gcc
-CXXFLAGS := -O2 -Wall -ggdb
+CXXFLAGS := -Wall -std=gnu89
 
 INCLUDES := -I.
 LIBS     := -lyaml
@@ -7,6 +7,13 @@ LIBS     := -lyaml
 SRCS     := $(wildcard *.c)
 OBJECTS  := $(patsubst %.c,%.o,$(SRCS))
 DEPS     := $(OBJECTS:.o=.d)
+
+DEBUG ?= 1
+ifeq ($(DEBUG), 1)
+    CXXFLAGS+= -O0 -ggdb
+else
+    CXXFLAGS+= -O2 -DNDEBUG
+endif
 
 all: nyx
 
