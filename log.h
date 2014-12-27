@@ -22,6 +22,7 @@ DECLARE_LOG_PROTO (warn)
 DECLARE_LOG_PROTO (error)
 DECLARE_LOG_PROTO (perror)
 DECLARE_LOG_PROTO (critical)
+DECLARE_LOG_PROTO (critical_perror)
 
 #undef DECLARE_LOG_PROTO
 

@@ -11,7 +11,7 @@ watch_new(const char *name)
 
     if (watch == NULL)
     {
-        log_perror("nyx: calloc");
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 

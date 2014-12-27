@@ -329,7 +329,7 @@ handle_watch(parse_info_t *info, yaml_event_t *event, void *data)
 
     if (watch == NULL)
     {
-        perror("nyx: calloc");
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 
@@ -377,7 +377,7 @@ parse_info_new(nyx_t *nyx)
 
     if (info == NULL)
     {
-        perror("nyx: calloc");
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 
@@ -395,7 +395,7 @@ parse_info_new_child(parse_info_t *parent)
 
     if (info == NULL)
     {
-        perror("nyx: calloc");
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 
@@ -455,7 +455,7 @@ parse_config(nyx_t *nyx)
     cfg = fopen(nyx->config_file, "r");
     if (cfg == NULL)
     {
-        perror("nyx: fopen");
+        log_perror("nyx: fopen");
         return 0;
     }
 

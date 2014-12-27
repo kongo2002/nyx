@@ -12,7 +12,7 @@ nyx_initialize(const char *config)
 
     if (nyx == NULL)
     {
-        log_perror("nyx: calloc");
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 

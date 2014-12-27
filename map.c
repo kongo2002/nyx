@@ -1,3 +1,4 @@
+#include "log.h"
 #include "map.h"
 
 #include <stdio.h>
@@ -25,7 +26,7 @@ hash_new(int size)
 
     if (hash == NULL)
     {
-        perror("nyx: calloc");
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 
@@ -36,8 +37,8 @@ hash_new(int size)
 
     if (hash->buckets == NULL)
     {
-        perror("nyx: calloc");
         free(hash);
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 
@@ -160,7 +161,7 @@ hash_add(hash_t *hash, const char *key, void *data)
 
         if (bucket->pairs == NULL)
         {
-            perror("nyx: calloc");
+            log_critical_perror("nyx: calloc");
             exit(EXIT_FAILURE);
         }
 

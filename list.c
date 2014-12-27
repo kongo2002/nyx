@@ -8,7 +8,7 @@ list_new(void)
 
     if (list == NULL)
     {
-        log_perror("nyx: calloc");
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 
@@ -22,7 +22,7 @@ list_add(list_t *list, void *data)
 
     if (node == NULL)
     {
-        log_perror("nyx: calloc");
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 

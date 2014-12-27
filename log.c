@@ -93,12 +93,13 @@ log_format_msg(log_level_e level, const char *format, va_list values)
         if ((level_) & LOG_CRITICAL) abort(); \
     }
 
-DECLARE_LOG_FUNC (debug,    LOG_DEBUG)
-DECLARE_LOG_FUNC (info,     LOG_INFO)
-DECLARE_LOG_FUNC (warn,     LOG_WARN)
-DECLARE_LOG_FUNC (error,    LOG_ERROR)
-DECLARE_LOG_FUNC (perror,   LOG_PERROR)
-DECLARE_LOG_FUNC (critical, LOG_CRITICAL)
+DECLARE_LOG_FUNC (debug,           LOG_DEBUG)
+DECLARE_LOG_FUNC (info,            LOG_INFO)
+DECLARE_LOG_FUNC (warn,            LOG_WARN)
+DECLARE_LOG_FUNC (error,           LOG_ERROR)
+DECLARE_LOG_FUNC (perror,          LOG_PERROR)
+DECLARE_LOG_FUNC (critical,        LOG_CRITICAL)
+DECLARE_LOG_FUNC (critical_perror, LOG_CRITICAL | LOG_PERROR)
 
 #undef DECLARE_LOG_FUNC
 

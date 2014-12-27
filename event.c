@@ -116,7 +116,7 @@ new_event_data(void)
 
     if (data == NULL)
     {
-        log_perror("nyx: calloc");
+        log_critical_perror("nyx: calloc");
         exit(EXIT_FAILURE);
     }
 
