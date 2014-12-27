@@ -449,12 +449,17 @@ parse_config(nyx_t *nyx)
 {
     int success = 1;
     FILE *cfg = NULL;
+    handler_func_t handler = NULL;
+    const char *config_file = nyx->options.filename;
+
+    if (config_file == NULL)
+        return 0;
+
     yaml_parser_t parser;
     yaml_event_t event;
-    handler_func_t handler = NULL;
 
     /* read input file */
-    cfg = fopen(nyx->config_file, "r");
+    cfg = fopen(config_file, "r");
     if (cfg == NULL)
     {
         log_perror("nyx: fopen");
@@ -464,7 +469,7 @@ parse_config(nyx_t *nyx)
     /* initialize yaml parser */
     if (!yaml_parser_initialize(&parser))
     {
-        log_warn("Failed to parse config file %s", nyx->config_file);
+        log_warn("Failed to parse config file %s", config_file);
         return 0;
     }
 
@@ -489,8 +494,7 @@ parse_config(nyx_t *nyx)
             new_info = handler(info, &event, info->data);
             if (new_info == NULL)
             {
-                log_warn("Invalid configuration '%s'",
-                        nyx->config_file);
+                log_warn("Invalid configuration '%s'", config_file);
                 success = 0;
                 break;
             }

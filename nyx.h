@@ -5,12 +5,19 @@
 
 typedef struct
 {
-    const char *config_file;
+    int quiet;
+    int no_color;
+    const char *filename;
+} nyx_options_t;
+
+typedef struct
+{
+    nyx_options_t options;
     hash_t *watches;
 } nyx_t;
 
 nyx_t *
-nyx_initialize(const char *config);
+nyx_initialize(int argc, char **args);
 
 #endif
 

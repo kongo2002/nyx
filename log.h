@@ -3,6 +3,8 @@
 
 #define _GNU_SOURCE
 
+#include "nyx.h"
+
 typedef enum
 {
     LOG_DEBUG    = 1 << 0,
@@ -12,6 +14,9 @@ typedef enum
     LOG_PERROR   = 1 << 4,
     LOG_CRITICAL = 1 << 5
 } log_level_e;
+
+void
+log_init(nyx_t *nyx);
 
 #define DECLARE_LOG_PROTO(type_) \
 void log_##type_(const char* format, ...);

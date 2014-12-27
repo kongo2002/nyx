@@ -1,4 +1,5 @@
 #include "log.h"
+#include "nyx.h"
 
 #define _GNU_SOURCE
 
@@ -10,6 +11,19 @@
 #include <unistd.h>
 
 static volatile int quiet = 0;
+static volatile int color = 1;
+
+void
+log_init(nyx_t *nyx)
+{
+#ifndef NDEBUG
+    quiet = 0;
+#else
+    quiet = nyx->options.quiet;
+#endif
+
+    color = !nyx->options.no_color;
+}
 
 static const char *
 get_log_color(log_level_e level, size_t *length)
@@ -43,10 +57,14 @@ log_msg(log_level_e level, const char *msg, size_t length)
     /* safe errno */
     int error = errno;
 
-    size_t start_length;
-    const char *start_color = get_log_color(level, &start_length);
+    if (color)
+    {
+        size_t start_length;
+        const char *start_color = get_log_color(level, &start_length);
 
-    fwrite(start_color, start_length, 1, stdout);
+        fwrite(start_color, start_length, 1, stdout);
+    }
+
     fwrite(msg, length, 1, stdout);
 
     /* errno specific handling */
@@ -60,7 +78,9 @@ log_msg(log_level_e level, const char *msg, size_t length)
         fwrite(error_msg, strlen(error_msg), 1, stdout);
     }
 
-    fwrite(end_color, end_length, 1, stdout);
+    if (color)
+        fwrite(end_color, end_length, 1, stdout);
+
     fputc('\n', stdout);
 
     /* restore errno? */

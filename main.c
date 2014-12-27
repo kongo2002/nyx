@@ -14,19 +14,18 @@ handle_process_event(int pid, process_event_data_t *event)
 int
 main(int argc, char **argv)
 {
-    const char *config;
     nyx_t *nyx = NULL;
-
-    log_info("Starting nyx");
 
     if (argc < 2)
     {
-        log_warn("No config file given");
+        fputs("Usage: nyx -qC [FILE]\n", stderr);
         return 1;
     }
 
-    config = argv[1];
-    nyx = nyx_initialize(config);
+    log_debug("Starting nyx");
+
+    nyx = nyx_initialize(argc, argv);
+
 
     if (!parse_config(nyx))
         return 1;
