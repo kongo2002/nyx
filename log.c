@@ -93,7 +93,10 @@ log_format_msg(log_level_e level, const char *format, va_list values)
         if ((level_) & LOG_CRITICAL) abort(); \
     }
 
+#ifndef NDEBUG
 DECLARE_LOG_FUNC (debug,           LOG_DEBUG)
+#endif
+
 DECLARE_LOG_FUNC (info,            LOG_INFO)
 DECLARE_LOG_FUNC (warn,            LOG_WARN)
 DECLARE_LOG_FUNC (error,           LOG_ERROR)

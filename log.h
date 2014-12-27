@@ -16,7 +16,12 @@ typedef enum
 #define DECLARE_LOG_PROTO(type_) \
 void log_##type_(const char* format, ...);
 
+#ifndef NDEBUG
 DECLARE_LOG_PROTO (debug)
+#else
+#define log_debug(fmt, ...)
+#endif
+
 DECLARE_LOG_PROTO (info)
 DECLARE_LOG_PROTO (warn)
 DECLARE_LOG_PROTO (error)
