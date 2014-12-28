@@ -1,6 +1,13 @@
 #include "log.h"
 #include "state.h"
 
+int
+dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
+{
+    log_debug("Incoming event data for PID %d", pid);
+    return 1;
+}
+
 state_t *
 state_new(watch_t *watch, nyx_t *nyx)
 {
@@ -27,6 +34,23 @@ state_new(watch_t *watch, nyx_t *nyx)
     return state;
 }
 
+static const char *state_to_str[] =
+{
+    "STATE_INIT",
+    "STATE_UNMONITORED",
+    "STATE_STARTING",
+    "STATE_RUNNING",
+    "STATE_STOPPING",
+    "STATE_STOPPED",
+    "STATE_SIZE"
+};
+
+const char *
+state_to_string(state_e state)
+{
+    return state_to_str[state];
+}
+
 static int
 process_state(state_t *state, state_e old_state)
 {
@@ -35,8 +59,8 @@ process_state(state_t *state, state_e old_state)
     log_debug("Watch '%s' (PID %d): %s -> %s",
             state->watch->name,
             state->pid,
-            state_to_str[old_state],
-            state_to_str[new_state]);
+            state_to_string(old_state),
+            state_to_string(new_state));
 
     switch (new_state)
     {
@@ -69,7 +93,7 @@ state_loop(state_t *state)
         else
         {
             log_debug("Watch '%s' (PID %d): state stayed %s",
-                    watch->name, state->pid, state_to_str[last_state]);
+                    watch->name, state->pid, state_to_string(last_state));
         }
 
         if (!result)

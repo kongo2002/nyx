@@ -172,7 +172,7 @@ set_event_data(process_event_data_t *data, struct proc_event *event)
  * Handle a single process event
  */
 static int
-handle_process_event(int nl_sock, process_handler_t handler)
+handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 {
     int pid = 0, rc = 0;
     process_event_data_t *event_data = new_event_data();
@@ -213,7 +213,7 @@ handle_process_event(int nl_sock, process_handler_t handler)
         pid = set_event_data(event_data, &nlcn_msg.proc_ev);
 
         if (pid > 0)
-            handler(pid, event_data);
+            handler(pid, event_data, nyx);
     }
 
     if (event_data != NULL)
@@ -233,7 +233,7 @@ on_sigint(int unused)
 }
 
 int
-event_loop(process_handler_t handler)
+event_loop(nyx_t *nyx, process_handler_t handler)
 {
     int socket;
     int rc = 1;
@@ -253,7 +253,7 @@ event_loop(process_handler_t handler)
         goto out;
     }
 
-    rc = handle_process_event(socket, handler);
+    rc = handle_process_event(socket, nyx, handler);
     if (rc == -1)
     {
         rc = 0;

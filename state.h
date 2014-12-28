@@ -1,7 +1,7 @@
 #ifndef __NYX_STATE_H__
 #define __NYX_STATE_H__
 
-#include "log.h"
+#include "event.h"
 #include "watch.h"
 
 #include <semaphore.h>
@@ -19,17 +19,6 @@ typedef enum
     STATE_SIZE
 } state_e;
 
-const char *state_to_str[] =
-{
-    "STATE_INIT",
-    "STATE_UNMONITORED",
-    "STATE_STARTING",
-    "STATE_RUNNING",
-    "STATE_STOPPING",
-    "STATE_STOPPED",
-    "STATE_SIZE"
-};
-
 typedef struct
 {
     pid_t pid;
@@ -39,6 +28,9 @@ typedef struct
     nyx_t *nyx;
 } state_t;
 
+inline const char *
+state_to_string(state_e state);
+
 state_t *
 state_new(watch_t *watch, nyx_t *nyx);
 
@@ -47,6 +39,9 @@ state_loop(state_t *state);
 
 void
 state_loop_start(void *state);
+
+int
+dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx);
 
 #endif
 

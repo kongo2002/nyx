@@ -1,6 +1,8 @@
 #ifndef __NYX_EVENT_H__
 #define __NYX_EVENT_H__
 
+#include "nyx.h"
+
 typedef enum process_event_t
 {
     EVENT_FORK,
@@ -34,9 +36,9 @@ typedef struct process_event_data_t
     };
 } process_event_data_t;
 
-typedef int (*process_handler_t)(int pid, process_event_data_t *event_data);
+typedef int (*process_handler_t)(int pid, process_event_data_t *event_data, nyx_t *nyx);
 
 int
-event_loop(process_handler_t handler);
+event_loop(nyx_t *nyx, process_handler_t handler);
 
 #endif
