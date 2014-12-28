@@ -4,8 +4,10 @@ CXXFLAGS := -Wall -std=gnu89
 INCLUDES := -I.
 LIBS     := -lyaml -lpthread
 
-SRCS     := $(wildcard *.c)
-OBJECTS  := $(patsubst %.c,%.o,$(SRCS))
+VPATH    := src
+
+SRCS     := $(wildcard src/*.c)
+OBJECTS  := $(patsubst src/%.c,src/%.o,$(SRCS))
 DEPS     := $(OBJECTS:.o=.d)
 
 DEBUG ?= 1
@@ -22,7 +24,7 @@ all: nyx
 nyx: $(OBJECTS)
 	$(CXX) $(OBJECTS) -o nyx $(LIBS)
 
-%.o: %.c
+src/%.o: %.c
 	$(CXX) -c $(CXXFLAGS) $(INCLUDES) -MMD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 
 run: nyx
@@ -32,8 +34,8 @@ tags: $(SRCS)
 	ctags -R --c-kinds=+lp --fields=+iaS --extra=+q --language-force=C .
 
 clean:
-	@rm -rf *.o
-	@rm -rf *.d
+	@rm -rf src/*.o
+	@rm -rf src/*.d
 	@rm -f nyx
 
 rebuild: clean all
