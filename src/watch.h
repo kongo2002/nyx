@@ -16,6 +16,9 @@ watch_new(const char *name);
 void
 watch_dump(watch_t *watch);
 
+void
+watch_destroy(watch_t *watch);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

@@ -1,6 +1,7 @@
 #include "config.h"
 #include "event.h"
 #include "log.h"
+#include "nyx.h"
 #include "state.h"
 #include "utils.h"
 
@@ -31,6 +32,8 @@ main(int argc, char **argv)
 
     /* tear down */
     log_shutdown();
+
+    nyx_destroy(nyx);
 
     return 0;
 }

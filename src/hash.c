@@ -20,7 +20,7 @@ hash_string(const char *str)
 }
 
 hash_t *
-hash_new(int size)
+hash_new(int size, callback_t free_value)
 {
     hash_t *hash = calloc(1, sizeof(hash_t));
 
@@ -31,6 +31,7 @@ hash_new(int size)
 
     hash->bucket_count = size;
     hash->buckets = calloc(size, sizeof(bucket_t));
+    hash->free_value = free_value;
 
     if (hash->buckets == NULL)
     {
@@ -66,7 +67,7 @@ get_pair(bucket_t *bucket, const char *key)
 }
 
 static void
-bucket_destroy(bucket_t *bucket)
+bucket_destroy(bucket_t *bucket, callback_t free_func)
 {
     unsigned int i = 0;
     unsigned int count = bucket->count;
@@ -80,6 +81,9 @@ bucket_destroy(bucket_t *bucket)
     while (i < count)
     {
         free((void *)pair->key);
+
+        if (free_func != NULL && pair->data != NULL)
+            free_func(pair->data);
 
         pair++; i++;
     }
@@ -101,7 +105,7 @@ hash_destroy(hash_t *hash)
 
     while (i < count)
     {
-        bucket_destroy(bucket);
+        bucket_destroy(bucket, hash->free_value);
 
         bucket++; i++;
     }
@@ -227,27 +231,6 @@ hash_foreach(hash_t *hash, void (*func)(void *))
 
         bucket++; i++;
     }
-}
-
-hash_t *
-hash_from_array(key_value_t key_values[], int size)
-{
-    hash_t *hash = NULL;
-    key_value_t *kv = NULL;
-
-    if (key_values == NULL)
-        return NULL;
-
-    kv = key_values;
-    hash = hash_new(size);
-
-    while (kv && kv->k)
-    {
-        hash_add(hash, kv->k, kv->v);
-        kv++;
-    }
-
-    return hash;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

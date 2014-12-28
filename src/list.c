@@ -2,12 +2,14 @@
 #include "log.h"
 
 list_t *
-list_new(void)
+list_new(void (*free_func)(void *))
 {
     list_t *list = calloc(1, sizeof(list_t));
 
     if (list == NULL)
         log_critical_perror("nyx: calloc");
+
+    list->free_func = free_func;
 
     return list;
 }
@@ -44,29 +46,21 @@ list_destroy(list_t *list)
     list_node_t *next = NULL;
     list_node_t *node = list->head;
 
+    void (*free_func)(void *) = list->free_func;
+
     while (node)
     {
-        next = node;
+        next = node->next;
+
+        if (free_func != NULL && node->data != NULL)
+            free_func(node->data);
 
         free(node);
-        node = next->next;
+        node = next;
     }
 
     free(list);
     list = NULL;
-}
-
-void
-list_clear(list_t *list)
-{
-    list_node_t *node = list->head;
-
-    while (node)
-    {
-        if (node->data)
-            free(node->data);
-        node = node->next;
-    }
 }
 
 void
@@ -86,13 +80,6 @@ unsigned long
 list_size(list_t *list)
 {
     return list->count;
-}
-
-void
-list_clear_destroy(list_t *list)
-{
-    list_clear(list);
-    list_destroy(list);
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

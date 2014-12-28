@@ -38,7 +38,7 @@ split_string(const char *str)
 
     string = strdup(str);
     to_free = string;
-    tokens = list_new();
+    tokens = list_new(NULL);
 
     while ((token = strsep(&string, whitespace)) != NULL)
     {
@@ -64,6 +64,23 @@ split_string(const char *str)
     free(to_free);
 
     return output;
+}
+
+void
+strings_free(char **strings)
+{
+    if (strings == NULL)
+        return;
+
+    char **string = strings;
+
+    while (*string)
+    {
+        free(*string);
+        string++;
+    }
+
+    free(strings);
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

@@ -1,4 +1,5 @@
 #include "log.h"
+#include "utils.h"
 #include "watch.h"
 
 #include <stdio.h>
@@ -45,6 +46,20 @@ dump_strings(const char *key, const char **values)
     }
 
     log_info("   ]");
+}
+
+void
+watch_destroy(watch_t *watch)
+{
+    strings_free((char **)watch->start);
+
+    if (watch->name) free((void *)watch->name);
+    if (watch->uid)  free((void *)watch->uid);
+    if (watch->gid)  free((void *)watch->gid);
+    if (watch->dir)  free((void *)watch->dir);
+
+    free(watch);
+    watch = NULL;
 }
 
 void

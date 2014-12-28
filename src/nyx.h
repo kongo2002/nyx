@@ -24,6 +24,9 @@ typedef struct
 nyx_t *
 nyx_initialize(int argc, char **args);
 
+void
+nyx_destroy(nyx_t *nyx);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

@@ -9,6 +9,7 @@ typedef struct list_t
     unsigned long count;
     struct list_node_t *head;
     struct list_node_t *tail;
+    void (*free_func)(void *);
 } list_t;
 
 typedef struct list_node_t
@@ -19,16 +20,10 @@ typedef struct list_node_t
 } list_node_t;
 
 list_t *
-list_new(void);
+list_new(void (*free_func)(void *));
 
 void
 list_destroy(list_t *list);
-
-void
-list_clear_destroy(list_t *list);
-
-void
-list_clear(list_t *list);
 
 void
 list_add(list_t *list, void *data);
