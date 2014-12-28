@@ -54,6 +54,26 @@ get_log_color(log_level_e level, size_t *length)
     return color;
 }
 
+static inline const char *
+get_log_prefix(log_level_e level)
+{
+    switch (level)
+    {
+        case LOG_DEBUG:
+            return "[D] ";
+        case LOG_WARN:
+            return "[W] ";
+        case LOG_PERROR:
+        case LOG_ERROR:
+            return "[E] ";
+        case LOG_CRITICAL:
+            return "[C] ";
+        case LOG_INFO:
+        default:
+            return "[I] ";
+    }
+}
+
 static void
 log_msg(log_level_e level, const char *msg, size_t length)
 {
@@ -71,6 +91,7 @@ log_msg(log_level_e level, const char *msg, size_t length)
         fwrite(start_color, start_length, 1, stdout);
     }
 
+    fwrite(get_log_prefix(level), 4, 1, stdout);
     fwrite(msg, length, 1, stdout);
 
     /* errno specific handling */
