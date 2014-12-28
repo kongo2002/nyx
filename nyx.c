@@ -40,6 +40,7 @@ nyx_initialize(int argc, char **args)
         break;
     }
 
+    nyx->pid = getpid();
     nyx->watches = hash_new(8);
 
     log_init(nyx);

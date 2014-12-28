@@ -3,6 +3,8 @@
 
 #include "map.h"
 
+#include <sys/types.h>
+
 typedef struct
 {
     int quiet;
@@ -12,6 +14,7 @@ typedef struct
 
 typedef struct
 {
+    pid_t pid;
     nyx_options_t options;
     hash_t *watches;
 } nyx_t;
