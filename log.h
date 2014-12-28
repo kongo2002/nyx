@@ -18,6 +18,9 @@ typedef enum
 void
 log_init(nyx_t *nyx);
 
+void
+log_shutdown(void);
+
 #define DECLARE_LOG_PROTO(type_) \
 void log_##type_(const char* format, ...);
 

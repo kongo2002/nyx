@@ -25,6 +25,12 @@ log_init(nyx_t *nyx)
     color = !nyx->options.no_color;
 }
 
+void
+log_shutdown(void)
+{
+    /* nothing for now */
+}
+
 static const char *
 get_log_color(log_level_e level, size_t *length)
 {

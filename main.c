@@ -31,6 +31,8 @@ main(int argc, char **argv)
 
     event_loop(&handle_process_event);
 
+    log_shutdown();
+
     return 0;
 }
 
