@@ -132,11 +132,13 @@ log_format_msg(log_level_e level, const char *format, va_list values)
     void \
     log_##fn_(const char *format, ...) \
     { \
-        if (quiet) return; \
-        va_list vas; \
-        va_start(vas, format); \
-        log_format_msg(level_, format, vas); \
-        va_end(vas); \
+        if (!quiet) \
+        { \
+            va_list vas; \
+            va_start(vas, format); \
+            log_format_msg(level_, format, vas); \
+            va_end(vas); \
+        } \
         if ((level_) & LOG_CRITICAL) abort(); \
     }
 

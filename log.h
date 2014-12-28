@@ -21,8 +21,10 @@ log_init(nyx_t *nyx);
 void
 log_shutdown(void);
 
-#define DECLARE_LOG_PROTO(type_) \
-void log_##type_(const char* format, ...);
+#define DECLARE_LOG_PROTO(type_, ...) \
+    void log_##type_(const char* format, ...) \
+        __attribute__((format(printf, 1, 2))) \
+        __VA_ARGS__;
 
 #ifndef NDEBUG
 DECLARE_LOG_PROTO (debug)
@@ -34,8 +36,8 @@ DECLARE_LOG_PROTO (info)
 DECLARE_LOG_PROTO (warn)
 DECLARE_LOG_PROTO (error)
 DECLARE_LOG_PROTO (perror)
-DECLARE_LOG_PROTO (critical)
-DECLARE_LOG_PROTO (critical_perror)
+DECLARE_LOG_PROTO (critical, __attribute__((noreturn)))
+DECLARE_LOG_PROTO (critical_perror, __attribute__((noreturn)))
 
 #undef DECLARE_LOG_PROTO
 
