@@ -6,7 +6,7 @@
 
 typedef struct list_t
 {
-    long count;
+    unsigned long count;
     struct list_node_t *head;
     struct list_node_t *tail;
 } list_t;
@@ -32,6 +32,12 @@ list_clear(list_t *list);
 
 void
 list_add(list_t *list, void *data);
+
+void
+list_foreach(list_t *list, void (*func)(unsigned long, void *));
+
+unsigned long
+list_size(list_t *list);
 
 #endif
 

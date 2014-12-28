@@ -70,6 +70,25 @@ list_clear(list_t *list)
 }
 
 void
+list_foreach(list_t *list, void (*func)(unsigned long, void *))
+{
+    unsigned long i = 0;
+    list_node_t *node = list->head;
+
+    while (node)
+    {
+        func(i++, node->data);
+        node = node->next;
+    }
+}
+
+unsigned long
+list_size(list_t *list)
+{
+    return list->count;
+}
+
+void
 list_clear_destroy(list_t *list)
 {
     list_clear(list);
