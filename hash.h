@@ -1,5 +1,5 @@
-#ifndef __NYX_MAP_H__
-#define __NYX_MAP_H__
+#ifndef __NYX_HASH_H__
+#define __NYX_HASH_H__
 
 typedef struct pair_t
 {

@@ -1,6 +1,6 @@
+#include "hash.h"
 #include "log.h"
 #include "nyx.h"
-#include "map.h"
 
 #include <stdlib.h>
 #include <stdio.h>

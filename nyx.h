@@ -1,7 +1,7 @@
 #ifndef __NYX_H__
 #define __NYX_H__
 
-#include "map.h"
+#include "hash.h"
 
 #include <sys/types.h>
 

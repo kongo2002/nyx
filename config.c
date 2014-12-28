@@ -1,6 +1,6 @@
 #include "config.h"
 #include "log.h"
-#include "map.h"
+#include "hash.h"
 #include "nyx.h"
 #include "watch.h"
 

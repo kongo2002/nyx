@@ -2,8 +2,8 @@
 #define __NYX_CONFIG_H__
 
 #include "nyx.h"
+#include "hash.h"
 #include "list.h"
-#include "map.h"
 
 #include <stdio.h>
 #include <yaml.h>

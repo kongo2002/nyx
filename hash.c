@@ -1,5 +1,5 @@
+#include "hash.h"
 #include "log.h"
-#include "map.h"
 
 #include <stdio.h>
 #include <stdlib.h>
