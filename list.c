@@ -7,10 +7,7 @@ list_new(void)
     list_t *list = calloc(1, sizeof(list_t));
 
     if (list == NULL)
-    {
         log_critical_perror("nyx: calloc");
-        exit(EXIT_FAILURE);
-    }
 
     return list;
 }
@@ -21,10 +18,7 @@ list_add(list_t *list, void *data)
     list_node_t *node = calloc(1, sizeof(list_node_t));
 
     if (node == NULL)
-    {
         log_critical_perror("nyx: calloc");
-        exit(EXIT_FAILURE);
-    }
 
     node->data = data;
 

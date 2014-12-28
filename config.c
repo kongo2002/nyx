@@ -372,10 +372,7 @@ parse_info_new(nyx_t *nyx)
     parse_info_t *info = calloc(1, sizeof(parse_info_t));
 
     if (info == NULL)
-    {
         log_critical_perror("nyx: calloc");
-        exit(EXIT_FAILURE);
-    }
 
     info->nyx = nyx;
     info->handler[YAML_STREAM_START_EVENT] = handle_stream;
@@ -390,10 +387,7 @@ parse_info_new_child(parse_info_t *parent)
     parse_info_t *info = calloc(1, sizeof(parse_info_t));
 
     if (info == NULL)
-    {
         log_critical_perror("nyx: calloc");
-        exit(EXIT_FAILURE);
-    }
 
     info->nyx = parent->nyx;
     info->parent = parent;

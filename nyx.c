@@ -14,10 +14,7 @@ nyx_initialize(int argc, char **args)
     nyx_t *nyx = calloc(1, sizeof(nyx_t));
 
     if (nyx == NULL)
-    {
         log_critical_perror("nyx: calloc");
-        exit(EXIT_FAILURE);
-    }
 
     /* parse command line arguments */
     while ((arg = getopt(argc, args, "qC")) != -1)

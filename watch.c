@@ -10,10 +10,7 @@ watch_new(const char *name)
     watch_t *watch = calloc(1, sizeof(watch_t));
 
     if (watch == NULL)
-    {
         log_critical_perror("nyx: calloc");
-        exit(EXIT_FAILURE);
-    }
 
     watch->name = name;
 

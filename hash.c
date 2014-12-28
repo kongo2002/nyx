@@ -25,10 +25,7 @@ hash_new(int size)
     hash_t *hash = calloc(1, sizeof(hash_t));
 
     if (hash == NULL)
-    {
         log_critical_perror("nyx: calloc");
-        exit(EXIT_FAILURE);
-    }
 
     size = size > 0 ? size : 4;
 
@@ -39,7 +36,6 @@ hash_new(int size)
     {
         free(hash);
         log_critical_perror("nyx: calloc");
-        exit(EXIT_FAILURE);
     }
 
     return hash;
@@ -160,10 +156,7 @@ hash_add(hash_t *hash, const char *key, void *data)
         bucket->pairs = calloc(1, sizeof(pair_t));
 
         if (bucket->pairs == NULL)
-        {
             log_critical_perror("nyx: calloc");
-            exit(EXIT_FAILURE);
-        }
 
         pair = bucket->pairs;
     }
