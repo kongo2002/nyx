@@ -1,4 +1,3 @@
-#include "hash.h"
 #include "log.h"
 #include "nyx.h"
 
@@ -39,6 +38,7 @@ nyx_initialize(int argc, char **args)
 
     nyx->pid = getpid();
     nyx->watches = hash_new(8);
+    nyx->states = list_new();
 
     log_init(nyx);
 
@@ -49,6 +49,7 @@ void
 nyx_destroy(nyx_t *nyx)
 {
     hash_destroy(nyx->watches);
+    list_destroy(nyx->states);
 
     free(nyx);
     nyx = NULL;

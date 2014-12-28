@@ -128,6 +128,23 @@ log_format_msg(log_level_e level, const char *format, va_list values)
     }
 }
 
+void
+log_message(log_level_e level, const char *format, ...)
+{
+    if (!quiet)
+    {
+        va_list vas;
+        va_start(vas, format);
+
+        log_format_msg(level, format, vas);
+
+        va_end(vas);
+    }
+
+    if (level & LOG_CRITICAL)
+        abort();
+}
+
 #define DECLARE_LOG_FUNC(fn_, level_) \
     void \
     log_##fn_(const char *format, ...) \

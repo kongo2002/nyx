@@ -2,7 +2,7 @@ CXX      := gcc
 CXXFLAGS := -Wall -std=gnu89
 
 INCLUDES := -I.
-LIBS     := -lyaml
+LIBS     := -lyaml -lpthread
 
 SRCS     := $(wildcard *.c)
 OBJECTS  := $(patsubst %.c,%.o,$(SRCS))

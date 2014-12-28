@@ -21,6 +21,10 @@ log_init(nyx_t *nyx);
 void
 log_shutdown(void);
 
+void
+log_message(log_level_e level, const char *format, ...)
+    __attribute__((format(printf, 2, 3)));
+
 #define DECLARE_LOG_PROTO(type_, ...) \
     void log_##type_(const char* format, ...) \
         __attribute__((format(printf, 1, 2))) \

@@ -2,6 +2,7 @@
 #define __NYX_H__
 
 #include "hash.h"
+#include "list.h"
 
 #include <sys/types.h>
 
@@ -17,6 +18,7 @@ typedef struct
     pid_t pid;
     nyx_options_t options;
     hash_t *watches;
+    list_t *states;
 } nyx_t;
 
 nyx_t *
