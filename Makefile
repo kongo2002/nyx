@@ -1,5 +1,5 @@
 CXX      := gcc
-CXXFLAGS := -Wall -std=gnu89
+CXXFLAGS := -Wall -Wextra -std=gnu89
 
 INCLUDES := -I.
 LIBS     := -lyaml -lpthread

@@ -1,8 +1,9 @@
+#include "def.h"
 #include "log.h"
 #include "state.h"
 
 int
-dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
+dispatch_event(int pid, UNUSED process_event_data_t *event_data, UNUSED nyx_t *nyx)
 {
     log_debug("Incoming event data for PID %d", pid);
     return 1;

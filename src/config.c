@@ -1,4 +1,5 @@
 #include "config.h"
+#include "def.h"
 #include "log.h"
 #include "hash.h"
 #include "nyx.h"
@@ -23,19 +24,19 @@ static const char * yaml_event_names[] =
 };
 
 static parse_info_t *
-handle_mapping(parse_info_t *info, yaml_event_t *event, void *data);
+handle_mapping(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
 static parse_info_t *
-handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data);
+handle_scalar_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
 static parse_info_t *
-handle_scalar_value(parse_info_t *info, yaml_event_t *event, void *data);
+handle_scalar_value(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
 static parse_info_t *
-handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data);
+handle_watch_map_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
 static parse_info_t *
-handle_watch(parse_info_t *info, yaml_event_t *event, void *data);
+handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
 static int
 check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
@@ -97,7 +98,7 @@ reset_handlers(parse_info_t *info)
 }
 
 static parse_info_t *
-parser_up(parse_info_t *info, yaml_event_t *event, void *data)
+parser_up(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
     if (info->parent == NULL)
     {
@@ -113,7 +114,7 @@ parser_up(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handle_stream_end(parse_info_t *info, yaml_event_t *event, void *data)
+handle_stream_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
     log_debug("handle_stream: end");
 
@@ -121,7 +122,7 @@ handle_stream_end(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handle_document_end(parse_info_t *info, yaml_event_t *event, void *data)
+handle_document_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
     log_debug("handle_document: end");
 
@@ -132,7 +133,7 @@ handle_document_end(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handle_scalar_value(parse_info_t *info, yaml_event_t *event, void *data)
+handle_scalar_value(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
     if (event->type != YAML_SCALAR_EVENT)
     {
@@ -193,7 +194,7 @@ handle_mapping_end(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handle_mapping(parse_info_t *info, yaml_event_t *event, void *data)
+handle_mapping(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
     log_debug("handle_mapping: start");
 
@@ -206,7 +207,7 @@ handle_mapping(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handle_document(parse_info_t *info, yaml_event_t *event, void *data)
+handle_document(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
     log_debug("handle_document: start");
 
@@ -218,7 +219,7 @@ handle_document(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handle_stream(parse_info_t *info, yaml_event_t *event, void *data)
+handle_stream(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
     log_debug("handle_stream: start");
 
@@ -275,7 +276,7 @@ static struct config_parser_map watch_value_map[] =
 };
 
 static parse_info_t *
-unknown_watch_key(parse_info_t *info, yaml_event_t *event, void *data)
+unknown_watch_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
     /* no op */
     return info;
@@ -316,7 +317,7 @@ handle_watch_map_end(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handle_watch_map(parse_info_t *info, yaml_event_t *event, void *data)
+handle_watch_map(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
     parse_info_t *new = NULL;
 
@@ -331,7 +332,7 @@ handle_watch_map(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handle_watch(parse_info_t *info, yaml_event_t *event, void *data)
+handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
     log_debug("handle watch");
 
@@ -356,7 +357,7 @@ handle_watch(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
-handle_watches(parse_info_t *info, yaml_event_t *event, void *data)
+handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
     log_debug("handle watches");
 
@@ -374,12 +375,6 @@ static struct config_parser_map root_map[] =
     { .key = "watches", .handler = &handle_watches },
     { NULL }
 };
-
-void *
-config_initialize(nyx_t *nyx)
-{
-    return NULL;
-}
 
 parse_info_t *
 parse_info_new(nyx_t *nyx)

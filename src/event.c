@@ -1,3 +1,4 @@
+#include "def.h"
 #include "event.h"
 #include "log.h"
 
@@ -226,7 +227,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 }
 
 static void
-on_sigint(int unused)
+on_sigint(UNUSED int unused)
 {
     log_debug("SIGINT - exiting event loop");
     need_exit = true;
