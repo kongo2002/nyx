@@ -26,12 +26,33 @@ dump_not_empty(const char *key, const char *value)
     log_info("  %s: %s", key, value);
 }
 
+static void
+dump_strings(const char *key, const char **values)
+{
+    const char **value;
+
+    if (values == NULL || *values == NULL)
+        return;
+
+    log_info("  %s: [", key);
+
+    value = values;
+
+    while (*value)
+    {
+        log_info("   '%s'", *value);
+        value++;
+    }
+
+    log_info("   ]");
+}
+
 void
 watch_dump(watch_t *watch)
 {
     log_info("Watch '%s'", watch->name);
 
-    dump_not_empty("start", watch->start);
+    dump_strings("start", watch->start);
     dump_not_empty("uid", watch->uid);
     dump_not_empty("gid", watch->gid);
     dump_not_empty("dir", watch->dir);

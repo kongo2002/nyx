@@ -2,6 +2,7 @@
 #include "log.h"
 #include "hash.h"
 #include "nyx.h"
+#include "utils.h"
 #include "watch.h"
 
 #include <string.h>
@@ -228,7 +229,7 @@ handle_stream(parse_info_t *info, yaml_event_t *event, void *data)
     return info;
 }
 
-#define DECLARE_WATCH_VALUE_FUNC(name_) \
+#define DECLARE_WATCH_STR_VALUE(name_) \
     static parse_info_t * \
     handle_watch_map_value_##name_(parse_info_t *info, yaml_event_t *event, void *data) \
     { \
@@ -241,13 +242,27 @@ handle_stream(parse_info_t *info, yaml_event_t *event, void *data)
         return info; \
     }
 
-DECLARE_WATCH_VALUE_FUNC(name)
-DECLARE_WATCH_VALUE_FUNC(uid)
-DECLARE_WATCH_VALUE_FUNC(gid)
-DECLARE_WATCH_VALUE_FUNC(start)
-DECLARE_WATCH_VALUE_FUNC(dir)
+#define DECLARE_WATCH_STR_LIST_VALUE(name_) \
+    static parse_info_t * \
+    handle_watch_map_value_##name_(parse_info_t *info, yaml_event_t *event, void *data) \
+    { \
+        watch_t *watch = data; \
+        const char *value = get_scalar_value(event); \
+        if (value == NULL || watch == NULL) \
+            return NULL; \
+        watch->name_ = split_string(value); \
+        info->handler[YAML_SCALAR_EVENT] = &handle_watch_map_key; \
+        return info; \
+    }
+
+DECLARE_WATCH_STR_VALUE(name)
+DECLARE_WATCH_STR_VALUE(uid)
+DECLARE_WATCH_STR_VALUE(gid)
+DECLARE_WATCH_STR_VALUE(dir)
+DECLARE_WATCH_STR_LIST_VALUE(start)
 
 #undef DECLARE_WATCH_VALUE_FUNC
+#undef DECLARE_WATCH_STR_LIST_VALUE
 
 static struct config_parser_map watch_value_map[] =
 {
