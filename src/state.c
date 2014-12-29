@@ -8,9 +8,35 @@
 
 typedef int (*transition_func_t)(state_t *, state_e, state_e);
 
+static const char *state_to_str[] =
+{
+    "STATE_INIT",
+    "STATE_UNMONITORED",
+    "STATE_STARTING",
+    "STATE_RUNNING",
+    "STATE_STOPPING",
+    "STATE_STOPPED",
+    "STATE_SIZE"
+};
+
+const char *
+state_to_string(state_e state)
+{
+    return state_to_str[state];
+}
+
+#define DEBUG_LOG_STATE_FUNC \
+    log_debug("State transition function of watch '%s' " \
+              " from %s to %s",\
+              state->watch->name,\
+              state_to_string(from),\
+              state_to_string(to));
+
 static int
 to_unmonitored(state_t *state, state_e from, state_e to)
 {
+    DEBUG_LOG_STATE_FUNC
+
     /* determine if the process is already/still running */
 
     return 1;
@@ -19,6 +45,7 @@ to_unmonitored(state_t *state, state_e from, state_e to)
 static int
 stop(state_t *state, state_e from, state_e to)
 {
+    DEBUG_LOG_STATE_FUNC
 
     return 1;
 }
@@ -26,6 +53,7 @@ stop(state_t *state, state_e from, state_e to)
 static int
 start(state_t *state, state_e from, state_e to)
 {
+    DEBUG_LOG_STATE_FUNC
 
     return 1;
 }
@@ -33,6 +61,7 @@ start(state_t *state, state_e from, state_e to)
 static int
 stopped(state_t *state, state_e from, state_e to)
 {
+    DEBUG_LOG_STATE_FUNC
 
     return 1;
 }
@@ -40,9 +69,12 @@ stopped(state_t *state, state_e from, state_e to)
 static int
 running(state_t *state, state_e from, state_e to)
 {
+    DEBUG_LOG_STATE_FUNC
 
     return 1;
 }
+
+#undef DEBUG_LOG_STATE_FUNC
 
 static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
 {
@@ -174,23 +206,6 @@ state_destroy(state_t *state)
 
     free(state);
     state = NULL;
-}
-
-static const char *state_to_str[] =
-{
-    "STATE_INIT",
-    "STATE_UNMONITORED",
-    "STATE_STARTING",
-    "STATE_RUNNING",
-    "STATE_STOPPING",
-    "STATE_STOPPED",
-    "STATE_SIZE"
-};
-
-const char *
-state_to_string(state_e state)
-{
-    return state_to_str[state];
 }
 
 static int
