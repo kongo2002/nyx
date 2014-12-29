@@ -2,17 +2,17 @@
 #include "event.h"
 #include "log.h"
 
-#include <sys/socket.h>
-#include <linux/netlink.h>
-#include <linux/connector.h>
-#include <linux/cn_proc.h>
-#include <signal.h>
 #include <errno.h>
+#include <linux/cn_proc.h>
+#include <linux/connector.h>
+#include <linux/netlink.h>
+#include <signal.h>
 #include <stdbool.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 static volatile bool need_exit = false;
 
@@ -36,6 +36,9 @@ netlink_connect(void)
         log_perror("nyx: socket");
         return -1;
     }
+
+    /* initialize memory */
+    memset(&addr, 0, sizeof(struct sockaddr_nl));
 
     addr.nl_family = AF_NETLINK;
     addr.nl_groups = CN_IDX_PROC;
