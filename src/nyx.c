@@ -51,11 +51,11 @@ nyx_initialize(int argc, char **args)
         break;
     }
 
+    log_init(nyx);
+
     nyx->pid = getpid();
     nyx->watches = hash_new(8, _watch_destroy);
     nyx->states = list_new(_state_destroy);
-
-    log_init(nyx);
 
     return nyx;
 }

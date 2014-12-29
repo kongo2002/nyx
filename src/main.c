@@ -18,7 +18,7 @@ main(int argc, char **argv)
         return 1;
     }
 
-    log_debug("Starting nyx");
+    log_debug("Initializing nyx");
 
     /* initialize log and main application data */
     nyx = nyx_initialize(argc, argv);
