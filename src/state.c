@@ -30,12 +30,12 @@ state_to_string(state_e state)
               " from %s to %s",\
               state->watch->name,\
               state_to_string(from),\
-              state_to_string(to));
+              state_to_string(to))
 
 static int
 to_unmonitored(state_t *state, state_e from, state_e to)
 {
-    DEBUG_LOG_STATE_FUNC
+    DEBUG_LOG_STATE_FUNC;
 
     /* determine if the process is already/still running */
 
@@ -45,58 +45,10 @@ to_unmonitored(state_t *state, state_e from, state_e to)
 static int
 stop(state_t *state, state_e from, state_e to)
 {
-    DEBUG_LOG_STATE_FUNC
+    DEBUG_LOG_STATE_FUNC;
 
     return 1;
 }
-
-static int
-start(state_t *state, state_e from, state_e to)
-{
-    DEBUG_LOG_STATE_FUNC
-
-    return 1;
-}
-
-static int
-stopped(state_t *state, state_e from, state_e to)
-{
-    DEBUG_LOG_STATE_FUNC
-
-    return 1;
-}
-
-static int
-running(state_t *state, state_e from, state_e to)
-{
-    DEBUG_LOG_STATE_FUNC
-
-    return 1;
-}
-
-#undef DEBUG_LOG_STATE_FUNC
-
-static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
-{
-    /* INIT, UNMONITORED,   STARTING, RUNNING, STOPPING, STOPPED, QUIT */
-
-    /* INIT to ... */
-    { NULL, to_unmonitored },
-
-    /* UNMONITORED to ... */
-    { NULL, NULL,           start,    running, stop,     stopped, },
-    /* STARTING to ... */
-    { NULL, to_unmonitored, NULL,     running, stop,     stopped, },
-    /* RUNNING to ... */
-    { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, },
-    /* STOPPING to ... */
-    { NULL, to_unmonitored, NULL,     NULL,    NULL,     stopped, },
-    /* STOPPED to ... */
-    { NULL, to_unmonitored, start,    NULL,    NULL,     NULL, },
-
-    /* QUIT to ... */
-    { NULL }
-};
 
 static pid_t
 run_forked(state_t *state)
@@ -126,6 +78,60 @@ run_forked(state_t *state)
     return pid;
 }
 
+static int
+start(state_t *state, state_e from, state_e to)
+{
+    DEBUG_LOG_STATE_FUNC;
+
+    /* start program */
+    pid_t pid = run_forked(state);
+
+    /* keep track of child pid */
+    if (pid > 0)
+        state->pid = pid;
+
+    return 1;
+}
+
+static int
+stopped(state_t *state, state_e from, state_e to)
+{
+    DEBUG_LOG_STATE_FUNC;
+
+    return 1;
+}
+
+static int
+running(state_t *state, state_e from, state_e to)
+{
+    DEBUG_LOG_STATE_FUNC;
+
+    return 1;
+}
+
+#undef DEBUG_LOG_STATE_FUNC
+
+static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
+{
+    /* INIT, UNMONITORED,   STARTING, RUNNING, STOPPING, STOPPED, QUIT */
+
+    /* INIT to ... */
+    { NULL, to_unmonitored },
+
+    /* UNMONITORED to ... */
+    { NULL, NULL,           start,    running, stop,     stopped, },
+    /* STARTING to ... */
+    { NULL, to_unmonitored, NULL,     running, stop,     stopped, },
+    /* RUNNING to ... */
+    { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, },
+    /* STOPPING to ... */
+    { NULL, to_unmonitored, NULL,     NULL,    NULL,     stopped, },
+    /* STOPPED to ... */
+    { NULL, to_unmonitored, start,    NULL,    NULL,     NULL, },
+
+    /* QUIT to ... */
+    { NULL }
+};
 
 int
 dispatch_event(int pid, UNUSED process_event_data_t *event_data, UNUSED nyx_t *nyx)
