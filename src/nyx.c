@@ -20,6 +20,24 @@ _state_destroy(void *state)
     state_destroy((void *)state);
 }
 
+void
+print_usage(FILE *out)
+{
+    fputs("usage: nyx [options] <file>\n", out);
+}
+
+void
+print_help(void)
+{
+    print_usage(stdout);
+    printf("\n"
+           "Options:\n"
+           "   -q   quiet    (output error messages only)\n"
+           "   -C   no color (no terminal coloring)\n"
+           "   -h   help     (print this help)\n");
+    exit(EXIT_SUCCESS);
+}
+
 nyx_t *
 nyx_initialize(int argc, char **args)
 {
@@ -31,7 +49,7 @@ nyx_initialize(int argc, char **args)
         log_critical_perror("nyx: calloc");
 
     /* parse command line arguments */
-    while ((arg = getopt(argc, args, "qC")) != -1)
+    while ((arg = getopt(argc, args, "qCh")) != -1)
     {
         switch (arg)
         {
@@ -40,6 +58,9 @@ nyx_initialize(int argc, char **args)
                 break;
             case 'C':
                 nyx->options.no_color = 1;
+                break;
+            case 'h':
+                print_help();
                 break;
         }
     }

@@ -14,11 +14,10 @@ main(int argc, char **argv)
 
     if (argc < 2)
     {
-        fputs("usage: nyx -qC <file>\n", stderr);
+        print_usage(stderr);
+        fputs("\nTry 'nyx -h' for more information\n", stderr);
         return 1;
     }
-
-    log_debug("Initializing nyx");
 
     /* initialize log and main application data */
     nyx = nyx_initialize(argc, argv);

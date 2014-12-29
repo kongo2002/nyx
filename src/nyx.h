@@ -21,6 +21,12 @@ typedef struct
     list_t *states;
 } nyx_t;
 
+void
+print_usage(FILE *out);
+
+void
+print_help(void) __attribute__((noreturn));
+
 nyx_t *
 nyx_initialize(int argc, char **args);
 
