@@ -99,7 +99,8 @@ state_destroy(state_t *state)
 
         if (join != 0)
         {
-            log_error("Joining of state thread failed: %d", join);
+            log_error("Joining of state thread of watch '%s' failed: %d",
+                    state->watch->name, join);
         }
 
         free(state->thread);
