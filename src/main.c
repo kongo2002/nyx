@@ -27,14 +27,17 @@ main(int argc, char **argv)
         return 1;
 
     /* start the event handler loop */
-    event_loop(nyx, dispatch_event);
+    if (!event_loop(nyx, dispatch_event))
+    {
+        log_error("Failed to initialize event manager "
+                  "- trying polling mechanism next");
+    }
 
     nyx_watches_init(nyx);
 
     /* tear down */
-    log_shutdown();
-
     nyx_destroy(nyx);
+    log_shutdown();
 
     return 0;
 }

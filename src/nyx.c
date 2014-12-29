@@ -4,6 +4,7 @@
 #include "state.h"
 #include "watch.h"
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -84,6 +85,7 @@ nyx_initialize(int argc, char **args)
 int
 nyx_watches_init(nyx_t *nyx)
 {
+    int rc = 1, init = 0;
     void *data = NULL;
     hash_iter_t *iter = hash_iter_start(nyx->watches);
 
@@ -94,19 +96,37 @@ nyx_watches_init(nyx_t *nyx)
 
         log_debug("Initialize watch '%s'", watch->name);
 
+        /* create new state instance */
         state = state_new(watch, nyx);
         list_add(nyx->states, state);
+
+        /* start a new thread for each state */
+        state->thread = calloc(1, sizeof(pthread_t));
+
+        if (state->thread == NULL)
+            log_critical_perror("nyx: calloc");
+
+        /* create with default thread attributes */
+        init = pthread_create(state->thread, NULL, state_loop_start, state);
+        if (init != 0)
+        {
+            log_error("Failed to create thread, error: %d", init);
+            rc = 0;
+            break;
+        }
     }
 
     free(iter);
-    return 1;
+    return rc;
 }
 
 void
 nyx_destroy(nyx_t *nyx)
 {
-    hash_destroy(nyx->watches);
+    log_info("Tearing down nyx");
+
     list_destroy(nyx->states);
+    hash_destroy(nyx->watches);
 
     free(nyx);
     nyx = NULL;

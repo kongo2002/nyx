@@ -25,6 +25,7 @@ typedef struct
     pid_t pid;
     state_e state;
     sem_t *sem;
+    pthread_t *thread;
     watch_t *watch;
     nyx_t *nyx;
 } state_t;
@@ -41,7 +42,7 @@ state_destroy(state_t *state);
 void
 state_loop(state_t *state);
 
-void
+void *
 state_loop_start(void *state);
 
 int

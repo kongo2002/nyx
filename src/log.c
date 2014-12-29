@@ -46,6 +46,8 @@ get_log_color(log_level_e level, size_t *length)
         color = "\033[37m";
     else if (level & LOG_PERROR)
         color = "\033[35m";
+    else if (level & LOG_ERROR)
+        color = "\033[31;1m";
     else
         color = "\033[32m";
 

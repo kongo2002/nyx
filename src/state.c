@@ -2,6 +2,39 @@
 #include "log.h"
 #include "state.h"
 
+#include <pthread.h>
+#include <errno.h>
+#include <unistd.h>
+
+static pid_t
+run_forked(state_t *state)
+{
+    pid_t pid = fork();
+
+    /* fork failed */
+    if (pid == -1)
+        log_critical_perror("nyx: fork");
+
+    /* child process */
+    if (pid == 0)
+    {
+        const char **args = state->watch->start;
+        const char *executable = *args;
+
+        /* TODO: setup signals */
+
+        execvp(executable, (char * const *)args);
+
+        if (errno == ENOENT)
+            exit(EXIT_SUCCESS);
+
+        log_critical_perror("nyx: execvp %s", executable);
+    }
+
+    return pid;
+}
+
+
 int
 dispatch_event(int pid, UNUSED process_event_data_t *event_data, UNUSED nyx_t *nyx)
 {
@@ -43,17 +76,38 @@ state_new(watch_t *watch, nyx_t *nyx)
 void
 state_destroy(state_t *state)
 {
-    if (state->sem != NULL)
-    {
-        sem_t *sem = state->sem;
+    sem_t *sem = state->sem;
 
+    if (sem != NULL)
+    {
         /* first we should unlock the semaphore
          * in case any process is still waiting on it */
         state->state = STATE_QUIT;
         sem_post(sem);
+    }
 
+    if (state->thread != NULL)
+    {
+        int join = 0;
+        void *retval;
+
+        log_debug("Waiting for state thread of watch '%s' to terminate",
+                state->watch->name);
+
+        /* join thread */
+        join = pthread_join(*state->thread, &retval);
+
+        if (join != 0)
+        {
+            log_error("Joining of state thread failed: %d", join);
+        }
+
+        free(state->thread);
+    }
+
+    if (sem != NULL)
+    {
         sem_destroy(sem);
-
         free(sem);
     }
 
@@ -92,7 +146,7 @@ process_state(state_t *state, state_e old_state)
     switch (new_state)
     {
         default:
-            /* TODO */
+            state->pid = run_forked(state);
             break;
     }
 
@@ -107,6 +161,8 @@ state_loop(state_t *state)
     watch_t *watch = state->watch;
     state_e last_state = STATE_INIT;
 
+    log_debug("Starting state loop for watch '%s'", watch->name);
+
     /* wait until the event manager triggers this
      * state semaphore */
     while ((sem_fail = sem_wait(state->sem)) == 0)
@@ -115,14 +171,20 @@ state_loop(state_t *state)
 
         if (state->state == STATE_QUIT)
         {
-            log_info("Watch '%s' (PID %d) terminating",
-                    state_to_string(STATE_QUIT), state->pid);
+            log_info("Watch '%s' terminating", watch->name);
             break;
         }
 
         if (last_state != state->state)
         {
             result = process_state(state, last_state);
+
+            if (!result)
+            {
+                /* TODO: do something else than logging? */
+                log_warn("Processing state of watch '%s' failed (PID %d)",
+                        state->watch->name, state->pid);
+            }
         }
         else
         {
@@ -130,24 +192,20 @@ state_loop(state_t *state)
                     watch->name, state->pid, state_to_string(last_state));
         }
 
-        if (!result)
-        {
-            /* TODO: do something else than logging? */
-            log_warn("Processing state of watch '%s' failed (PID %d)",
-                    state->watch->name, state->pid);
-        }
-
         last_state = state->state;
+        log_debug("Waiting on next state update for watch '%s'", watch->name);
     }
 
     if (sem_fail)
         log_perror("nyx: sem_wait");
 }
 
-void
+void *
 state_loop_start(void *state)
 {
     state_loop((state_t *)state);
+
+    return NULL;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */
