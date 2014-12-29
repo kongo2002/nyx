@@ -24,6 +24,9 @@ typedef struct
 nyx_t *
 nyx_initialize(int argc, char **args);
 
+int
+nyx_watches_init(nyx_t *nyx);
+
 void
 nyx_destroy(nyx_t *nyx);
 

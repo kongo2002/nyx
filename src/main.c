@@ -30,6 +30,8 @@ main(int argc, char **argv)
     /* start the event handler loop */
     event_loop(nyx, dispatch_event);
 
+    nyx_watches_init(nyx);
+
     /* tear down */
     log_shutdown();
 

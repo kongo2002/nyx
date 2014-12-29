@@ -206,6 +206,64 @@ hash_get(hash_t *hash, const char* key)
     return pair->data;
 }
 
+hash_iter_t *
+hash_iter_start(hash_t *hash)
+{
+    hash_iter_t *iter = calloc(1, sizeof(hash_iter_t));
+
+    if (iter == NULL)
+        log_critical_perror("nyx: calloc");
+
+    iter->_hash = hash;
+    iter->_pair = 0;
+    iter->_bucket = 0;
+
+    while (hash->bucket_count > iter->_bucket &&
+            hash->buckets[iter->_bucket].count == 0)
+    {
+        iter->_bucket += 1;
+    }
+
+    return iter;
+}
+
+int
+hash_iter(hash_iter_t *iter, void **data)
+{
+    if (iter == NULL || iter->_hash == NULL)
+        return 0;
+
+    const hash_t *hash = iter->_hash;
+
+    if (hash->bucket_count <= iter->_bucket)
+        return 0;
+
+    const bucket_t *bucket = hash->buckets + iter->_bucket;
+
+    if (bucket == NULL ||
+            (bucket->count <= iter->_pair && hash->bucket_count <= iter->_bucket))
+        return 0;
+
+    *data = bucket->pairs[iter->_pair].data;
+
+    /* proceed iterator */
+    if ((iter->_pair + 1) >= bucket->count)
+    {
+        do
+        {
+            iter->_bucket += 1;
+        }
+        while (hash->bucket_count > iter->_bucket &&
+                hash->buckets[iter->_bucket].count == 0);
+
+        iter->_pair = 0;
+    }
+    else
+        iter->_pair += 1;
+
+    return 1;
+}
+
 void
 hash_foreach(hash_t *hash, void (*func)(void *))
 {

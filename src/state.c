@@ -13,7 +13,12 @@ state_t *
 state_new(watch_t *watch, nyx_t *nyx)
 {
     int init = 0;
-    sem_t *semaphore = NULL;
+
+    sem_t *semaphore = calloc(1, sizeof(sem_t));
+
+    if (semaphore == NULL)
+        log_critical_perror("nyx: calloc");
+
     state_t *state = calloc(1, sizeof(state_t));
 
     if (state == NULL)
@@ -33,6 +38,27 @@ state_new(watch_t *watch, nyx_t *nyx)
     state->sem = semaphore;
 
     return state;
+}
+
+void
+state_destroy(state_t *state)
+{
+    if (state->sem != NULL)
+    {
+        sem_t *sem = state->sem;
+
+        /* first we should unlock the semaphore
+         * in case any process is still waiting on it */
+        state->state = STATE_QUIT;
+        sem_post(sem);
+
+        sem_destroy(sem);
+
+        free(sem);
+    }
+
+    free(state);
+    state = NULL;
 }
 
 static const char *state_to_str[] =
@@ -86,6 +112,13 @@ state_loop(state_t *state)
     while ((sem_fail = sem_wait(state->sem)) == 0)
     {
         result = 0;
+
+        if (state->state == STATE_QUIT)
+        {
+            log_info("Watch '%s' (PID %d) terminating",
+                    state_to_string(STATE_QUIT), state->pid);
+            break;
+        }
 
         if (last_state != state->state)
         {

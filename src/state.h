@@ -16,6 +16,7 @@ typedef enum
     STATE_RUNNING,
     STATE_STOPPING,
     STATE_STOPPED,
+    STATE_QUIT,
     STATE_SIZE
 } state_e;
 
@@ -33,6 +34,9 @@ state_to_string(state_e state);
 
 state_t *
 state_new(watch_t *watch, nyx_t *nyx);
+
+void
+state_destroy(state_t *state);
 
 void
 state_loop(state_t *state);

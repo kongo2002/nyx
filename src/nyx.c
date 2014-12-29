@@ -1,5 +1,7 @@
 #include "log.h"
+#include "hash.h"
 #include "nyx.h"
+#include "state.h"
 #include "watch.h"
 
 #include <stdlib.h>
@@ -10,6 +12,12 @@ static void
 _watch_destroy(void *watch)
 {
     watch_destroy((watch_t *)watch);
+}
+
+static void
+_state_destroy(void *state)
+{
+    state_destroy((void *)state);
 }
 
 nyx_t *
@@ -45,13 +53,32 @@ nyx_initialize(int argc, char **args)
 
     nyx->pid = getpid();
     nyx->watches = hash_new(8, _watch_destroy);
-
-    /* the states will be deleted via the watches hash */
-    nyx->states = list_new(NULL);
+    nyx->states = list_new(_state_destroy);
 
     log_init(nyx);
 
     return nyx;
+}
+
+int
+nyx_watches_init(nyx_t *nyx)
+{
+    void *data = NULL;
+    hash_iter_t *iter = hash_iter_start(nyx->watches);
+
+    while (hash_iter(iter, &data))
+    {
+        state_t *state = NULL;
+        watch_t *watch = data;
+
+        log_debug("Initialize watch '%s'", watch->name);
+
+        state = state_new(watch, nyx);
+        list_add(nyx->states, state);
+    }
+
+    free(iter);
+    return 1;
 }
 
 void
