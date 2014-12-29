@@ -1,4 +1,7 @@
 *.d
 *.o
+*.pyc
+/config.yaml
+/examples
 nyx
 tags
