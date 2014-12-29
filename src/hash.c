@@ -206,14 +206,9 @@ hash_get(hash_t *hash, const char* key)
     return pair->data;
 }
 
-hash_iter_t *
-hash_iter_start(hash_t *hash)
+static void
+hash_iter_init(hash_iter_t *iter, hash_t *hash)
 {
-    hash_iter_t *iter = calloc(1, sizeof(hash_iter_t));
-
-    if (iter == NULL)
-        log_critical_perror("nyx: calloc");
-
     iter->_hash = hash;
     iter->_pair = 0;
     iter->_bucket = 0;
@@ -223,8 +218,25 @@ hash_iter_start(hash_t *hash)
     {
         iter->_bucket += 1;
     }
+}
+
+hash_iter_t *
+hash_iter_start(hash_t *hash)
+{
+    hash_iter_t *iter = calloc(1, sizeof(hash_iter_t));
+
+    if (iter == NULL)
+        log_critical_perror("nyx: calloc");
+
+    hash_iter_init(iter, hash);
 
     return iter;
+}
+
+void
+hash_iter_rewind(hash_iter_t *iter)
+{
+    hash_iter_init(iter, iter->_hash);
 }
 
 int

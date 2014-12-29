@@ -42,3 +42,5 @@ int
 event_loop(nyx_t *nyx, process_handler_t handler);
 
 #endif
+
+/* vim: set et sw=4 sts=4 tw=80: */

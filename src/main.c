@@ -2,6 +2,7 @@
 #include "event.h"
 #include "log.h"
 #include "nyx.h"
+#include "poll.h"
 #include "state.h"
 #include "utils.h"
 
@@ -10,6 +11,7 @@
 int
 main(int argc, char **argv)
 {
+    int exit = 0;
     nyx_t *nyx = NULL;
 
     if (argc < 2)
@@ -26,20 +28,26 @@ main(int argc, char **argv)
     if (!parse_config(nyx))
         return 1;
 
+    nyx_watches_init(nyx);
+
     /* start the event handler loop */
     if (!event_loop(nyx, dispatch_event))
     {
         log_error("Failed to initialize event manager "
                   "- trying polling mechanism next");
-    }
 
-    nyx_watches_init(nyx);
+        if (!poll_loop(nyx, dispatch_poll_result))
+        {
+            log_error("Failed to start loop manager as well - terminating");
+            exit = 1;
+        }
+    }
 
     /* tear down */
     nyx_destroy(nyx);
     log_shutdown();
 
-    return 0;
+    return exit;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

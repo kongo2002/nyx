@@ -52,6 +52,9 @@ hash_get(hash_t *hash, const char* key);
 hash_iter_t *
 hash_iter_start(hash_t *hash);
 
+void
+hash_iter_rewind(hash_iter_t *iter);
+
 int
 hash_iter(hash_iter_t *iter, void **data);
 

@@ -7,14 +7,13 @@
 #include <linux/connector.h>
 #include <linux/netlink.h>
 #include <signal.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-static volatile bool need_exit = false;
+static volatile int need_exit = 0;
 
 /**
  * Open netlink socket connection
@@ -60,7 +59,7 @@ netlink_connect(void)
  * Subscribe on process events
  */
 static int
-set_process_event_listen(int socket, bool enable)
+set_process_event_listen(int socket, int enable)
 {
     int rc;
 
@@ -104,13 +103,13 @@ set_process_event_listen(int socket, bool enable)
 static int
 subscribe_event_listen(int socket)
 {
-    return set_process_event_listen(socket, true);
+    return set_process_event_listen(socket, 1);
 }
 
 static int
 unsubscribe_event_listen(int socket)
 {
-    return set_process_event_listen(socket, false);
+    return set_process_event_listen(socket, 0);
 }
 
 static process_event_data_t *
@@ -191,6 +190,8 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
         };
     } nlcn_msg;
 
+    log_debug("Starting event manager loop");
+
     while (!need_exit)
     {
         rc = recv(nl_sock, &nlcn_msg, sizeof(nlcn_msg), 0);
@@ -232,8 +233,8 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 static void
 on_sigint(UNUSED int unused)
 {
-    log_debug("SIGINT - exiting event loop");
-    need_exit = true;
+    log_debug("SIGINT - exiting event manager loop");
+    need_exit = 1;
 }
 
 int
@@ -241,10 +242,6 @@ event_loop(nyx_t *nyx, process_handler_t handler)
 {
     int socket;
     int rc = 1;
-
-    /* TODO: does this belong in here? */
-    signal(SIGINT, &on_sigint);
-    siginterrupt(SIGINT, true);
 
     socket = netlink_connect();
     if (socket == -1)
@@ -256,6 +253,10 @@ event_loop(nyx_t *nyx, process_handler_t handler)
         rc = 0;
         goto out;
     }
+
+    /* TODO: does this belong in here? */
+    signal(SIGINT, &on_sigint);
+    siginterrupt(SIGINT, 1);
 
     rc = handle_process_event(socket, nyx, handler);
     if (rc == -1)

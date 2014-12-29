@@ -140,6 +140,15 @@ dispatch_event(int pid, UNUSED process_event_data_t *event_data, UNUSED nyx_t *n
     return 1;
 }
 
+int
+dispatch_poll_result(int pid, int running, UNUSED nyx_t *nyx)
+{
+    log_debug("Incoming polling data for PID %d: running: %s",
+            pid, (running ? "true" : "false"));
+
+    return 1;
+}
+
 state_t *
 state_new(watch_t *watch, nyx_t *nyx)
 {

@@ -48,6 +48,9 @@ state_loop_start(void *state);
 int
 dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx);
 
+int
+dispatch_poll_result(int pid, int running, nyx_t *nyx);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */
