@@ -6,6 +6,66 @@
 #include <errno.h>
 #include <unistd.h>
 
+typedef int (*transition_func_t)(state_t *, state_e, state_e);
+
+static int
+to_unmonitored(state_t *state, state_e from, state_e to)
+{
+    /* determine if the process is already/still running */
+
+    return 1;
+}
+
+static int
+stop(state_t *state, state_e from, state_e to)
+{
+
+    return 1;
+}
+
+static int
+start(state_t *state, state_e from, state_e to)
+{
+
+    return 1;
+}
+
+static int
+stopped(state_t *state, state_e from, state_e to)
+{
+
+    return 1;
+}
+
+static int
+running(state_t *state, state_e from, state_e to)
+{
+
+    return 1;
+}
+
+static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
+{
+    /* INIT, UNMONITORED,   STARTING, RUNNING, STOPPING, STOPPED, QUIT */
+
+    /* INIT to ... */
+    { NULL, to_unmonitored },
+
+    /* UNMONITORED to ... */
+    { NULL, NULL,           start,    running, stop,     stopped, },
+    /* STARTING to ... */
+    { NULL, to_unmonitored, NULL,     running, stop,     stopped, },
+    /* RUNNING to ... */
+    { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, },
+    /* STOPPING to ... */
+    { NULL, to_unmonitored, NULL,     NULL,    NULL,     stopped, },
+    /* STOPPED to ... */
+    { NULL, to_unmonitored, start,    NULL,    NULL,     NULL, },
+
+    /* QUIT to ... */
+    { NULL }
+};
+
 static pid_t
 run_forked(state_t *state)
 {
@@ -134,24 +194,31 @@ state_to_string(state_e state)
 }
 
 static int
-process_state(state_t *state, state_e old_state)
+process_state(state_t *state, state_e old_state, state_e new_state)
 {
-    state_e new_state = state->state;
-
     log_debug("Watch '%s' (PID %d): %s -> %s",
             state->watch->name,
             state->pid,
             state_to_string(old_state),
             state_to_string(new_state));
 
-    switch (new_state)
+    int result = 0;
+    transition_func_t func = transition_table[old_state][new_state];
+
+    /* no handler for the given state transition
+     * meaning the transition is not allowed */
+    if (func == NULL)
     {
-        default:
-            state->pid = run_forked(state);
-            break;
+        log_debug("Transition from %s to %s is not valid",
+                state_to_string(old_state),
+                state_to_string(new_state));
+
+        return 0;
     }
 
-    return 1;
+    result = func(state, old_state, new_state);
+
+    return result;
 }
 
 void
@@ -168,21 +235,28 @@ state_loop(state_t *state)
      * state semaphore */
     while ((sem_fail = sem_wait(state->sem)) == 0)
     {
+        state_e current_state = state->state;
         result = 0;
 
-        if (state->state == STATE_QUIT)
+        /* QUIT is handled immediately */
+        if (current_state == STATE_QUIT)
         {
             log_info("Watch '%s' terminating", watch->name);
             break;
         }
 
-        if (last_state != state->state)
+        /* in case the state did not change
+         * we don't have to do anything */
+        if (last_state != current_state)
         {
-            result = process_state(state, last_state);
+            result = process_state(state, last_state, current_state);
 
             if (!result)
             {
-                /* TODO: do something else than logging? */
+                /* the state transition failed
+                 * so we have to restore the old state */
+                state->state = last_state;
+
                 log_warn("Processing state of watch '%s' failed (PID %d)",
                         state->watch->name, state->pid);
             }
