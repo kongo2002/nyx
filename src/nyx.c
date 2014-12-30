@@ -1,9 +1,10 @@
-#include "log.h"
 #include "hash.h"
+#include "log.h"
 #include "nyx.h"
 #include "state.h"
 #include "watch.h"
 
+#include <getopt.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,11 +34,19 @@ print_help(void)
     print_usage(stdout);
     printf("\n"
            "Options:\n"
-           "   -q   quiet    (output error messages only)\n"
-           "   -C   no color (no terminal coloring)\n"
-           "   -h   help     (print this help)\n");
+           "   -q  --quiet    (output error messages only)\n"
+           "   -C  --no-color (no terminal coloring)\n"
+           "   -h  --help     (print this help)\n");
     exit(EXIT_SUCCESS);
 }
+
+static const struct option long_options[] =
+{
+    { .name = "help",     .has_arg = 0, .flag = NULL, .val = 'h'},
+    { .name = "no-color", .has_arg = 0, .flag = NULL, .val = 'C'},
+    { .name = "quiet",    .has_arg = 0, .flag = NULL, .val = 'q'},
+    { NULL }
+};
 
 nyx_t *
 nyx_initialize(int argc, char **args)
@@ -50,7 +59,7 @@ nyx_initialize(int argc, char **args)
         log_critical_perror("nyx: calloc");
 
     /* parse command line arguments */
-    while ((arg = getopt(argc, args, "qCh")) != -1)
+    while ((arg = getopt_long(argc, args, "qCh", long_options, NULL)) != -1)
     {
         switch (arg)
         {
@@ -123,7 +132,7 @@ nyx_watches_init(nyx_t *nyx)
 void
 nyx_destroy(nyx_t *nyx)
 {
-    log_info("Tearing down nyx");
+    log_debug("Tearing down nyx");
 
     list_destroy(nyx->states);
     hash_destroy(nyx->watches);

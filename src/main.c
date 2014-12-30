@@ -26,7 +26,13 @@ main(int argc, char **argv)
 
     /* parse config */
     if (!parse_config(nyx))
-        return 1;
+    {
+        if (hash_count(nyx->watches) < 1)
+            log_error("No watches configured - terminating now");
+
+        exit = 1;
+        goto teardown;
+    }
 
     nyx_watches_init(nyx);
 
@@ -43,7 +49,7 @@ main(int argc, char **argv)
         }
     }
 
-    /* tear down */
+teardown:
     nyx_destroy(nyx);
     log_shutdown();
 
