@@ -1,6 +1,7 @@
 #include "def.h"
 #include "log.h"
 #include "poll.h"
+#include "process.h"
 #include "state.h"
 
 #include <signal.h>
@@ -51,6 +52,9 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
             int running = 0;
             state_t *state = node->data;
             pid_t pid = state->pid;
+
+            if (pid < 1)
+                pid = determine_pid(state->watch->name, nyx);
 
             if (pid > 0)
             {

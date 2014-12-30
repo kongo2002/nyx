@@ -3,7 +3,6 @@
 #include <dirent.h>
 #include <errno.h>
 #include <pwd.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -49,6 +48,17 @@ prepare_dir(const char *directory)
     }
 
     return directory;
+}
+
+FILE *
+get_pid_file(const char *pid_dir, const char *name, const char *mode)
+{
+    char buffer[512] = {0};
+    const char *dir = prepare_dir(pid_dir);
+
+    snprintf(buffer, sizeof(buffer), "%s/%s", dir, name);
+
+    return fopen(buffer, mode);
 }
 
 int
