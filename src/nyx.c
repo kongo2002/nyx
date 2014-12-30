@@ -1,3 +1,4 @@
+#include "fs.h"
 #include "hash.h"
 #include "log.h"
 #include "nyx.h"
@@ -6,8 +7,8 @@
 
 #include <getopt.h>
 #include <pthread.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 static void
@@ -48,6 +49,35 @@ static const struct option long_options[] =
     { NULL }
 };
 
+static const char *pid_dir_defaults[] =
+{
+    "/var/run/nyx",
+    "~/.nyx/pid",
+    "/tmp/nyx/pid",
+    NULL
+};
+
+static const char *
+determine_pid_dir(void)
+{
+    const char **dir = pid_dir_defaults;
+
+    while (*dir)
+    {
+        if (mkdir_p(*dir))
+        {
+            log_debug("Using '%s' as nyx PID directory", *dir);
+            return *dir;
+        }
+
+        dir++;
+    }
+
+    log_error("Failed to determine a PID directory for nyx");
+
+    return NULL;
+}
+
 nyx_t *
 nyx_initialize(int argc, char **args)
 {
@@ -70,6 +100,7 @@ nyx_initialize(int argc, char **args)
                 nyx->options.no_color = 1;
                 break;
             case 'h':
+                free(nyx);
                 print_help();
                 break;
         }
@@ -83,6 +114,11 @@ nyx_initialize(int argc, char **args)
     }
 
     log_init(nyx);
+
+    nyx->pid_dir = determine_pid_dir();
+
+    if (nyx->pid_dir == NULL)
+        return NULL;
 
     nyx->pid = getpid();
     nyx->watches = hash_new(8, _watch_destroy);
@@ -133,6 +169,9 @@ void
 nyx_destroy(nyx_t *nyx)
 {
     log_debug("Tearing down nyx");
+
+    if (nyx == NULL)
+        return;
 
     list_destroy(nyx->states);
     hash_destroy(nyx->watches);

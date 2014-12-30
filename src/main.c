@@ -11,7 +11,7 @@
 int
 main(int argc, char **argv)
 {
-    int exit = 0;
+    int failed = 0;
     nyx_t *nyx = NULL;
 
     if (argc < 2)
@@ -24,13 +24,19 @@ main(int argc, char **argv)
     /* initialize log and main application data */
     nyx = nyx_initialize(argc, argv);
 
+    if (nyx == NULL)
+    {
+        failed = 1;
+        goto teardown;
+    }
+
     /* parse config */
     if (!parse_config(nyx))
     {
         if (hash_count(nyx->watches) < 1)
             log_error("No watches configured - terminating now");
 
-        exit = 1;
+        failed = 1;
         goto teardown;
     }
 
@@ -45,7 +51,7 @@ main(int argc, char **argv)
         if (!poll_loop(nyx, dispatch_poll_result))
         {
             log_error("Failed to start loop manager as well - terminating");
-            exit = 1;
+            failed = 1;
         }
     }
 
@@ -53,7 +59,7 @@ teardown:
     nyx_destroy(nyx);
     log_shutdown();
 
-    return exit;
+    return failed;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */
