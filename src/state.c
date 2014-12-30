@@ -1,5 +1,6 @@
 #include "def.h"
 #include "log.h"
+#include "process.h"
 #include "state.h"
 
 #include <pthread.h>
@@ -35,9 +36,34 @@ state_to_string(state_e state)
 static int
 to_unmonitored(state_t *state, state_e from, state_e to)
 {
+    int running = 0;
+    watch_t *watch = state->watch;
+    pid_t pid = state->pid;
+
     DEBUG_LOG_STATE_FUNC;
 
     /* determine if the process is already/still running */
+
+    /* no pid yet
+     * this should be usually the case on startup */
+    if (pid < 1)
+    {
+        /* try to read pid from an existing pid file */
+        pid = determine_pid(watch->name, state->nyx);
+    }
+
+    if (pid > 0)
+    {
+        running = check_process_running(pid);
+
+        state->pid = running ? pid : 0;
+
+        /* TODO: update pid file? */
+    }
+
+    state->state = running
+        ? STATE_RUNNING
+        : STATE_STOPPED;
 
     return 1;
 }
@@ -166,6 +192,7 @@ state_new(watch_t *watch, nyx_t *nyx)
 
     state->nyx = nyx;
     state->watch = watch;
+    state->state = STATE_UNMONITORED;
 
     /* initialize unnamed semaphore
      * - process-local semaphore

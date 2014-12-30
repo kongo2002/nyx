@@ -1,6 +1,8 @@
 #include "fs.h"
 #include "process.h"
 
+#include <signal.h>
+
 pid_t
 determine_pid(const char *name, nyx_t *nyx)
 {
@@ -19,6 +21,20 @@ determine_pid(const char *name, nyx_t *nyx)
 
     if (matched == 1)
         return pid;
+
+    return 0;
+}
+
+int
+check_process_running(pid_t pid)
+{
+    if (kill(pid, 0) == 0)
+    {
+        /* process is either running or a zombie */
+        return 1;
+    }
+
+    /* TODO: handle different errors? */
 
     return 0;
 }

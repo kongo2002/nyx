@@ -18,20 +18,6 @@ on_sigint(UNUSED int unused)
     need_exit = 1;
 }
 
-static int
-check_process_running(pid_t pid)
-{
-    if (kill(pid, 0) == 0)
-    {
-        /* process is either running or a zombie */
-        return 1;
-    }
-
-    /* TODO: handle different errors? */
-
-    return 0;
-}
-
 int
 poll_loop(nyx_t *nyx, poll_handler_t handler)
 {
