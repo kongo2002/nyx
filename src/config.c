@@ -454,7 +454,7 @@ parse_config(nyx_t *nyx)
     int success = 1;
     FILE *cfg = NULL;
     handler_func_t handler = NULL;
-    const char *config_file = nyx->options.filename;
+    const char *config_file = nyx->options.config_file;
 
     if (config_file == NULL)
         return 0;

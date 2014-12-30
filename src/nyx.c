@@ -109,7 +109,7 @@ nyx_initialize(int argc, char **args)
     for (index = optind; index < argc; )
     {
         /* TODO: support multiple config files */
-        nyx->options.filename = args[index];
+        nyx->options.config_file = args[index];
         break;
     }
 

@@ -10,7 +10,7 @@ typedef struct
 {
     int quiet;
     int no_color;
-    const char *filename;
+    const char *config_file;
 } nyx_options_t;
 
 typedef struct
