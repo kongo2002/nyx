@@ -11,6 +11,7 @@ typedef struct
     int quiet;
     int no_color;
     const char *config_file;
+    int def_start_timeout;
 } nyx_options_t;
 
 typedef struct

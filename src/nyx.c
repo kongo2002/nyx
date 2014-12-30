@@ -106,6 +106,7 @@ nyx_initialize(int argc, char **args)
         }
     }
 
+    /* process remaining arguments */
     for (index = optind; index < argc; )
     {
         /* TODO: support multiple config files */
@@ -114,6 +115,9 @@ nyx_initialize(int argc, char **args)
     }
 
     log_init(nyx);
+
+    /* set default options */
+    nyx->options.def_start_timeout = 5;
 
     nyx->pid_dir = determine_pid_dir();
 
