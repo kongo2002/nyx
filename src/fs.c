@@ -2,11 +2,11 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <grp.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 const char *
@@ -27,6 +27,33 @@ get_homedir(void)
     }
 
     return homedir;
+}
+
+int
+get_user(const char *name, uid_t *uid, gid_t *gid)
+{
+    struct passwd *pw = getpwnam(name);
+
+    if (pw == NULL)
+        return 0;
+
+    *uid = pw->pw_uid;
+    *gid = pw->pw_gid;
+
+    return 1;
+}
+
+int
+get_group(const char *name, gid_t *gid)
+{
+    struct group *grp = getgrnam(name);
+
+    if (grp == NULL)
+        return 0;
+
+    *gid = grp->gr_gid;
+
+    return 1;
 }
 
 static const char *
