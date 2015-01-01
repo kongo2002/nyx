@@ -180,15 +180,8 @@ state_new(watch_t *watch, nyx_t *nyx)
 {
     int init = 0;
 
-    sem_t *semaphore = calloc(1, sizeof(sem_t));
-
-    if (semaphore == NULL)
-        log_critical_perror("nyx: calloc");
-
-    state_t *state = calloc(1, sizeof(state_t));
-
-    if (state == NULL)
-        log_critical_perror("nyx: calloc");
+    sem_t *semaphore = xcalloc(1, sizeof(sem_t));
+    state_t *state = xcalloc(1, sizeof(state_t));
 
     state->nyx = nyx;
     state->watch = watch;

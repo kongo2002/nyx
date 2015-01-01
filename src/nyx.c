@@ -129,10 +129,7 @@ nyx_initialize(int argc, char **args)
 {
     int arg = 0, index = 0;
 
-    nyx_t *nyx = calloc(1, sizeof(nyx_t));
-
-    if (nyx == NULL)
-        log_critical_perror("nyx: calloc");
+    nyx_t *nyx = xcalloc(1, sizeof(nyx_t));
 
     /* parse command line arguments */
     while ((arg = getopt_long(argc, args, "qCh", long_options, NULL)) != -1)
@@ -196,10 +193,7 @@ nyx_watches_init(nyx_t *nyx)
         list_add(nyx->states, state);
 
         /* start a new thread for each state */
-        state->thread = calloc(1, sizeof(pthread_t));
-
-        if (state->thread == NULL)
-            log_critical_perror("nyx: calloc");
+        state->thread = xcalloc(1, sizeof(pthread_t));
 
         /* create with default thread attributes */
         init = pthread_create(state->thread, NULL, state_loop_start, state);

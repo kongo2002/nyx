@@ -1,3 +1,4 @@
+#include "def.h"
 #include "list.h"
 #include "utils.h"
 
@@ -51,7 +52,7 @@ split_string(const char *str)
     if (size < 1)
         return NULL;
 
-    output = calloc(size + 1, sizeof(char *));
+    output = xcalloc(size + 1, sizeof(char *));
 
     node = tokens->head;
     while (node)

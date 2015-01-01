@@ -114,10 +114,7 @@ unsubscribe_event_listen(int socket)
 static process_event_data_t *
 new_event_data(void)
 {
-    process_event_data_t *data = calloc(1, sizeof(process_event_data_t));
-
-    if (data == NULL)
-        log_critical_perror("nyx: calloc");
+    process_event_data_t *data = xcalloc(1, sizeof(process_event_data_t));
 
     return data;
 }

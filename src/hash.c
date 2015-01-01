@@ -1,3 +1,4 @@
+#include "def.h"
 #include "hash.h"
 #include "log.h"
 
@@ -22,22 +23,13 @@ hash_string(const char *str)
 hash_t *
 hash_new(int size, callback_t free_value)
 {
-    hash_t *hash = calloc(1, sizeof(hash_t));
-
-    if (hash == NULL)
-        log_critical_perror("nyx: calloc");
+    hash_t *hash = xcalloc(1, sizeof(hash_t));
 
     size = size > 0 ? size : 4;
 
     hash->bucket_count = size;
-    hash->buckets = calloc(size, sizeof(bucket_t));
+    hash->buckets = xcalloc(size, sizeof(bucket_t));
     hash->free_value = free_value;
-
-    if (hash->buckets == NULL)
-    {
-        free(hash);
-        log_critical_perror("nyx: calloc");
-    }
 
     return hash;
 }
@@ -157,10 +149,7 @@ hash_add(hash_t *hash, const char *key, void *data)
     /* the bucket is empty */
     if (bucket_count < 1)
     {
-        bucket->pairs = calloc(1, sizeof(pair_t));
-
-        if (bucket->pairs == NULL)
-            log_critical_perror("nyx: calloc");
+        bucket->pairs = xcalloc(1, sizeof(pair_t));
 
         pair = bucket->pairs;
     }
@@ -176,7 +165,7 @@ hash_add(hash_t *hash, const char *key, void *data)
     len = keylen > MAP_KEY_MAXLEN ? MAP_KEY_MAXLEN : keylen;
 
     /* copy and assign key */
-    key_cpy = calloc(len+1, sizeof(char));
+    key_cpy = xcalloc(len+1, sizeof(char));
     strncpy(key_cpy, key, len);
 
     pair->key = key_cpy;
@@ -223,10 +212,7 @@ hash_iter_init(hash_iter_t *iter, hash_t *hash)
 hash_iter_t *
 hash_iter_start(hash_t *hash)
 {
-    hash_iter_t *iter = calloc(1, sizeof(hash_iter_t));
-
-    if (iter == NULL)
-        log_critical_perror("nyx: calloc");
+    hash_iter_t *iter = xcalloc(1, sizeof(hash_iter_t));
 
     hash_iter_init(iter, hash);
 

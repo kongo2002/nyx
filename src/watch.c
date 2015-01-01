@@ -1,3 +1,4 @@
+#include "def.h"
 #include "log.h"
 #include "utils.h"
 #include "watch.h"
@@ -8,10 +9,7 @@
 watch_t *
 watch_new(const char *name)
 {
-    watch_t *watch = calloc(1, sizeof(watch_t));
-
-    if (watch == NULL)
-        log_critical_perror("nyx: calloc");
+    watch_t *watch = xcalloc(1, sizeof(watch_t));
 
     watch->name = name;
 

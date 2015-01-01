@@ -1,13 +1,11 @@
+#include "def.h"
 #include "list.h"
 #include "log.h"
 
 list_t *
 list_new(void (*free_func)(void *))
 {
-    list_t *list = calloc(1, sizeof(list_t));
-
-    if (list == NULL)
-        log_critical_perror("nyx: calloc");
+    list_t *list = xcalloc(1, sizeof(list_t));
 
     list->free_func = free_func;
 
@@ -17,10 +15,7 @@ list_new(void (*free_func)(void *))
 void
 list_add(list_t *list, void *data)
 {
-    list_node_t *node = calloc(1, sizeof(list_node_t));
-
-    if (node == NULL)
-        log_critical_perror("nyx: calloc");
+    list_node_t *node = xcalloc(1, sizeof(list_node_t));
 
     node->data = data;
 
