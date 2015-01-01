@@ -129,7 +129,13 @@ nyx_initialize(int argc, char **args)
 {
     int arg = 0, index = 0;
 
-    nyx_t *nyx = xcalloc(1, sizeof(nyx_t));
+    nyx_t *nyx = calloc(1, sizeof(nyx_t));
+
+    if (nyx == NULL)
+    {
+        perror("nyx: calloc");
+        exit(EXIT_FAILURE);
+    }
 
     /* parse command line arguments */
     while ((arg = getopt_long(argc, args, "qCh", long_options, NULL)) != -1)
