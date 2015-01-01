@@ -6,12 +6,13 @@
 #include "state.h"
 #include "watch.h"
 
+#include <errno.h>
 #include <getopt.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 static void
@@ -84,7 +85,18 @@ determine_pid_dir(void)
 static void
 handle_child_stop(UNUSED int signum)
 {
+    pid_t pid;
+    int last_errno = errno;
 
+    log_debug("Received child stop signal - waiting for termination");
+
+    /* wait for all child processes */
+    while ((pid = waitpid(-1, NULL, WNOHANG)) > 0)
+    {
+        /* do nothing */
+    }
+
+    errno = last_errno;
 }
 
 void
@@ -92,18 +104,14 @@ setup_signals(nyx_t *nyx, void (*terminate_handler)(int))
 {
     int is_init = nyx->pid == 1;
 
-    sigset_t full_set;
-    struct sigaction action;
-
     log_debug("Setting up signals");
 
-    sigfillset(&full_set);
+    struct sigaction action =
+    {
+        .sa_flags = SA_NOCLDSTOP | SA_RESTART,
+        .sa_handler = handle_child_stop
+    };
 
-    /* create a new signal handler for SIGCHLD */
-    memset(&action, 0, sizeof(action));
-
-    action.sa_flags = SA_NOCLDSTOP | SA_RESTART;
-    action.sa_handler = handle_child_stop;
     sigfillset(&action.sa_mask);
 
     /* register SIGCHLD handler */
