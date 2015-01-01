@@ -37,6 +37,9 @@ int
 nyx_watches_init(nyx_t *nyx);
 
 void
+setup_signals(nyx_t *nyx, void (*terminate_handler)(int));
+
+void
 nyx_destroy(nyx_t *nyx);
 
 #endif

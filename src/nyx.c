@@ -1,3 +1,4 @@
+#include "def.h"
 #include "fs.h"
 #include "hash.h"
 #include "log.h"
@@ -7,8 +8,10 @@
 
 #include <getopt.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static void
@@ -76,6 +79,41 @@ determine_pid_dir(void)
     log_error("Failed to determine a PID directory for nyx");
 
     return NULL;
+}
+
+static void
+handle_child_stop(UNUSED int signum)
+{
+
+}
+
+void
+setup_signals(nyx_t *nyx, void (*terminate_handler)(int))
+{
+    int is_init = nyx->pid == 1;
+
+    sigset_t full_set;
+    struct sigaction action;
+
+    log_debug("Setting up signals");
+
+    sigfillset(&full_set);
+
+    /* create a new signal handler for SIGCHLD */
+    memset(&action, 0, sizeof(action));
+
+    action.sa_flags = SA_NOCLDSTOP | SA_RESTART;
+    action.sa_handler = handle_child_stop;
+    sigfillset(&action.sa_mask);
+
+    /* register SIGCHLD handler */
+    sigaction(SIGCHLD, &action, NULL);
+
+    /* register handler for termination:
+     * SIGTERM and SIGINT */
+    action.sa_handler = terminate_handler;
+    sigaction(SIGTERM, &action, NULL);
+    sigaction(SIGINT, &action, NULL);
 }
 
 nyx_t *

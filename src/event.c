@@ -6,7 +6,6 @@
 #include <linux/cn_proc.h>
 #include <linux/connector.h>
 #include <linux/netlink.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -231,9 +230,9 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 }
 
 static void
-on_sigint(UNUSED int unused)
+on_terminate(UNUSED int signum)
 {
-    log_debug("SIGINT - exiting event manager loop");
+    log_debug("Caught termination signal - exiting event manager loop");
     need_exit = 1;
 }
 
@@ -254,9 +253,7 @@ event_loop(nyx_t *nyx, process_handler_t handler)
         goto out;
     }
 
-    /* TODO: does this belong in here? */
-    signal(SIGINT, &on_sigint);
-    siginterrupt(SIGINT, 1);
+    setup_signals(nyx, on_terminate);
 
     rc = handle_process_event(socket, nyx, handler);
     if (rc == -1)

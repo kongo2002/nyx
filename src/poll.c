@@ -4,7 +4,6 @@
 #include "process.h"
 #include "state.h"
 
-#include <signal.h>
 #include <unistd.h>
 
 static const unsigned int POLLING_INTERVAL = 5;
@@ -12,9 +11,9 @@ static const unsigned int POLLING_INTERVAL = 5;
 static volatile int need_exit = 0;
 
 static void
-on_sigint(UNUSED int unused)
+on_terminate(UNUSED int signum)
 {
-    log_debug("SIGINT - exiting polling manager loop");
+    log_debug("Caught termination signal - exiting polling manager loop");
     need_exit = 1;
 }
 
@@ -23,9 +22,7 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
 {
     list_t *states = nyx->states;
 
-    /* TODO: does this belong in here? */
-    signal(SIGINT, &on_sigint);
-    siginterrupt(SIGINT, 1);
+    setup_signals(nyx, on_terminate);
 
     log_debug("Starting polling manager loop");
 
