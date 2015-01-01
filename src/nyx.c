@@ -102,8 +102,6 @@ handle_child_stop(UNUSED int signum)
 void
 setup_signals(nyx_t *nyx, void (*terminate_handler)(int))
 {
-    int is_init = nyx->pid == 1;
-
     log_debug("Setting up signals");
 
     struct sigaction action =
@@ -174,6 +172,7 @@ nyx_initialize(int argc, char **args)
         return NULL;
 
     nyx->pid = getpid();
+    nyx->is_init = nyx->pid == 1;
     nyx->watches = hash_new(8, _watch_destroy);
     nyx->states = list_new(_state_destroy);
 

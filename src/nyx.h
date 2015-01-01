@@ -18,6 +18,7 @@ typedef struct
 typedef struct
 {
     pid_t pid;
+    int is_init;
     const char *pid_dir;
     nyx_options_t options;
     hash_t *watches;
