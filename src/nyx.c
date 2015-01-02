@@ -1,3 +1,4 @@
+#include "connector.h"
 #include "def.h"
 #include "fs.h"
 #include "hash.h"
@@ -129,7 +130,7 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
 nyx_t *
 nyx_initialize(int argc, char **args)
 {
-    int arg = 0, index = 0;
+    int arg = 0, index = 0, err = 0;
 
     nyx_t *nyx = calloc(1, sizeof(nyx_t));
 
@@ -189,6 +190,20 @@ nyx_initialize(int argc, char **args)
     nyx->watches = hash_new(8, _watch_destroy);
     nyx->states = list_new(_state_destroy);
 
+    /* start connector */
+    nyx->connector_thread = xcalloc(1, sizeof(pthread_t));
+
+    err = pthread_create(nyx->connector_thread, NULL, connector_start, nyx);
+
+    if (err)
+    {
+        log_perror("nyx: pthread_create");
+        log_error("Failed to initialize connector thread");
+
+        free(nyx->connector_thread);
+        nyx->connector_thread = NULL;
+    }
+
     return nyx;
 }
 
@@ -243,6 +258,20 @@ nyx_destroy(nyx_t *nyx)
 
     if (nyx == NULL)
         return;
+
+    /* tear down connector first */
+    if (nyx->connector_thread)
+    {
+        pthread_t connector = *nyx->connector_thread;
+
+        /* TODO: proper connector termination */
+        connector_close();
+        pthread_cancel(connector);
+        pthread_join(connector, NULL);
+
+        free(nyx->connector_thread);
+        nyx->connector_thread = NULL;
+    }
 
     list_destroy(nyx->states);
     hash_destroy(nyx->watches);

@@ -21,6 +21,7 @@ typedef struct
     pid_t pid;
     int is_init;
     const char *pid_dir;
+    pthread_t *connector_thread;
     nyx_options_t options;
     hash_t *watches;
     list_t *states;
