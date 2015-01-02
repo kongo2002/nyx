@@ -103,6 +103,7 @@ spawn(state_t *state)
         pid_t sid = 0;
         uid_t uid = 0;
         gid_t gid = 0;
+        mode_t old_mode;
 
         const watch_t *watch = state->watch;
         const char **args = state->watch->start;
@@ -117,13 +118,17 @@ spawn(state_t *state)
             get_group(watch->gid, &gid);
 
         /* TODO */
-        umask(0);
+        old_mode = umask(0);
+
+        log_debug("Reset umask - old mask: %04o", old_mode);
 
         /* create session */
         if ((sid = setsid()) == -1)
             log_perror("nyx: setsid");
         else
+        {
             log_debug("Created new session group: %d", sid);
+        }
 
         /* set user/group */
         if (gid)
@@ -174,7 +179,13 @@ spawn(state_t *state)
         execvp(executable, (char * const *)args);
 
         if (errno == ENOENT)
+        {
+            /* program does not exist or is not executable */
+
+            /* TODO: remove watch? */
+
             exit(EXIT_SUCCESS);
+        }
 
         log_critical_perror("nyx: execvp %s", executable);
     }
