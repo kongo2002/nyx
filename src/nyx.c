@@ -39,6 +39,7 @@ print_help(void)
     print_usage(stdout);
     printf("\n"
            "Options:\n"
+           "   -s  --syslog   (log into syslog)\n"
            "   -q  --quiet    (output error messages only)\n"
            "   -C  --no-color (no terminal coloring)\n"
            "   -h  --help     (print this help)\n");
@@ -50,6 +51,7 @@ static const struct option long_options[] =
     { .name = "help",     .has_arg = 0, .flag = NULL, .val = 'h'},
     { .name = "no-color", .has_arg = 0, .flag = NULL, .val = 'C'},
     { .name = "quiet",    .has_arg = 0, .flag = NULL, .val = 'q'},
+    { .name = "syslog",   .has_arg = 0, .flag = NULL, .val = 's'},
     { NULL }
 };
 
@@ -142,6 +144,9 @@ nyx_initialize(int argc, char **args)
         {
             case 'q':
                 nyx->options.quiet = 1;
+                break;
+            case 's':
+                nyx->options.syslog = 1;
                 break;
             case 'C':
                 nyx->options.no_color = 1;

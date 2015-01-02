@@ -10,6 +10,7 @@ typedef struct
 {
     int quiet;
     int no_color;
+    int syslog;
     const char *config_file;
     int def_start_timeout;
     int def_grace;
