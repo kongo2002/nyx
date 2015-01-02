@@ -1,10 +1,14 @@
 #include "def.h"
+#include "fs.h"
 #include "log.h"
 #include "process.h"
 #include "state.h"
 
-#include <pthread.h>
 #include <errno.h>
+#include <grp.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 typedef int (*transition_func_t)(state_t *, state_e, state_e);
@@ -24,6 +28,13 @@ const char *
 state_to_string(state_e state)
 {
     return state_to_str[state];
+}
+
+static void
+set_state(state_t *state, state_e value)
+{
+    state->state = value;
+    sem_post(state->sem);
 }
 
 #define DEBUG_LOG_STATE_FUNC \
@@ -61,9 +72,9 @@ to_unmonitored(state_t *state, state_e from, state_e to)
         /* TODO: update pid file? */
     }
 
-    state->state = running
+    set_state(state, running
         ? STATE_RUNNING
-        : STATE_STOPPED;
+        : STATE_STOPPED);
 
     return 1;
 }
@@ -77,7 +88,7 @@ stop(state_t *state, state_e from, state_e to)
 }
 
 static pid_t
-run_forked(state_t *state)
+spawn(state_t *state)
 {
     pid_t pid = fork();
 
@@ -88,10 +99,64 @@ run_forked(state_t *state)
     /* child process */
     if (pid == 0)
     {
+        uid_t uid = 0;
+        gid_t gid = 0;
+
+        const watch_t *watch = state->watch;
         const char **args = state->watch->start;
         const char *executable = *args;
 
-        /* TODO: setup signals */
+        /* determine user and group */
+        if (watch->uid)
+            get_user(watch->uid, &uid, &gid);
+
+        if (watch->gid)
+            get_group(watch->gid, &gid);
+
+        /* TODO */
+        umask(0);
+
+        /* create session */
+        setsid();
+
+        /* set user/group */
+        if (gid)
+        {
+            gid_t groups[] = { gid };
+
+            setgroups(1, groups);
+            setgid(gid);
+        }
+
+        if (uid && gid)
+            initgroups(watch->uid, gid);
+
+        if (uid)
+            setuid(uid);
+
+        /* set current directory */
+        if (dir_exists(watch->dir))
+            chdir(watch->dir);
+        else
+            chdir("/");
+
+        /* close open file descriptors */
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
+
+        /* TODO: redirect somewhere? */
+
+        if (open("/dev/null", O_RDONLY) == -1)
+            log_perror("nyx: open");
+
+        if (open("/dev/null", O_WRONLY) == -1)
+            log_perror("nyx: open");
+
+        if (open("/dev/null", O_RDWR) == -1)
+            log_perror("nyx: open");
+
+        /* TODO: set environment variables */
 
         execvp(executable, (char * const *)args);
 
@@ -104,17 +169,23 @@ run_forked(state_t *state)
     return pid;
 }
 
+static void
+start_state(state_t *state)
+{
+    /* start program */
+    pid_t pid = spawn(state);
+
+    /* keep track of child pid */
+    if (pid > 0)
+        state->pid = pid;
+}
+
 static int
 start(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
 
-    /* start program */
-    pid_t pid = run_forked(state);
-
-    /* keep track of child pid */
-    if (pid > 0)
-        state->pid = pid;
+    start_state(state);
 
     return 1;
 }
@@ -123,6 +194,8 @@ static int
 stopped(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
+
+    set_state(state, STATE_STARTING);
 
     return 1;
 }
@@ -172,6 +245,24 @@ dispatch_poll_result(int pid, int running, UNUSED nyx_t *nyx)
     log_debug("Incoming polling data for PID %d: running: %s",
             pid, (running ? "true" : "false"));
 
+    /* find state */
+    list_node_t *node = nyx->states->head;
+
+    while (node)
+    {
+        state_t *state = node->data;
+
+        if (state != NULL && state->pid == pid)
+        {
+            state_e next_state = running ? STATE_RUNNING : STATE_STOPPED;
+
+            if (next_state != state->state)
+                set_state(state, next_state);
+        }
+
+        node = node->next;
+    }
+
     return 1;
 }
 
@@ -209,8 +300,7 @@ state_destroy(state_t *state)
     {
         /* first we should unlock the semaphore
          * in case any process is still waiting on it */
-        state->state = STATE_QUIT;
-        sem_post(sem);
+        set_state(state, STATE_QUIT);
     }
 
     if (state->thread != NULL)
@@ -317,7 +407,7 @@ state_loop(state_t *state)
                     watch->name, state->pid, state_to_string(last_state));
         }
 
-        last_state = state->state;
+        last_state = current_state;
         log_debug("Waiting on next state update for watch '%s'", watch->name);
     }
 
