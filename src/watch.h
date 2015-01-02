@@ -1,6 +1,8 @@
 #ifndef __NYX_WATCH_H__
 #define __NYX_WATCH_H__
 
+#include "hash.h"
+
 typedef struct watch_t
 {
     const char *name;
@@ -8,6 +10,7 @@ typedef struct watch_t
     const char *gid;
     const char **start;
     const char *dir;
+    hash_t *env;
 } watch_t;
 
 watch_t *

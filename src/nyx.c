@@ -102,7 +102,7 @@ handle_child_stop(UNUSED int signum)
 }
 
 void
-setup_signals(nyx_t *nyx, void (*terminate_handler)(int))
+setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
 {
     log_debug("Setting up signals");
 
@@ -188,10 +188,11 @@ int
 nyx_watches_init(nyx_t *nyx)
 {
     int rc = 1, init = 0;
+    const char *key = NULL;
     void *data = NULL;
     hash_iter_t *iter = hash_iter_start(nyx->watches);
 
-    while (hash_iter(iter, &data))
+    while (hash_iter(iter, &key, &data))
     {
         state_t *state = NULL;
         watch_t *watch = data;

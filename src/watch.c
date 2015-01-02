@@ -1,5 +1,6 @@
 #include "def.h"
 #include "fs.h"
+#include "hash.h"
 #include "log.h"
 #include "utils.h"
 #include "watch.h"
@@ -57,6 +58,9 @@ watch_destroy(watch_t *watch)
     if (watch->gid)  free((void *)watch->gid);
     if (watch->dir)  free((void *)watch->dir);
 
+    if (watch->env)
+        hash_destroy(watch->env);
+
     free(watch);
     watch = NULL;
 }
@@ -99,9 +103,27 @@ watch_dump(watch_t *watch)
     log_info("Watch '%s'", watch->name);
 
     dump_strings("start", watch->start);
+
     dump_not_empty("uid", watch->uid);
     dump_not_empty("gid", watch->gid);
     dump_not_empty("dir", watch->dir);
+
+    if (watch->env)
+    {
+        log_info("  env: [");
+
+        const char *key = NULL;
+        void *data = NULL;
+        hash_iter_t *iter = hash_iter_start(watch->env);
+
+        while (hash_iter(iter, &key, &data))
+        {
+            log_info("   %s: %s", key, (char *)data);
+        }
+
+        log_info("   ]");
+        free(iter);
+    }
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

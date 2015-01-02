@@ -56,7 +56,7 @@ void
 hash_iter_rewind(hash_iter_t *iter);
 
 int
-hash_iter(hash_iter_t *iter, void **data);
+hash_iter(hash_iter_t *iter, const char **key, void **data);
 
 void
 hash_foreach(hash_t *hash, void (*func)(void *));

@@ -271,7 +271,7 @@ hash_iter_rewind(hash_iter_t *iter)
 }
 
 int
-hash_iter(hash_iter_t *iter, void **data)
+hash_iter(hash_iter_t *iter, const char **key, void **data)
 {
     if (iter == NULL || iter->_hash == NULL)
         return 0;
@@ -287,6 +287,7 @@ hash_iter(hash_iter_t *iter, void **data)
             (bucket->count <= iter->_pair && hash->bucket_count <= iter->_bucket))
         return 0;
 
+    *key = bucket->pairs[iter->_pair].key;
     *data = bucket->pairs[iter->_pair].data;
 
     /* proceed iterator */

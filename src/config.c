@@ -38,6 +38,9 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 static parse_info_t *
 handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
+static parse_info_t *
+handle_watch_env_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data);
+
 static int
 check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
 {
@@ -265,6 +268,61 @@ DECLARE_WATCH_STR_LIST_VALUE(start)
 #undef DECLARE_WATCH_VALUE_FUNC
 #undef DECLARE_WATCH_STR_LIST_VALUE
 
+static const char *env_key = NULL;
+
+static parse_info_t *
+handle_watch_env_value(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    const char *env_value = get_scalar_value(event);
+
+    log_debug("Environment variable value: %s", env_value);
+
+    watch_t *watch = data;
+
+    if (watch != NULL && watch->env && env_key)
+    {
+        hash_add(watch->env, env_key, strdup(env_value));
+
+        /* dispose key */
+        free((void *)env_key);
+        env_key = NULL;
+    }
+
+    info->handler[YAML_SCALAR_EVENT] = &handle_watch_env_key;
+
+    return info;
+}
+
+static parse_info_t *
+handle_watch_env_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    const char *new_env_key = get_scalar_value(event);
+
+    log_debug("Environment variable key: %s", new_env_key);
+
+    env_key = strdup(new_env_key);
+
+    info->handler[YAML_SCALAR_EVENT] = &handle_watch_env_value;
+
+    return info;
+}
+
+static parse_info_t *
+handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    log_debug("handle_watch_env");
+
+    parse_info_t *new_info = parse_info_new_child(info);
+    watch_t *watch = data;
+
+    watch->env = hash_new(8, free);
+
+    new_info->handler[YAML_SCALAR_EVENT] = &handle_watch_env_key;
+    new_info->handler[YAML_MAPPING_END_EVENT] = &parser_up;
+
+    return new_info;
+}
+
 static struct config_parser_map watch_value_map[] =
 {
     { .key = "name", .handler = handle_watch_map_value_name },
@@ -272,6 +330,7 @@ static struct config_parser_map watch_value_map[] =
     { .key = "gid", .handler = handle_watch_map_value_gid },
     { .key = "start", .handler = handle_watch_map_value_start },
     { .key = "dir", .handler = handle_watch_map_value_dir },
+    { .key = "env", .handler = handle_watch_env },
     { NULL }
 };
 
@@ -300,6 +359,7 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
     handler = get_handler_from_map_fallback(watch_value_map, key, unknown_watch_key);
 
     info->handler[YAML_SCALAR_EVENT] = handler;
+    info->handler[YAML_MAPPING_START_EVENT] = handler;
 
     return info;
 }
@@ -509,6 +569,12 @@ parse_config(nyx_t *nyx)
 
     /* cleanup */
     yaml_parser_delete(&parser);
+
+    if (env_key)
+    {
+        free((void *)env_key);
+        env_key = NULL;
+    }
 
     parse_info_destroy(info);
     fclose(cfg);
