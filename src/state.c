@@ -5,10 +5,12 @@
 #include "state.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <grp.h>
 #include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <unistd.h>
 
 typedef int (*transition_func_t)(state_t *, state_e, state_e);
@@ -86,6 +88,28 @@ stop(state_t *state, state_e from, state_e to)
     DEBUG_LOG_STATE_FUNC;
 
     return 1;
+}
+
+static void
+set_environment(const watch_t *watch)
+{
+    const char *key = NULL;
+    void *data = NULL;
+
+    if (watch->env == NULL || hash_count(watch->env) < 1)
+        return;
+
+    hash_iter_t *iter = hash_iter_start(watch->env);
+
+    while (hash_iter(iter, &key, &data))
+    {
+        char *value = data;
+
+        if (setenv(key, value, 1) == -1)
+            log_perror("nyx: setenv");
+    }
+
+    free(iter);
 }
 
 static pid_t
@@ -174,7 +198,7 @@ spawn(state_t *state)
         if (open("/dev/null", O_RDWR) == -1)
             log_perror("nyx: open");
 
-        /* TODO: set environment variables */
+        set_environment(watch);
 
         execvp(executable, (char * const *)args);
 
