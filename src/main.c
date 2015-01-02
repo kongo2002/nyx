@@ -51,7 +51,7 @@ main(int argc, char **argv)
     /* start the event handler loop */
     if (!event_loop(nyx, dispatch_event))
     {
-        log_error("Failed to initialize event manager "
+        log_warn("Failed to initialize event manager "
                   "- trying polling mechanism next");
 
         if (!poll_loop(nyx, dispatch_poll_result))
