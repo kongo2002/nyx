@@ -3,6 +3,12 @@
 
 #include <signal.h>
 
+int
+clear_pid(const char *name, nyx_t *nyx)
+{
+    return remove_pid_file(nyx->pid_dir, name);
+}
+
 pid_t
 determine_pid(const char *name, nyx_t *nyx)
 {
@@ -13,7 +19,7 @@ determine_pid(const char *name, nyx_t *nyx)
     if (name == NULL)
         return 0;
 
-    if ((file = get_pid_file(nyx->pid_dir, name, "r")) != NULL)
+    if ((file = open_pid_file(nyx->pid_dir, name, "r")) != NULL)
     {
         matched = fscanf(file, "%ud", &pid);
         fclose(file);
@@ -48,7 +54,7 @@ write_pid(pid_t pid, const char *name, nyx_t *nyx)
     if (name == NULL)
         return 0;
 
-    if ((file = get_pid_file(nyx->pid_dir, name, "w")) != NULL)
+    if ((file = open_pid_file(nyx->pid_dir, name, "w")) != NULL)
     {
         written = fprintf(file, "%ud", pid);
         fclose(file);

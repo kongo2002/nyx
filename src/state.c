@@ -67,9 +67,10 @@ to_unmonitored(state_t *state, state_e from, state_e to)
     {
         running = check_process_running(pid);
 
-        state->pid = running ? pid : 0;
+        if (!running)
+            clear_pid(watch->name, state->nyx);
 
-        /* TODO: update pid file? */
+        state->pid = running ? pid : 0;
     }
 
     set_state(state, running
@@ -177,7 +178,10 @@ start_state(state_t *state)
 
     /* keep track of child pid */
     if (pid > 0)
+    {
         state->pid = pid;
+        write_pid(pid, state->watch->name, state->nyx);
+    }
 }
 
 static int

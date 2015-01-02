@@ -78,14 +78,26 @@ prepare_dir(const char *directory)
 }
 
 FILE *
-get_pid_file(const char *pid_dir, const char *name, const char *mode)
+open_pid_file(const char *pid_dir, const char *name, const char *mode)
 {
-    char buffer[512] = {0};
+    return fopen(get_pid_file(pid_dir, name), mode);
+}
+
+int
+remove_pid_file(const char *pid_dir, const char *name)
+{
+    return remove(get_pid_file(pid_dir, name));
+}
+
+const char *
+get_pid_file(const char *pid_dir, const char *name)
+{
+    static char buffer[512] = {0};
     const char *dir = prepare_dir(pid_dir);
 
     snprintf(buffer, sizeof(buffer), "%s/%s", dir, name);
 
-    return fopen(buffer, mode);
+    return buffer;
 }
 
 int

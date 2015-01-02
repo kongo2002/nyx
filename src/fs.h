@@ -10,8 +10,14 @@ dir_exists(const char *directory);
 int
 mkdir_p(const char *directory);
 
+const char *
+get_pid_file(const char *pid_dir, const char *name);
+
 FILE *
-get_pid_file(const char *pid_dir, const char *name, const char *mode);
+open_pid_file(const char *pid_dir, const char *name, const char *mode);
+
+int
+remove_pid_file(const char *pid_dir, const char *name);
 
 const char *
 get_homedir(void);
