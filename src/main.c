@@ -8,6 +8,49 @@
 
 #include <stdio.h>
 
+static int
+daemon_mode(nyx_t *nyx)
+{
+    /* parse config */
+    if (!parse_config(nyx))
+    {
+        if (hash_count(nyx->watches) < 1)
+            log_error("No watches configured - terminating now");
+
+        return 0;
+    }
+
+    if (!nyx_watches_init(nyx))
+    {
+        log_error("No valid watched configured - terminating now");
+
+        return 0;
+    }
+
+    /* start the event handler loop */
+    if (!event_loop(nyx, dispatch_event))
+    {
+        log_warn("Failed to initialize event manager "
+                  "- trying polling mechanism next");
+
+        if (!poll_loop(nyx, dispatch_poll_result))
+        {
+            log_error("Failed to start loop manager as well - terminating");
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static int
+is_daemon(nyx_t *nyx)
+{
+    return nyx != NULL &&
+        nyx->options.config_file != NULL &&
+        *nyx->options.config_file;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -30,35 +73,11 @@ main(int argc, char **argv)
         goto teardown;
     }
 
-    /* parse config */
-    if (!parse_config(nyx))
+    if (is_daemon(nyx))
+        failed = !daemon_mode(nyx);
+    else
     {
-        if (hash_count(nyx->watches) < 1)
-            log_error("No watches configured - terminating now");
-
-        failed = 1;
-        goto teardown;
-    }
-
-    if (!nyx_watches_init(nyx))
-    {
-        log_error("No valid watched configured - terminating now");
-
-        failed = 1;
-        goto teardown;
-    }
-
-    /* start the event handler loop */
-    if (!event_loop(nyx, dispatch_event))
-    {
-        log_warn("Failed to initialize event manager "
-                  "- trying polling mechanism next");
-
-        if (!poll_loop(nyx, dispatch_poll_result))
-        {
-            log_error("Failed to start loop manager as well - terminating");
-            failed = 1;
-        }
+        /* TODO: command mode */
     }
 
 teardown:
