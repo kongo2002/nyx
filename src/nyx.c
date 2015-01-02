@@ -39,6 +39,7 @@ print_help(void)
     print_usage(stdout);
     printf("\n"
            "Options:\n"
+           "   -c  --config   (path to configuration file)\n"
            "   -s  --syslog   (log into syslog)\n"
            "   -q  --quiet    (output error messages only)\n"
            "   -C  --no-color (no terminal coloring)\n"
@@ -49,6 +50,7 @@ print_help(void)
 static const struct option long_options[] =
 {
     { .name = "help",     .has_arg = 0, .flag = NULL, .val = 'h'},
+    { .name = "config",   .has_arg = 0, .flag = NULL, .val = 'c'},
     { .name = "no-color", .has_arg = 0, .flag = NULL, .val = 'C'},
     { .name = "quiet",    .has_arg = 0, .flag = NULL, .val = 'q'},
     { .name = "syslog",   .has_arg = 0, .flag = NULL, .val = 's'},
@@ -138,7 +140,7 @@ nyx_initialize(int argc, char **args)
     }
 
     /* parse command line arguments */
-    while ((arg = getopt_long(argc, args, "qCh", long_options, NULL)) != -1)
+    while ((arg = getopt_long(argc, args, "hqsCc:", long_options, NULL)) != -1)
     {
         switch (arg)
         {
@@ -151,9 +153,16 @@ nyx_initialize(int argc, char **args)
             case 'C':
                 nyx->options.no_color = 1;
                 break;
+            case 'c':
+                nyx->options.config_file = optarg;
+                break;
             case 'h':
                 free(nyx);
                 print_help();
+                break;
+            case '?':
+                free(nyx);
+                exit(EXIT_FAILURE);
                 break;
         }
     }
@@ -161,8 +170,7 @@ nyx_initialize(int argc, char **args)
     /* process remaining arguments */
     for (index = optind; index < argc; )
     {
-        /* TODO: support multiple config files */
-        nyx->options.config_file = args[index];
+        /* TODO: process commands */
         break;
     }
 
