@@ -100,12 +100,14 @@ spawn(state_t *state)
     /* child process */
     if (pid == 0)
     {
+        pid_t sid = 0;
         uid_t uid = 0;
         gid_t gid = 0;
 
         const watch_t *watch = state->watch;
         const char **args = state->watch->start;
         const char *executable = *args;
+        const char *dir = dir_exists(watch->dir) ? watch->dir : "/";
 
         /* determine user and group */
         if (watch->uid)
@@ -118,28 +120,38 @@ spawn(state_t *state)
         umask(0);
 
         /* create session */
-        setsid();
+        if ((sid = setsid()) == -1)
+            log_perror("nyx: setsid");
+        else
+            log_debug("Created new session group: %d", sid);
 
         /* set user/group */
         if (gid)
         {
             gid_t groups[] = { gid };
 
-            setgroups(1, groups);
-            setgid(gid);
+            if (setgroups(1, groups) == -1)
+                log_perror("nyx: setgroups");
+
+            if (setgid(gid) == -1)
+                log_perror("nyx: setgid");
         }
 
         if (uid && gid)
-            initgroups(watch->uid, gid);
+        {
+            if (initgroups(watch->uid, gid) == -1)
+                log_perror("nyx: initgroups");
+        }
 
         if (uid)
-            setuid(uid);
+        {
+            if (setuid(uid) == -1)
+                log_perror("nyx: setuid");
+        }
 
         /* set current directory */
-        if (dir_exists(watch->dir))
-            chdir(watch->dir);
-        else
-            chdir("/");
+        if (chdir(dir) == -1)
+            log_perror("nyx: chdir");
 
         /* close open file descriptors */
         close(STDIN_FILENO);
