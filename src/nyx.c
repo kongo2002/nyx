@@ -196,6 +196,12 @@ nyx_watches_init(nyx_t *nyx)
         state_t *state = NULL;
         watch_t *watch = data;
 
+        if (!watch_validate(watch))
+        {
+            log_error("Invalid watch '%s' - skipping", watch->name);
+            continue;
+        }
+
         log_debug("Initialize watch '%s'", watch->name);
 
         /* create new state instance */
@@ -206,17 +212,19 @@ nyx_watches_init(nyx_t *nyx)
         state->thread = xcalloc(1, sizeof(pthread_t));
 
         /* create with default thread attributes */
-        init = pthread_create(state->thread, NULL, state_loop_start, state);
-        if (init != 0)
+        rc = pthread_create(state->thread, NULL, state_loop_start, state);
+        if (rc != 0)
         {
-            log_error("Failed to create thread, error: %d", init);
+            log_error("Failed to create thread, error: %d", rc);
             rc = 0;
             break;
         }
+
+        init++;
     }
 
     free(iter);
-    return rc;
+    return init > 0;
 }
 
 void

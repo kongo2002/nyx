@@ -1,4 +1,5 @@
 #include "def.h"
+#include "fs.h"
 #include "log.h"
 #include "utils.h"
 #include "watch.h"
@@ -58,6 +59,38 @@ watch_destroy(watch_t *watch)
 
     free(watch);
     watch = NULL;
+}
+
+int
+watch_validate(watch_t *watch)
+{
+    int result = 1, valid = 0;
+    uid_t uid = 0;
+    gid_t gid = 0;
+
+    result &= watch->name && *watch->name;
+
+    if (watch->uid)
+    {
+        valid = get_user(watch->uid, &uid, &gid);
+
+        if (!valid)
+            log_error("Invalid uid: %s", watch->uid);
+
+        result &= valid;
+    }
+
+    if (watch->gid)
+    {
+        valid = get_group(watch->gid, &uid);
+
+        if (!valid)
+            log_error("Invalid gid: %s", watch->gid);
+
+        result &= valid;
+    }
+
+    return result;
 }
 
 void

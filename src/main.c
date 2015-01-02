@@ -40,7 +40,13 @@ main(int argc, char **argv)
         goto teardown;
     }
 
-    nyx_watches_init(nyx);
+    if (!nyx_watches_init(nyx))
+    {
+        log_error("No valid watched configured - terminating now");
+
+        failed = 1;
+        goto teardown;
+    }
 
     /* start the event handler loop */
     if (!event_loop(nyx, dispatch_event))
