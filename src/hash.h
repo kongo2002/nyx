@@ -64,6 +64,9 @@ hash_foreach(hash_t *hash, void (*func)(void *));
 unsigned int
 hash_count(hash_t *hash);
 
+int
+hash_remove(hash_t *hash, const char *key);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

@@ -35,9 +35,9 @@ hash_new(int size, callback_t free_value)
 }
 
 static pair_t *
-get_pair(bucket_t *bucket, const char *key)
+get_pair(bucket_t *bucket, const char *key, unsigned int *idx)
 {
-    unsigned int i = 0;
+    *idx = 0;
     unsigned int count = bucket->count;
     pair_t *pair = NULL;
 
@@ -46,13 +46,13 @@ get_pair(bucket_t *bucket, const char *key)
 
     pair = bucket->pairs;
 
-    while (i < count)
+    while (*idx < count)
     {
         if (pair->key != NULL &&
             strncmp(pair->key, key, MAP_KEY_MAXLEN) == 0)
             return pair;
 
-        pair++; i++;
+        pair++; (*idx)++;
     }
 
     return NULL;
@@ -128,7 +128,7 @@ int
 hash_add(hash_t *hash, const char *key, void *data)
 {
     size_t keylen, len;
-    unsigned int bucket_count;
+    unsigned int bucket_count, idx;
     char *key_cpy = NULL;
 
     bucket_t *bucket = NULL;
@@ -138,7 +138,7 @@ hash_add(hash_t *hash, const char *key, void *data)
         return 0;
 
     bucket = get_bucket(hash, key);
-    pair = get_pair(bucket, key);
+    pair = get_pair(bucket, key, &idx);
 
     /* there is already a matching pair in the current bucket */
     if (pair != NULL)
@@ -180,6 +180,7 @@ hash_add(hash_t *hash, const char *key, void *data)
 void *
 hash_get(hash_t *hash, const char* key)
 {
+    unsigned int idx = 0;
     bucket_t *bucket = NULL;
     pair_t *pair = NULL;
 
@@ -187,12 +188,56 @@ hash_get(hash_t *hash, const char* key)
         return NULL;
 
     bucket = get_bucket(hash, key);
-    pair = get_pair(bucket, key);
+    pair = get_pair(bucket, key, &idx);
 
     if (pair == NULL)
         return NULL;
 
     return pair->data;
+}
+
+int
+hash_remove(hash_t *hash, const char *key)
+{
+    unsigned int i = 0, j = 0, idx = 0;
+    bucket_t *bucket = NULL;
+    pair_t *pair = NULL, *new_pairs = NULL;
+
+    if (hash == NULL || key == NULL)
+        return 0;
+
+    bucket = get_bucket(hash, key);
+
+    if (bucket == NULL)
+        return 0;
+
+    pair = get_pair(bucket, key, &idx);
+
+    if (pair == NULL)
+        return 0;
+
+    bucket->count--;
+    new_pairs = bucket->count
+        ? xcalloc(bucket->count, sizeof(pair_t))
+        : NULL;
+
+    for (i = 0; i<bucket->count+1; i++)
+    {
+        if (i == idx)
+            continue;
+
+        pair = &bucket->pairs[i];
+
+        j = i > idx ? i-1 : i;
+
+        new_pairs[j].key = pair->key;
+        new_pairs[j].data = pair->data;
+    }
+
+    free(bucket->pairs);
+    bucket->pairs = new_pairs;
+
+    return 1;
 }
 
 static void
