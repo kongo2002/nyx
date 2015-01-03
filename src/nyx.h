@@ -30,6 +30,9 @@ typedef struct
 void
 print_usage(FILE *out);
 
+int
+is_daemon(nyx_t *nyx);
+
 void
 print_help(void) __attribute__((noreturn));
 

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "connector.h"
 #include "event.h"
 #include "log.h"
 #include "nyx.h"
@@ -43,14 +44,6 @@ daemon_mode(nyx_t *nyx)
     return 1;
 }
 
-static int
-is_daemon(nyx_t *nyx)
-{
-    return nyx != NULL &&
-        nyx->options.config_file != NULL &&
-        *nyx->options.config_file;
-}
-
 int
 main(int argc, char **argv)
 {
@@ -77,7 +70,19 @@ main(int argc, char **argv)
         failed = !daemon_mode(nyx);
     else
     {
-        /* TODO: command mode */
+        const char *result = NULL;
+        connector_command_e command;
+
+        if (parse_command(argv[1], &command))
+            result = connector_call(command);
+
+        if (result != NULL)
+        {
+            printf("%s\n", result);
+
+            free((void *)result);
+            result = NULL;
+        }
     }
 
 teardown:

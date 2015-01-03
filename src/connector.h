@@ -9,6 +9,9 @@ typedef enum
     CMD_SIZE
 } connector_command_e;
 
+const char *
+connector_call(connector_command_e cmd);
+
 int
 parse_command(const char *input, connector_command_e *cmd);
 

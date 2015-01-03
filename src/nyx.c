@@ -127,6 +127,14 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
     sigaction(SIGINT, &action, NULL);
 }
 
+int
+is_daemon(nyx_t *nyx)
+{
+    return nyx != NULL &&
+        nyx->options.config_file != NULL &&
+        *nyx->options.config_file;
+}
+
 nyx_t *
 nyx_initialize(int argc, char **args)
 {
@@ -180,28 +188,31 @@ nyx_initialize(int argc, char **args)
     /* set default options */
     nyx->options.def_start_timeout = 5;
 
-    nyx->pid_dir = determine_pid_dir();
-
-    if (nyx->pid_dir == NULL)
-        return NULL;
-
-    nyx->pid = getpid();
-    nyx->is_init = nyx->pid == 1;
-    nyx->watches = hash_new(8, _watch_destroy);
-    nyx->states = list_new(_state_destroy);
-
-    /* start connector */
-    nyx->connector_thread = xcalloc(1, sizeof(pthread_t));
-
-    err = pthread_create(nyx->connector_thread, NULL, connector_start, nyx);
-
-    if (err)
+    if (is_daemon(nyx))
     {
-        log_perror("nyx: pthread_create");
-        log_error("Failed to initialize connector thread");
+        nyx->pid_dir = determine_pid_dir();
 
-        free(nyx->connector_thread);
-        nyx->connector_thread = NULL;
+        if (nyx->pid_dir == NULL)
+            return NULL;
+
+        nyx->pid = getpid();
+        nyx->is_init = nyx->pid == 1;
+        nyx->watches = hash_new(8, _watch_destroy);
+        nyx->states = list_new(_state_destroy);
+
+        /* start connector */
+        nyx->connector_thread = xcalloc(1, sizeof(pthread_t));
+
+        err = pthread_create(nyx->connector_thread, NULL, connector_start, nyx);
+
+        if (err)
+        {
+            log_perror("nyx: pthread_create");
+            log_error("Failed to initialize connector thread");
+
+            free(nyx->connector_thread);
+            nyx->connector_thread = NULL;
+        }
     }
 
     return nyx;
@@ -273,8 +284,17 @@ nyx_destroy(nyx_t *nyx)
         nyx->connector_thread = NULL;
     }
 
-    list_destroy(nyx->states);
-    hash_destroy(nyx->watches);
+    if (nyx->states)
+    {
+        list_destroy(nyx->states);
+        nyx->states = NULL;
+    }
+
+    if (nyx->watches)
+    {
+        hash_destroy(nyx->watches);
+        nyx->watches = NULL;
+    }
 
     free(nyx);
     nyx = NULL;

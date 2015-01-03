@@ -32,6 +32,77 @@ parse_command(const char *input, connector_command_e *cmd)
 #undef MATCH
 }
 
+static const char *
+get_command_string(connector_command_e cmd)
+{
+    switch (cmd)
+    {
+        case CMD_PING:
+            return "ping";
+        case CMD_VERSION:
+            return "version";
+        case CMD_TERMINATE:
+            return "terminate";
+        default:
+            return NULL;
+    }
+}
+
+const char *
+connector_call(connector_command_e cmd)
+{
+    int sock = 0, err = 0;
+    char buffer[512] = {0};
+    const char *result = NULL;
+    const char *command;
+    struct sockaddr_un addr;
+
+    command = get_command_string(cmd);
+
+    if (command == NULL)
+        return NULL;
+
+    /* create a UNIX domain, connection based socket */
+    sock = socket(AF_UNIX, SOCK_STREAM, 0);
+
+    if (sock == -1)
+    {
+        log_perror("nyx: socket");
+        return NULL;
+    }
+
+    memset(&addr, 0, sizeof(struct sockaddr_un));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, NYX_SOCKET_ADDR, sizeof(addr.sun_path)-1);
+
+    err = connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
+
+    if (err == -1)
+    {
+        log_perror("nyx: connect");
+        return NULL;
+    }
+
+    if (send(sock, command, strlen(command), 0) == -1)
+    {
+        log_perror("nyx: send");
+    }
+    else
+    {
+        if ((err = recv(sock, buffer, 512, 0)) > 0)
+        {
+            result = strndup(buffer, 512);
+        }
+        else if (err < 0)
+        {
+            log_perror("nyx: recv");
+        }
+    }
+
+    close(sock);
+    return result;
+}
+
 static int
 handle_command(connector_command_e cmd, char **output)
 {
