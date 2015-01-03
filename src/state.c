@@ -40,7 +40,7 @@ set_state(state_t *state, state_e value)
 }
 
 #define DEBUG_LOG_STATE_FUNC \
-    log_debug("State transition function of watch '%s' " \
+    log_debug("State transition function of watch '%s'" \
               " from %s to %s",\
               state->watch->name,\
               state_to_string(from),\
