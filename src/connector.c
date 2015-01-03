@@ -7,9 +7,30 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <string.h>
 #include <unistd.h>
 
+#define NYX_SOCKET_ADDR "/tmp/nyx.sock"
+
 static volatile int need_exit = 0;
+
+int
+parse_command(const char *input, connector_command_e *cmd)
+{
+#define MATCH(x, y) \
+    if (!strncmp(x, input, (sizeof(x)-1))) \
+    { \
+        *cmd = y; \
+        return 1; \
+    }
+
+    MATCH("ping", CMD_PING)
+    MATCH("version", CMD_VERSION)
+    MATCH("terminate", CMD_TERMINATE)
+
+    return 0;
+#undef MATCH
+}
 
 void
 connector_close()
@@ -22,6 +43,7 @@ connector_start(UNUSED void *nyx)
 {
     static int max_conn = 4;
 
+    connector_command_e cmd;
     char buffer[512] = {0};
     ssize_t received = 0;
     int sock = 0, error = 0, client = 0, finished = 0;
@@ -32,7 +54,7 @@ connector_start(UNUSED void *nyx)
 
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, "/tmp/god.sock", sizeof(addr.sun_path)-1);
+    strncpy(addr.sun_path, NYX_SOCKET_ADDR, sizeof(addr.sun_path)-1);
 
     log_debug("Starting connector");
 
@@ -45,8 +67,8 @@ connector_start(UNUSED void *nyx)
         return NULL;
     }
 
-    /* remove any existing god sockets */
-    unlink("/tmp/god.sock");
+    /* remove any existing nyx sockets */
+    unlink(NYX_SOCKET_ADDR);
 
     error = bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
 
@@ -86,6 +108,7 @@ connector_start(UNUSED void *nyx)
 
         while (!finished)
         {
+            memset(buffer, 0, 512);
             received = recv(client, buffer, 512, 0);
 
             if (received < 1)
@@ -103,14 +126,27 @@ connector_start(UNUSED void *nyx)
                 break;
             }
 
-            /* just for now... */
+#ifndef NDEBUG
             fwrite(buffer, 1, received, stdout);
+#endif
+
+            if (parse_command(buffer, &cmd))
+            {
+                log_debug("Command %d", cmd);
+
+                if (cmd == CMD_TERMINATE)
+                {
+                    need_exit = 1;
+                    break;
+                }
+            }
         }
 
         close(client);
     }
 
     close(sock);
+    unlink(NYX_SOCKET_ADDR);
 
     log_debug("Connector: terminated");
 
