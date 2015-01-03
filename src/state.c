@@ -130,7 +130,7 @@ spawn(state_t *state)
         mode_t old_mode;
 
         const watch_t *watch = state->watch;
-        const char **args = state->watch->start;
+        const char **args = watch->start;
         const char *executable = *args;
         const char *dir = dir_exists(watch->dir) ? watch->dir : "/";
 
@@ -204,7 +204,9 @@ spawn(state_t *state)
 
         if (errno == ENOENT)
         {
-            /* program does not exist or is not executable */
+            log_warn("Start command '%s' of watch '%s' is not executable "
+                     "or does not exist at all",
+                     executable, watch->name);
 
             /* TODO: remove watch? */
 
