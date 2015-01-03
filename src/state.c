@@ -283,35 +283,65 @@ static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
     { NULL }
 };
 
-int
-dispatch_event(int pid, UNUSED process_event_data_t *event_data, UNUSED nyx_t *nyx)
+static state_t*
+find_state(list_t *states, pid_t pid)
 {
-    log_debug("Incoming event data for PID %d", pid);
-    return 1;
-}
-
-int
-dispatch_poll_result(int pid, int running, UNUSED nyx_t *nyx)
-{
-    log_debug("Incoming polling data for PID %d: running: %s",
-            pid, (running ? "true" : "false"));
-
-    /* find state */
-    list_node_t *node = nyx->states->head;
+    list_node_t *node = states->head;
 
     while (node)
     {
         state_t *state = node->data;
 
         if (state != NULL && state->pid == pid)
-        {
-            state_e next_state = running ? STATE_RUNNING : STATE_STOPPED;
-
-            if (next_state != state->state)
-                set_state(state, next_state);
-        }
+            return state;
 
         node = node->next;
+    }
+
+    return NULL;
+}
+
+int
+dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
+{
+    state_t *state = NULL;
+
+    log_debug("Incoming event data for PID %d", pid);
+
+    switch (event_data->type)
+    {
+        case EVENT_EXIT:
+            state = find_state(nyx->states, pid);
+
+            if (state != NULL)
+            {
+                if (state->state != STATE_STOPPED)
+                    set_state(state, STATE_STOPPED);
+            }
+            break;
+        case EVENT_FORK:
+        default:
+            /* do nothing for now */
+            break;
+    }
+
+    return 1;
+}
+
+int
+dispatch_poll_result(int pid, int running, nyx_t *nyx)
+{
+    log_debug("Incoming polling data for PID %d: running: %s",
+            pid, (running ? "true" : "false"));
+
+    state_t *state = find_state(nyx->states, pid);
+
+    if (state != NULL)
+    {
+        state_e next_state = running ? STATE_RUNNING : STATE_STOPPED;
+
+        if (next_state != state->state)
+            set_state(state, next_state);
     }
 
     return 1;
