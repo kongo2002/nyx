@@ -75,6 +75,11 @@ main(int argc, char **argv)
 
         if (parse_command(argv[1], &command))
             result = connector_call(command);
+        else
+        {
+            log_error("Invalid command '%s'", argv[1]);
+            failed = 1;
+        }
 
         if (result != NULL)
         {
