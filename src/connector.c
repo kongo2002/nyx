@@ -32,6 +32,28 @@ parse_command(const char *input, connector_command_e *cmd)
 #undef MATCH
 }
 
+static int
+handle_command(connector_command_e cmd, char **output)
+{
+    switch (cmd)
+    {
+        case CMD_PING:
+            *output = "pong";
+            return 1;
+        case CMD_VERSION:
+            *output = "0.0.1";
+            return 1;
+        case CMD_TERMINATE:
+            need_exit = 1;
+            *output = "1";
+            return 1;
+        default:
+            break;
+    }
+
+    return 0;
+}
+
 void
 connector_close()
 {
@@ -45,7 +67,7 @@ connector_start(UNUSED void *nyx)
 
     connector_command_e cmd;
     char buffer[512] = {0};
-    ssize_t received = 0;
+    ssize_t received = 0, sent = 0;
     int sock = 0, error = 0, client = 0, finished = 0;
 
     struct sockaddr_un addr;
@@ -132,12 +154,20 @@ connector_start(UNUSED void *nyx)
 
             if (parse_command(buffer, &cmd))
             {
+                char *output = NULL;
+
                 log_debug("Command %d", cmd);
 
-                if (cmd == CMD_TERMINATE)
+                if (!handle_command(cmd, &output))
                 {
-                    need_exit = 1;
-                    break;
+                    log_warn("Failed to process command %d", cmd);
+                }
+                else
+                {
+                    sent = send(client, output, strlen(output), 0);
+
+                    if (sent == -1)
+                        log_perror("nyx: send");
                 }
             }
         }
