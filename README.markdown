@@ -33,11 +33,11 @@ $ nyx version
 
 At the moment available commands are:
 
-    - `ping`: ping a running daemon
-    - `version`: return the daemon version
-    - `start <watch>`: send a start command to the specified watch
-    - `stop <watch>`: send a stop command to the specified watch
-    - `terminate`: terminate the god daemon
+- `ping`: ping a running daemon
+- `version`: return the daemon version
+- `start <watch>`: send a start command to the specified watch
+- `stop <watch>`: send a stop command to the specified watch
+- `terminate`: terminate the god daemon
 
 
 ## Maintainer
