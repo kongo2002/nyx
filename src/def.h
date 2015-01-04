@@ -22,6 +22,8 @@
 
 #define UNUSED __attribute__((unused))
 
+#define LEN(x) (sizeof(x) / sizeof(x[0]))
+
 void *
 xcalloc(size_t count, size_t size);
 

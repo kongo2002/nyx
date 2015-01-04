@@ -86,9 +86,9 @@ main(int argc, char **argv)
     else
     {
         const char *result = NULL;
-        connector_command_e command;
+        command_t *command = NULL;
 
-        if (parse_command(argv[1], &command))
+        if ((command = parse_command(argv[1])) != NULL)
             result = connector_call(command);
         else
         {

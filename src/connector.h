@@ -16,6 +16,8 @@
 #ifndef __NYX_CONNECTOR_H__
 #define __NYX_CONNECTOR_H__
 
+#include "nyx.h"
+
 typedef enum
 {
     CMD_PING,
@@ -26,11 +28,21 @@ typedef enum
     CMD_SIZE
 } connector_command_e;
 
-const char *
-connector_call(connector_command_e cmd);
+typedef int (*command_handler)(connector_command_e, const char *, nyx_t *);
 
-int
-parse_command(const char *input, connector_command_e *cmd);
+typedef struct
+{
+    connector_command_e type;
+    const char *name;
+    command_handler handler;
+    size_t cmd_length;
+} command_t;
+
+const char *
+connector_call(command_t *cmd);
+
+command_t *
+parse_command(const char *input);
 
 void
 connector_close();

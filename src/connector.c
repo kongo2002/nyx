@@ -29,59 +29,45 @@
 
 static volatile int need_exit = 0;
 
-int
-parse_command(const char *input, connector_command_e *cmd)
+#define CMD(t, n, h) \
+    { .type = t, .name = n, .handler = h, .cmd_length = LEN(n) }
+
+static command_t commands[] =
 {
-#define MATCH(x, y) \
-    if (!strncmp(x, input, (sizeof(x)-1))) \
-    { \
-        *cmd = y; \
-        return 1; \
-    }
+    CMD(CMD_PING, "ping", NULL),
+    CMD(CMD_VERSION, "version", NULL),
+    CMD(CMD_TERMINATE, "terminate", NULL),
+    CMD(CMD_START, "start", NULL),
+    CMD(CMD_STOP, "stop", NULL),
+};
 
-    MATCH("ping", CMD_PING)
-    MATCH("version", CMD_VERSION)
-    MATCH("terminate", CMD_TERMINATE)
-    MATCH("start", CMD_START)
-    MATCH("stop", CMD_STOP)
+#undef CMD
 
-    return 0;
-#undef MATCH
-}
-
-static const char *
-get_command_string(connector_command_e cmd)
+command_t *
+parse_command(const char *input)
 {
-    switch (cmd)
+    size_t i = 0;
+    size_t size = LEN(commands);
+    command_t *command = commands;
+
+    while (i < size)
     {
-        case CMD_PING:
-            return "ping";
-        case CMD_VERSION:
-            return "version";
-        case CMD_TERMINATE:
-            return "terminate";
-        case CMD_START:
-            return "start";
-        case CMD_STOP:
-            return "stop";
-        default:
-            return NULL;
+        if (!strncmp(command->name, input, command->cmd_length))
+            return command;
+
+        command++; i++;
     }
+
+    return NULL;
 }
 
 const char *
-connector_call(connector_command_e cmd)
+connector_call(command_t *cmd)
 {
     int sock = 0, err = 0;
     char buffer[512] = {0};
     const char *result = NULL;
-    const char *command;
     struct sockaddr_un addr;
-
-    command = get_command_string(cmd);
-
-    if (command == NULL)
-        return NULL;
 
     /* create a UNIX domain, connection based socket */
     sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -104,7 +90,7 @@ connector_call(connector_command_e cmd)
         return NULL;
     }
 
-    if (send(sock, command, strlen(command), 0) == -1)
+    if (send(sock, cmd->name, cmd->cmd_length, 0) == -1)
     {
         log_perror("nyx: send");
     }
@@ -125,25 +111,12 @@ connector_call(connector_command_e cmd)
 }
 
 static int
-handle_command(connector_command_e cmd, char **output)
+handle_command(command_t *cmd, const char *input, nyx_t *nyx)
 {
-    switch (cmd)
-    {
-        case CMD_PING:
-            *output = "pong";
-            return 1;
-        case CMD_VERSION:
-            *output = NYX_VERSION;
-            return 1;
-        case CMD_TERMINATE:
-            need_exit = 1;
-            *output = "1";
-            return 1;
-        default:
-            break;
-    }
+    if (cmd->handler == NULL)
+        return 0;
 
-    return 0;
+    return cmd->handler(cmd->type, input, nyx);
 }
 
 void
@@ -153,11 +126,12 @@ connector_close()
 }
 
 void *
-connector_start(UNUSED void *nyx)
+connector_start(void *state)
 {
     static int max_conn = 4;
 
-    connector_command_e cmd;
+    nyx_t *nyx = state;
+    command_t *cmd = NULL;
     char buffer[512] = {0};
     ssize_t received = 0, sent = 0;
     int sock = 0, error = 0, client = 0, finished = 0;
@@ -240,15 +214,17 @@ connector_start(UNUSED void *nyx)
                 break;
             }
 
-            if (parse_command(buffer, &cmd))
+            if ((cmd = parse_command(buffer)) != NULL)
             {
                 char *output = NULL;
 
-                log_debug("Command %d", cmd);
+                log_debug("Handling command '%s' (%d)",
+                        cmd->name, cmd->type);
 
-                if (!handle_command(cmd, &output))
+                if (!handle_command(cmd, buffer, nyx))
                 {
-                    log_warn("Failed to process command %d", cmd);
+                    log_warn("Failed to process command '%s' (%d)",
+                            cmd->name, cmd->type);
                 }
                 else
                 {
