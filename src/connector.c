@@ -158,7 +158,7 @@ connector_start(void *state)
     nyx_t *nyx = state;
     command_t *cmd = NULL;
     char buffer[512] = {0};
-    ssize_t received = 0, sent = 0;
+    ssize_t received = 0;
     int sock = 0, error = 0, client = 0, finished = 0;
 
     struct sockaddr_un addr;
@@ -241,8 +241,6 @@ connector_start(void *state)
 
             if ((cmd = parse_command(buffer)) != NULL)
             {
-                char *output = NULL;
-
                 log_debug("Handling command '%s' (%d)",
                         cmd->name, cmd->type);
 
@@ -250,13 +248,6 @@ connector_start(void *state)
                 {
                     log_warn("Failed to process command '%s' (%d)",
                             cmd->name, cmd->type);
-                }
-                else
-                {
-                    sent = send(client, output, strlen(output), 0);
-
-                    if (sent == -1)
-                        log_perror("nyx: send");
                 }
             }
         }
