@@ -21,6 +21,35 @@ $ nyx -c config.yaml
 ```
 
 
+#### Configuration
+
+The daemon can be configured via a [YAML][yaml] file. An examplary configuration
+file might look like this:
+
+```yaml
+watches:
+    # the name of the application
+    app_name:
+
+        # arbitrary executable
+        start: /usr/bin/app -f /etc/app/some.config
+
+        # user (optional)
+        uid: user
+
+        # group (optional)
+        gid: user
+
+        # working directory (optional)
+        dir: /home/user
+
+        # environment variables (optional)
+        env:
+            SOME: variable
+
+```
+
+
 ### Command interface
 
 You can interact with a running *nyx* daemon instance with the same executable:
@@ -61,3 +90,4 @@ The project is written by Gregor Uhlenheuer. You can reach me at
 [god]: https://github.com/mojombo/god/
 [mail]: mailto:kongo2002@gmail.com
 [apache]: http://www.apache.org/licenses/LICENSE-2.0
+[yaml]: http://www.yaml.org/
