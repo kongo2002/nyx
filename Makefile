@@ -17,6 +17,8 @@ else
     CXXFLAGS+= -O2 -DNDEBUG
 endif
 
+.PHONY: all clean rebuild
+
 all: nyx
 
 -include $(DEPS)
@@ -27,9 +29,6 @@ nyx: $(OBJECTS)
 src/%.o: %.c
 	$(CC) -c $(CXXFLAGS) $(INCLUDES) -MMD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 
-run: nyx
-	./nyx config.yaml
-
 tags: $(SRCS)
 	ctags -R --c-kinds=+lp --fields=+iaS --extra=+q --language-force=C .
 
@@ -39,5 +38,3 @@ clean:
 	@rm -f nyx
 
 rebuild: clean all
-
-.PHONY: all clean run rebuild
