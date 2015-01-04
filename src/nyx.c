@@ -40,7 +40,7 @@ _watch_destroy(void *watch)
 static void
 _state_destroy(void *state)
 {
-    state_destroy((void *)state);
+    state_destroy((state_t *)state);
 }
 
 void
