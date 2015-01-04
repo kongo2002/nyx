@@ -35,7 +35,7 @@ typedef struct sender_callback_t
     int (*sender)(struct sender_callback_t *, const char *);
 } sender_callback_t;
 
-typedef int (*command_handler)(sender_callback_t *, const char *, nyx_t *);
+typedef int (*command_handler)(sender_callback_t *, const char **, nyx_t *);
 
 typedef struct
 {
@@ -47,7 +47,7 @@ typedef struct
 } command_t;
 
 const char *
-connector_call(command_t *cmd);
+connector_call(nyx_t *nyx, command_t *cmd);
 
 command_t *
 parse_command(const char **input);

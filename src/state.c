@@ -47,7 +47,7 @@ state_to_string(state_e state)
     return state_to_str[state];
 }
 
-static void
+void
 set_state(state_t *state, state_e value)
 {
     state->state = value;
@@ -300,8 +300,31 @@ static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
     { NULL }
 };
 
-static state_t*
-find_state(list_t *states, pid_t pid)
+state_t*
+find_state_by_name(list_t *states, const char *name)
+{
+    const char *wname = NULL;
+    size_t len = strlen(name);
+
+    list_node_t *node = states->head;
+
+    while (node)
+    {
+        state_t *state = node->data;
+        wname = state->watch->name;
+
+        if (state != NULL && strncmp(wname, name, len) == 0)
+            return state;
+
+        node = node->next;
+    }
+
+    return NULL;
+
+}
+
+state_t*
+find_state_by_pid(list_t *states, pid_t pid)
 {
     list_node_t *node = states->head;
 
@@ -328,7 +351,7 @@ dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
     switch (event_data->type)
     {
         case EVENT_EXIT:
-            state = find_state(nyx->states, pid);
+            state = find_state_by_pid(nyx->states, pid);
 
             if (state != NULL)
             {
@@ -351,7 +374,7 @@ dispatch_poll_result(int pid, int running, nyx_t *nyx)
     log_debug("Incoming polling data for PID %d: running: %s",
             pid, (running ? "true" : "false"));
 
-    state_t *state = find_state(nyx->states, pid);
+    state_t *state = find_state_by_pid(nyx->states, pid);
 
     if (state != NULL)
     {

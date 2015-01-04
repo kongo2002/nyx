@@ -27,6 +27,25 @@ list_new(void (*free_func)(void *))
     return list;
 }
 
+void *
+list_find(list_t *list, int (*predicate)(void *))
+{
+    if (list == NULL)
+        return NULL;
+
+    list_node_t *node = list->head;
+
+    while (node)
+    {
+        if (predicate(node->data))
+            return node->data;
+
+        node = node->next;
+    }
+
+    return NULL;
+}
+
 void
 list_add(list_t *list, void *data)
 {

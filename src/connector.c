@@ -17,6 +17,7 @@
 #include "def.h"
 #include "log.h"
 #include "nyx.h"
+#include "state.h"
 #include "utils.h"
 
 #include <errno.h>
@@ -31,15 +32,45 @@
 static volatile int need_exit = 0;
 
 static int
-handle_ping(sender_callback_t *cb, UNUSED const char *input, UNUSED nyx_t *nyx)
+handle_ping(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
 {
     return cb->sender(cb, "pong");
 }
 
 static int
-handle_version(sender_callback_t *cb, UNUSED const char *input, UNUSED nyx_t *nyx)
+handle_version(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
 {
     return cb->sender(cb, "version");
+}
+
+static int
+handle_terminate(UNUSED sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
+{
+    need_exit = 1;
+    return 1;
+}
+
+static int
+handle_stop(sender_callback_t *cb, const char **input, nyx_t *nyx)
+{
+    char buffer[512] = {0};
+    const char *name = input[1];
+    state_t *state = find_state_by_name(nyx->states, name);
+
+    if (state == NULL)
+    {
+        snprintf(buffer, 512, "unknown watch '%s'", name);
+        cb->sender(cb, buffer);
+        return 0;
+    }
+
+    /* request stop */
+    set_state(state, STATE_STOPPING);
+
+    snprintf(buffer, 512, "requested stop for watch '%s'", name);
+    cb->sender(cb, buffer);
+
+    return 1;
 }
 
 #define CMD(t, n, h, a) \
@@ -49,9 +80,9 @@ static command_t commands[] =
 {
     CMD(CMD_PING, "ping", handle_ping, 0),
     CMD(CMD_VERSION, "version", handle_version, 0),
-    CMD(CMD_TERMINATE, "terminate", NULL, 0),
+    CMD(CMD_TERMINATE, "terminate", handle_terminate, 0),
     CMD(CMD_START, "start", NULL, 1),
-    CMD(CMD_STOP, "stop", NULL, 1),
+    CMD(CMD_STOP, "stop", handle_stop, 1),
 };
 
 #undef CMD
@@ -103,8 +134,29 @@ parse_command(const char **input)
     return NULL;
 }
 
+static ssize_t
+send_command(int socket, nyx_t *nyx)
+{
+    ssize_t sum = 0, sent = 0;
+    const char **cmd = nyx->options.commands;
+
+    while (*cmd && (sent = send(socket, *cmd, strlen(*cmd), 0)) > 0)
+    {
+        if (send(socket, " ", 1, 0) < 1)
+            return -1;
+
+        sum += sent + 1;
+        cmd++;
+    }
+
+    if (sent < 0)
+        return -1;
+
+    return sum;
+}
+
 const char *
-connector_call(command_t *cmd)
+connector_call(nyx_t *nyx, command_t *cmd)
 {
     int sock = 0, err = 0;
     char buffer[512] = {0};
@@ -132,7 +184,7 @@ connector_call(command_t *cmd)
         return NULL;
     }
 
-    if (send(sock, cmd->name, cmd->cmd_length, 0) == -1)
+    if (send_command(sock, nyx) == -1)
     {
         log_perror("nyx: send");
     }
@@ -168,7 +220,7 @@ send_callback(sender_callback_t *callback, const char *output)
 }
 
 static int
-handle_command(command_t *cmd, int client, const char *input, nyx_t *nyx)
+handle_command(command_t *cmd, int client, const char **input, nyx_t *nyx)
 {
     if (cmd->handler == NULL)
         return 0;
@@ -290,7 +342,7 @@ connector_start(void *state)
                 log_debug("Handling command '%s' (%d)",
                         cmd->name, cmd->type);
 
-                if (!handle_command(cmd, client, buffer, nyx))
+                if (!handle_command(cmd, client, commands, nyx))
                 {
                     log_warn("Failed to process command '%s' (%d)",
                             cmd->name, cmd->type);
@@ -298,6 +350,9 @@ connector_start(void *state)
             }
 
             strings_free((char **)commands);
+
+            /* TODO: determine when to close the connection */
+            break;
         }
 
         close(client);

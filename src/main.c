@@ -66,7 +66,7 @@ command_mode(nyx_t *nyx)
     command_t *command = NULL;
 
     if ((command = parse_command(nyx->options.commands)) != NULL)
-        result = connector_call(command);
+        result = connector_call(nyx, command);
     else
     {
         log_error("Invalid command '%s'", nyx->options.commands[0]);

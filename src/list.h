@@ -37,6 +37,9 @@ typedef struct list_node_t
 list_t *
 list_new(void (*free_func)(void *));
 
+void *
+list_find(list_t *list, int (*predicate)(void *));
+
 void
 list_destroy(list_t *list);
 
