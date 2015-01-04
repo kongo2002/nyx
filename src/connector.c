@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "connector.h"
 #include "def.h"
 #include "log.h"
@@ -21,15 +23,53 @@
 #include "utils.h"
 
 #include <errno.h>
+#include <stdarg.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
-#include <string.h>
 #include <unistd.h>
 
 #define NYX_SOCKET_ADDR "/tmp/nyx.sock"
 
 static volatile int need_exit = 0;
+
+static int
+send_format(sender_callback_t *cb, const char *format, ...)
+    __attribute__((format(printf, 2, 3)));
+
+static int
+send_format_msg(sender_callback_t *cb, const char *format, va_list values)
+{
+    char *msg;
+
+    int sent = 0;
+    int length = vasprintf(&msg, format, values);
+
+    if (length > 0)
+    {
+        if ((sent = send(cb->client, msg, length, 0)) < 0)
+            log_perror("nyx: send");
+
+        free(msg);
+    }
+
+    return sent;
+}
+
+static int
+send_format(sender_callback_t *cb, const char *format, ...)
+{
+    int sent;
+    va_list vas;
+    va_start(vas, format);
+
+    sent = send_format_msg(cb, format, vas);
+
+    va_end(vas);
+
+    return sent;
+}
 
 static int
 handle_ping(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
@@ -53,22 +93,18 @@ handle_terminate(UNUSED sender_callback_t *cb, UNUSED const char **input, UNUSED
 static int
 handle_stop(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
-    char buffer[512] = {0};
     const char *name = input[1];
     state_t *state = find_state_by_name(nyx->states, name);
 
     if (state == NULL)
     {
-        snprintf(buffer, 512, "unknown watch '%s'", name);
-        cb->sender(cb, buffer);
+        cb->sender(cb, "unknown watch '%s' specified", name);
         return 0;
     }
 
     /* request stop */
     set_state(state, STATE_STOPPING);
-
-    snprintf(buffer, 512, "requested stop for watch '%s'", name);
-    cb->sender(cb, buffer);
+    cb->sender(cb, "requested stop for watch '%s'", name);
 
     return 1;
 }
@@ -156,7 +192,7 @@ send_command(int socket, nyx_t *nyx)
 }
 
 const char *
-connector_call(nyx_t *nyx, command_t *cmd)
+connector_call(nyx_t *nyx, UNUSED command_t *cmd)
 {
     int sock = 0, err = 0;
     char buffer[512] = {0};
@@ -205,21 +241,6 @@ connector_call(nyx_t *nyx, command_t *cmd)
 }
 
 static int
-send_callback(sender_callback_t *callback, const char *output)
-{
-    if (callback == NULL || output == NULL || *output == '\0')
-        return 0;
-
-    ssize_t sent = 0;
-    sent = send(callback->client, output, strlen(output), 0);
-
-    if (sent == -1)
-        log_perror("nyx: send");
-
-    return sent;
-}
-
-static int
 handle_command(command_t *cmd, int client, const char **input, nyx_t *nyx)
 {
     if (cmd->handler == NULL)
@@ -230,7 +251,7 @@ handle_command(command_t *cmd, int client, const char **input, nyx_t *nyx)
 
     callback->command = cmd->type;
     callback->client = client;
-    callback->sender = send_callback;
+    callback->sender = send_format;
 
     retval = cmd->handler(callback, input, nyx);
 
