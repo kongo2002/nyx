@@ -1,4 +1,4 @@
-CXX      := gcc
+CC       ?= gcc
 CXXFLAGS := -Wall -Wextra -std=gnu89
 
 INCLUDES := -I.
@@ -22,10 +22,10 @@ all: nyx
 -include $(DEPS)
 
 nyx: $(OBJECTS)
-	$(CXX) $(OBJECTS) -o nyx $(LIBS)
+	$(CC) $(OBJECTS) -o nyx $(LIBS)
 
 src/%.o: %.c
-	$(CXX) -c $(CXXFLAGS) $(INCLUDES) -MMD -MF $(patsubst %.o,%.d,$@) -o $@ $<
+	$(CC) -c $(CXXFLAGS) $(INCLUDES) -MMD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 
 run: nyx
 	./nyx config.yaml
