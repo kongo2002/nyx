@@ -53,13 +53,13 @@ void
 print_help(void)
 {
     print_usage(stdout);
-    printf("\n"
-           "Options:\n"
-           "   -c  --config   (path to configuration file)\n"
-           "   -s  --syslog   (log into syslog)\n"
-           "   -q  --quiet    (output error messages only)\n"
-           "   -C  --no-color (no terminal coloring)\n"
-           "   -h  --help     (print this help)\n");
+    puts("\n"
+         "Options:\n"
+         "   -c  --config   (path to configuration file)\n"
+         "   -s  --syslog   (log into syslog)\n"
+         "   -q  --quiet    (output error messages only)\n"
+         "   -C  --no-color (no terminal coloring)\n"
+         "   -h  --help     (print this help)");
     exit(EXIT_SUCCESS);
 }
 
