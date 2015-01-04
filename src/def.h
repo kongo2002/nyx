@@ -18,6 +18,8 @@
 
 #include <stdlib.h>
 
+#define NYX_VERSION "0.0.1"
+
 #define UNUSED __attribute__((unused))
 
 void *

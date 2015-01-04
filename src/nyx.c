@@ -59,6 +59,7 @@ print_help(void)
          "   -s  --syslog   (log into syslog)\n"
          "   -q  --quiet    (output error messages only)\n"
          "   -C  --no-color (no terminal coloring)\n"
+         "   -V  --version  (version information)\n"
          "   -h  --help     (print this help)");
     exit(EXIT_SUCCESS);
 }
@@ -70,6 +71,7 @@ static const struct option long_options[] =
     { .name = "no-color", .has_arg = 0, .flag = NULL, .val = 'C'},
     { .name = "quiet",    .has_arg = 0, .flag = NULL, .val = 'q'},
     { .name = "syslog",   .has_arg = 0, .flag = NULL, .val = 's'},
+    { .name = "version",  .has_arg = 0, .flag = NULL, .val = 'V'},
     { NULL }
 };
 
@@ -164,7 +166,7 @@ nyx_initialize(int argc, char **args)
     }
 
     /* parse command line arguments */
-    while ((arg = getopt_long(argc, args, "hqsCc:", long_options, NULL)) != -1)
+    while ((arg = getopt_long(argc, args, "hqsCVc:", long_options, NULL)) != -1)
     {
         switch (arg)
         {
@@ -179,6 +181,11 @@ nyx_initialize(int argc, char **args)
                 break;
             case 'c':
                 nyx->options.config_file = optarg;
+                break;
+            case 'V':
+                puts("nyx " NYX_VERSION);
+                free(nyx);
+                exit(EXIT_SUCCESS);
                 break;
             case 'h':
                 free(nyx);

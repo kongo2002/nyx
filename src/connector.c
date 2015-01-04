@@ -133,7 +133,7 @@ handle_command(connector_command_e cmd, char **output)
             *output = "pong";
             return 1;
         case CMD_VERSION:
-            *output = "0.0.1";
+            *output = NYX_VERSION;
             return 1;
         case CMD_TERMINATE:
             need_exit = 1;
