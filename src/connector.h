@@ -28,7 +28,14 @@ typedef enum
     CMD_SIZE
 } connector_command_e;
 
-typedef int (*command_handler)(connector_command_e, const char *, nyx_t *);
+typedef struct sender_callback_t
+{
+    int client;
+    connector_command_e command;
+    int (*sender)(struct sender_callback_t *, const char *);
+} sender_callback_t;
+
+typedef int (*command_handler)(sender_callback_t *, const char *, nyx_t *);
 
 typedef struct
 {

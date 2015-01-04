@@ -111,12 +111,37 @@ connector_call(command_t *cmd)
 }
 
 static int
-handle_command(command_t *cmd, const char *input, nyx_t *nyx)
+send_callback(sender_callback_t *callback, const char *output)
+{
+    if (callback == NULL || output == NULL || *output == '\0')
+        return 0;
+
+    ssize_t sent = 0;
+    sent = send(callback->client, output, strlen(output), 0);
+
+    if (sent == -1)
+        log_perror("nyx: send");
+
+    return sent;
+}
+
+static int
+handle_command(command_t *cmd, int client, const char *input, nyx_t *nyx)
 {
     if (cmd->handler == NULL)
         return 0;
 
-    return cmd->handler(cmd->type, input, nyx);
+    int retval = 0;
+    sender_callback_t *callback = xcalloc(1, sizeof(sender_callback_t));
+
+    callback->command = cmd->type;
+    callback->client = client;
+    callback->sender = send_callback;
+
+    retval = cmd->handler(callback, input, nyx);
+
+    free(callback);
+    return retval;
 }
 
 void
@@ -221,7 +246,7 @@ connector_start(void *state)
                 log_debug("Handling command '%s' (%d)",
                         cmd->name, cmd->type);
 
-                if (!handle_command(cmd, buffer, nyx))
+                if (!handle_command(cmd, client, buffer, nyx))
                 {
                     log_warn("Failed to process command '%s' (%d)",
                             cmd->name, cmd->type);
