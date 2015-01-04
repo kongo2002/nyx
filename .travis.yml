@@ -4,4 +4,8 @@ compiler:
     - gcc
     - clang
 
+env:
+    - DEBUG=1
+    - DEBUG=0
+
 script: make
