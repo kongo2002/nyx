@@ -272,11 +272,7 @@ nyx_watches_init(nyx_t *nyx)
         /* create with default thread attributes */
         rc = pthread_create(state->thread, NULL, state_loop_start, state);
         if (rc != 0)
-        {
-            log_error("Failed to create thread, error: %d", rc);
-            rc = 0;
-            break;
-        }
+            log_critical_perror("Failed to create thread, error: %d", rc);
 
         init++;
     }
