@@ -29,13 +29,25 @@
 
 static volatile int need_exit = 0;
 
+static int
+handle_ping(sender_callback_t *cb, UNUSED const char *input, UNUSED nyx_t *nyx)
+{
+    return cb->sender(cb, "pong");
+}
+
+static int
+handle_version(sender_callback_t *cb, UNUSED const char *input, UNUSED nyx_t *nyx)
+{
+    return cb->sender(cb, "version");
+}
+
 #define CMD(t, n, h) \
     { .type = t, .name = n, .handler = h, .cmd_length = LEN(n) }
 
 static command_t commands[] =
 {
-    CMD(CMD_PING, "ping", NULL),
-    CMD(CMD_VERSION, "version", NULL),
+    CMD(CMD_PING, "ping", handle_ping),
+    CMD(CMD_VERSION, "version", handle_version),
     CMD(CMD_TERMINATE, "terminate", NULL),
     CMD(CMD_START, "start", NULL),
     CMD(CMD_STOP, "stop", NULL),
