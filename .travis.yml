@@ -1,0 +1,10 @@
+language: c
+
+compiler:
+    - gcc
+    - clang
+
+before-script:
+    - sudo apt-get install -qq libyaml
+
+script: make
