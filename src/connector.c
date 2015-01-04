@@ -42,6 +42,8 @@ parse_command(const char *input, connector_command_e *cmd)
     MATCH("ping", CMD_PING)
     MATCH("version", CMD_VERSION)
     MATCH("terminate", CMD_TERMINATE)
+    MATCH("start", CMD_START)
+    MATCH("stop", CMD_STOP)
 
     return 0;
 #undef MATCH
@@ -58,6 +60,10 @@ get_command_string(connector_command_e cmd)
             return "version";
         case CMD_TERMINATE:
             return "terminate";
+        case CMD_START:
+            return "start";
+        case CMD_STOP:
+            return "stop";
         default:
             return NULL;
     }

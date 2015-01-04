@@ -21,6 +21,8 @@ typedef enum
     CMD_PING,
     CMD_VERSION,
     CMD_TERMINATE,
+    CMD_STOP,
+    CMD_START,
     CMD_SIZE
 } connector_command_e;
 
