@@ -59,10 +59,35 @@ daemon_mode(nyx_t *nyx)
     return 1;
 }
 
+static int
+command_mode(nyx_t *nyx)
+{
+    const char *result = NULL;
+    command_t *command = NULL;
+
+    if ((command = parse_command(nyx->options.commands)) != NULL)
+        result = connector_call(command);
+    else
+    {
+        log_error("Invalid command '%s'", nyx->options.commands[0]);
+        return 0;
+    }
+
+    if (result != NULL)
+    {
+        printf("%s\n", result);
+
+        free((void *)result);
+        result = NULL;
+    }
+
+    return 1;
+}
+
 int
 main(int argc, char **argv)
 {
-    int failed = 0;
+    int success = 0;
     nyx_t *nyx = NULL;
 
     if (argc < 2)
@@ -75,41 +100,17 @@ main(int argc, char **argv)
     /* initialize log and main application data */
     nyx = nyx_initialize(argc, argv);
 
-    if (nyx == NULL)
+    if (nyx != NULL)
     {
-        failed = 1;
-        goto teardown;
+        success = nyx->is_daemon
+            ? daemon_mode(nyx)
+            : command_mode(nyx);
     }
 
-    if (is_daemon(nyx))
-        failed = !daemon_mode(nyx);
-    else
-    {
-        const char *result = NULL;
-        command_t *command = NULL;
-
-        if ((command = parse_command(argv[1])) != NULL)
-            result = connector_call(command);
-        else
-        {
-            log_error("Invalid command '%s'", argv[1]);
-            failed = 1;
-        }
-
-        if (result != NULL)
-        {
-            printf("%s\n", result);
-
-            free((void *)result);
-            result = NULL;
-        }
-    }
-
-teardown:
     nyx_destroy(nyx);
     log_shutdown();
 
-    return failed;
+    return !success;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

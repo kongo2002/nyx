@@ -17,6 +17,7 @@
 #include "def.h"
 #include "log.h"
 #include "nyx.h"
+#include "utils.h"
 
 #include <errno.h>
 #include <sys/socket.h>
@@ -41,31 +42,60 @@ handle_version(sender_callback_t *cb, UNUSED const char *input, UNUSED nyx_t *ny
     return cb->sender(cb, "version");
 }
 
-#define CMD(t, n, h) \
-    { .type = t, .name = n, .handler = h, .cmd_length = LEN(n) }
+#define CMD(t, n, h, a) \
+    { .type = t, .name = n, .handler = h, .min_args = a, .cmd_length = LEN(n) }
 
 static command_t commands[] =
 {
-    CMD(CMD_PING, "ping", handle_ping),
-    CMD(CMD_VERSION, "version", handle_version),
-    CMD(CMD_TERMINATE, "terminate", NULL),
-    CMD(CMD_START, "start", NULL),
-    CMD(CMD_STOP, "stop", NULL),
+    CMD(CMD_PING, "ping", handle_ping, 0),
+    CMD(CMD_VERSION, "version", handle_version, 0),
+    CMD(CMD_TERMINATE, "terminate", NULL, 0),
+    CMD(CMD_START, "start", NULL, 1),
+    CMD(CMD_STOP, "stop", NULL, 1),
 };
 
 #undef CMD
 
+static unsigned int
+count_args(const char **args)
+{
+    unsigned int count = 0;
+    const char **arg = args;
+
+    while (*arg)
+    {
+        count++;
+        arg++;
+    }
+
+    return count;
+}
+
 command_t *
-parse_command(const char *input)
+parse_command(const char **input)
 {
     size_t i = 0;
     size_t size = LEN(commands);
+    unsigned int args = 0;
     command_t *command = commands;
 
     while (i < size)
     {
-        if (!strncmp(command->name, input, command->cmd_length))
+        if (!strncmp(command->name, *input, command->cmd_length))
+        {
+            /* check if necessary arguments are given */
+            args = count_args(input) - 1;
+
+            if (args < command->min_args)
+            {
+                log_error("Command '%s' requires a minimum of %d arguments",
+                        command->name,
+                        command->min_args);
+                return NULL;
+            }
+
             return command;
+        }
 
         command++; i++;
     }
@@ -172,6 +202,7 @@ connector_start(void *state)
     char buffer[512] = {0};
     ssize_t received = 0;
     int sock = 0, error = 0, client = 0, finished = 0;
+    const char **commands = NULL;
 
     struct sockaddr_un addr;
     struct sockaddr_un client_addr;
@@ -251,7 +282,10 @@ connector_start(void *state)
                 break;
             }
 
-            if ((cmd = parse_command(buffer)) != NULL)
+            /* parse input buffer */
+            commands = split_string(buffer);
+
+            if ((cmd = parse_command(commands)) != NULL)
             {
                 log_debug("Handling command '%s' (%d)",
                         cmd->name, cmd->type);
@@ -262,6 +296,8 @@ connector_start(void *state)
                             cmd->name, cmd->type);
                 }
             }
+
+            strings_free((char **)commands);
         }
 
         close(client);

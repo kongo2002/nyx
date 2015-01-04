@@ -43,13 +43,14 @@ typedef struct
     const char *name;
     command_handler handler;
     size_t cmd_length;
+    unsigned int min_args;
 } command_t;
 
 const char *
 connector_call(command_t *cmd);
 
 command_t *
-parse_command(const char *input);
+parse_command(const char **input);
 
 void
 connector_close();

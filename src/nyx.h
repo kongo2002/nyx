@@ -26,15 +26,17 @@ typedef struct
     int quiet;
     int no_color;
     int syslog;
-    const char *config_file;
     int def_start_timeout;
     int def_grace;
+    const char *config_file;
+    const char **commands;
 } nyx_options_t;
 
 typedef struct
 {
     pid_t pid;
     int is_init;
+    int is_daemon;
     const char *pid_dir;
     pthread_t *connector_thread;
     nyx_options_t options;

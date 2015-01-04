@@ -144,18 +144,10 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
     sigaction(SIGINT, &action, NULL);
 }
 
-int
-is_daemon(nyx_t *nyx)
-{
-    return nyx != NULL &&
-        nyx->options.config_file != NULL &&
-        *nyx->options.config_file;
-}
-
 nyx_t *
 nyx_initialize(int argc, char **args)
 {
-    int arg = 0, index = 0, err = 0;
+    int arg = 0, i = 0, j = 0, err = 0;
 
     nyx_t *nyx = calloc(1, sizeof(nyx_t));
 
@@ -198,43 +190,52 @@ nyx_initialize(int argc, char **args)
         }
     }
 
-    /* process remaining arguments */
-    for (index = optind; index < argc; )
+    /* if a config file is given
+     * this has to be a deamon */
+    nyx->is_daemon = nyx->options.config_file && *nyx->options.config_file;
+
+    /* process remaining arguments if given */
+    if (optind < argc)
     {
-        /* TODO: process commands */
-        break;
+        nyx->options.commands = xcalloc(argc-optind+1, sizeof(char *));
+
+        for (j = 0, i = optind; i < argc; i++, j++)
+        {
+            nyx->options.commands[j] = args[i];
+        }
     }
 
     log_init(nyx);
 
+    /* further initialization is necessary in daemon mode only */
+    if (!nyx->is_daemon)
+        return nyx;
+
     /* set default options */
     nyx->options.def_start_timeout = 5;
 
-    if (is_daemon(nyx))
+    nyx->pid_dir = determine_pid_dir();
+
+    if (nyx->pid_dir == NULL)
+        return NULL;
+
+    nyx->pid = getpid();
+    nyx->is_init = nyx->pid == 1;
+    nyx->watches = hash_new(8, _watch_destroy);
+    nyx->states = list_new(_state_destroy);
+
+    /* start connector */
+    nyx->connector_thread = xcalloc(1, sizeof(pthread_t));
+
+    err = pthread_create(nyx->connector_thread, NULL, connector_start, nyx);
+
+    if (err)
     {
-        nyx->pid_dir = determine_pid_dir();
+        log_perror("nyx: pthread_create");
+        log_error("Failed to initialize connector thread");
 
-        if (nyx->pid_dir == NULL)
-            return NULL;
-
-        nyx->pid = getpid();
-        nyx->is_init = nyx->pid == 1;
-        nyx->watches = hash_new(8, _watch_destroy);
-        nyx->states = list_new(_state_destroy);
-
-        /* start connector */
-        nyx->connector_thread = xcalloc(1, sizeof(pthread_t));
-
-        err = pthread_create(nyx->connector_thread, NULL, connector_start, nyx);
-
-        if (err)
-        {
-            log_perror("nyx: pthread_create");
-            log_error("Failed to initialize connector thread");
-
-            free(nyx->connector_thread);
-            nyx->connector_thread = NULL;
-        }
+        free(nyx->connector_thread);
+        nyx->connector_thread = NULL;
     }
 
     return nyx;
@@ -316,6 +317,12 @@ nyx_destroy(nyx_t *nyx)
     {
         hash_destroy(nyx->watches);
         nyx->watches = NULL;
+    }
+
+    if (nyx->options.commands)
+    {
+        free(nyx->options.commands);
+        nyx->options.commands = NULL;
     }
 
     free(nyx);
