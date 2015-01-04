@@ -240,10 +240,6 @@ connector_start(UNUSED void *nyx)
                 break;
             }
 
-#ifndef NDEBUG
-            fwrite(buffer, 1, received, stdout);
-#endif
-
             if (parse_command(buffer, &cmd))
             {
                 char *output = NULL;
