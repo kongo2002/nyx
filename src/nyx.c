@@ -213,6 +213,7 @@ nyx_initialize(int argc, char **args)
 
     /* set default options */
     nyx->options.def_start_timeout = 5;
+    nyx->options.def_grace = 5;
 
     nyx->pid_dir = determine_pid_dir();
 
