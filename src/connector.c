@@ -339,17 +339,65 @@ unblock_socket(int socket)
     return 1;
 }
 
+static int
+handle_request(struct epoll_event *event, nyx_t *nyx)
+{
+    int success = 1;
+    ssize_t received = 0;
+    int fd = event->data.fd;
+    char buffer[512] = {0};
+    const char **commands = NULL;
+    command_t *cmd = NULL;
+
+    memset(buffer, 0, 512);
+    received = recv(fd, buffer, 512, 0);
+
+    if (received < 1)
+    {
+        if (received < 0)
+        {
+            if (errno == EINTR)
+            {
+                log_debug("Connector: caught interrupt");
+                success = 0;
+            }
+
+            if (errno != EAGAIN)
+                log_perror("nyx: recv");
+        }
+    }
+    else
+    {
+        /* parse input buffer */
+        commands = split_string(buffer);
+
+        if ((cmd = parse_command(commands)) != NULL)
+        {
+            log_debug("Handling command '%s' (%d)",
+                    cmd->name, cmd->type);
+
+            if (!handle_command(cmd, fd, commands, nyx))
+            {
+                log_warn("Failed to process command '%s' (%d)",
+                        cmd->name, cmd->type);
+            }
+        }
+
+        strings_free((char **)commands);
+    }
+
+    close(fd);
+
+    return success;
+}
+
 void *
 connector_start(void *state)
 {
     static int max_conn = 64;
 
     nyx_t *nyx = state;
-    command_t *cmd = NULL;
-    char buffer[512] = {0};
-    ssize_t received = 0;
     int sock = 0, error = 0, epfd = 0;
-    const char **commands = NULL;
     struct epoll_event *events = NULL;
     struct epoll_event ev;
 
@@ -475,46 +523,8 @@ connector_start(void *state)
             /* incoming data from one of the client sockets */
             else
             {
-                int fd = event->data.fd;
-
-                memset(buffer, 0, 512);
-                received = recv(fd, buffer, 512, 0);
-
-                if (received < 1)
-                {
-                    if (received < 0)
-                    {
-                        if (errno == EINTR)
-                        {
-                            log_debug("Connector: caught interrupt");
-                            need_exit = 1;
-                        }
-
-                        if (errno != EAGAIN)
-                            log_perror("nyx: recv");
-                    }
-                }
-                else
-                {
-                    /* parse input buffer */
-                    commands = split_string(buffer);
-
-                    if ((cmd = parse_command(commands)) != NULL)
-                    {
-                        log_debug("Handling command '%s' (%d)",
-                                cmd->name, cmd->type);
-
-                        if (!handle_command(cmd, fd, commands, nyx))
-                        {
-                            log_warn("Failed to process command '%s' (%d)",
-                                    cmd->name, cmd->type);
-                        }
-                    }
-
-                    strings_free((char **)commands);
-                }
-
-                close(fd);
+                if (!handle_request(event, nyx))
+                    need_exit = 1;
             }
         }
     }
