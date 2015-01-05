@@ -98,12 +98,20 @@ to_unmonitored(state_t *state, state_e from, state_e to)
     return 1;
 }
 
+static void
+notify_stopped(state_t *state)
+{
+    state->pid = 0;
+    clear_pid(state->watch->name, state->nyx);
+}
+
 static int
 stop(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
 
-    int times = state->nyx->options.def_grace;
+    nyx_t *nyx = state->nyx;
+    int times = nyx->options.def_grace;
     pid_t pid = state->pid;
 
     /* nothing to do */
@@ -120,7 +128,10 @@ stop(state_t *state, state_e from, state_e to)
         /* process does not exist
          * -> already terminated */
         if (errno == ESRCH)
+        {
+            notify_stopped(state);
             return 1;
+        }
 
         log_perror("nyx: kill");
         return 0;
@@ -131,7 +142,10 @@ stop(state_t *state, state_e from, state_e to)
         if (kill(pid, 0) == -1)
         {
             if (errno == ESRCH)
+            {
+                notify_stopped(state);
                 return 1;
+            }
         }
 
         sleep(1);
@@ -145,10 +159,12 @@ stop(state_t *state, state_e from, state_e to)
         log_perror("nyx: kill");
     }
 
+    notify_stopped(state);
+
     log_warn("Failed to stop watch '%s' after waiting %d seconds - "
              "sending SIGKILL now",
              state->watch->name,
-             state->nyx->options.def_grace);
+             nyx->options.def_grace);
 
     return 1;
 }
