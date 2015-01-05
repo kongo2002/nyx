@@ -23,8 +23,10 @@
 #include "utils.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -284,27 +286,78 @@ connector_close()
     need_exit = 1;
 }
 
+static int
+add_epoll_socket(int socket, struct epoll_event *event, int epoll)
+{
+    int error = 0;
+
+    memset(event, 0, sizeof(struct epoll_event));
+
+    event->events = EPOLLIN;
+    event->data.fd = socket;
+
+    error = epoll_ctl(epoll, EPOLL_CTL_ADD, socket, event);
+
+    if (error == -1)
+        log_perror("nyx: epoll_ctl");
+
+    return !error;
+}
+
+static void
+init_nyx_addr(struct sockaddr_un *addr)
+{
+    memset(addr, 0, sizeof(struct sockaddr_un));
+    addr->sun_family = AF_UNIX;
+    strncpy(addr->sun_path, NYX_SOCKET_ADDR, sizeof(addr->sun_path)-1);
+}
+
+static int
+unblock_socket(int socket)
+{
+    int flags = 0, err = 0;
+
+    flags = fcntl(socket, F_GETFL, 0);
+
+    if (flags == -1)
+    {
+        log_perror("nyx: fcntl");
+        return 0;
+    }
+
+    /* add non-blocking flag */
+    flags |= O_NONBLOCK;
+
+    err = fcntl(socket, F_SETFL, flags);
+
+    if (err == -1)
+    {
+        log_perror("nyx: fcntl");
+        return 0;
+    }
+
+    return 1;
+}
+
 void *
 connector_start(void *state)
 {
-    static int max_conn = 4;
+    static int max_conn = 64;
 
     nyx_t *nyx = state;
     command_t *cmd = NULL;
     char buffer[512] = {0};
     ssize_t received = 0;
-    int sock = 0, error = 0, client = 0, finished = 0;
+    int sock = 0, error = 0, epfd = 0;
     const char **commands = NULL;
-
-    struct sockaddr_un addr;
-    struct sockaddr_un client_addr;
-    socklen_t client_len = sizeof(client_addr);
-
-    memset(&addr, 0, sizeof(struct sockaddr_un));
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, NYX_SOCKET_ADDR, sizeof(addr.sun_path)-1);
+    struct epoll_event *events = NULL;
+    struct epoll_event ev;
 
     log_debug("Starting connector");
+
+    struct sockaddr_un addr;
+
+    init_nyx_addr(&addr);
 
     /* create a UNIX domain, connection based socket */
     sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -318,6 +371,7 @@ connector_start(void *state)
     /* remove any existing nyx sockets */
     unlink(NYX_SOCKET_ADDR);
 
+    /* bind to specified socket location */
     error = bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
 
     if (error)
@@ -326,80 +380,151 @@ connector_start(void *state)
         return NULL;
     }
 
+    if (!unblock_socket(sock))
+        return NULL;
+
+    /* listen on requests */
     error = listen(sock, max_conn);
 
     if (error)
     {
         log_perror("nyx: listen");
-        return NULL;
+        goto teardown;
     }
+
+    /* initialize epoll */
+    epfd = epoll_create(10);
+    if (epfd == -1)
+    {
+        log_perror("nyx: epoll_create");
+        goto teardown;
+    }
+
+    /* add new socket to epoll instance */
+    if (!add_epoll_socket(sock, &ev, epfd))
+        goto teardown;
+
+    events = xcalloc(max_conn, sizeof(struct epoll_event));
 
     while (!need_exit)
     {
+        int i = 0, n = 0;
+        struct epoll_event *event = NULL;
+
         log_debug("Connector: waiting for connections");
 
-        client = accept(sock, (struct sockaddr *)&client_addr, &client_len);
+        n = epoll_wait(epfd, events, max_conn, -1);
 
-        if (client == -1)
+        /* epoll listening failed for some reason */
+        if (n < 1)
         {
             if (errno == EINTR)
             {
                 log_debug("Connector: caught interrupt");
                 need_exit = 1;
+                continue;
             }
 
             log_perror("nyx: accept");
             continue;
         }
 
-        finished = 0;
-
-        while (!finished)
+        /* process all received events */
+        for (i = 0, event = events; i < n; event++, i++)
         {
-            memset(buffer, 0, 512);
-            received = recv(client, buffer, 512, 0);
-
-            if (received < 1)
+            /* error on the socket */
+            if ((event->events & EPOLLERR) ||
+                (event->events & EPOLLHUP) ||
+                !(event->events & EPOLLIN))
             {
-                if (received < 0)
+                log_warn("epoll error on socket");
+                close(event->data.fd);
+
+                continue;
+            }
+
+            /* check for events on listening socket
+             * -> accept a new connection */
+            if (event->data.fd == sock)
+            {
+                int client = 0;
+                struct sockaddr_un caddr;
+                socklen_t client_len = sizeof(struct sockaddr_un);
+
+                client = accept(sock, (struct sockaddr *)&caddr, &client_len);
+
+                if (client == -1)
                 {
-                    if (errno == EINTR)
+                    if (errno != EAGAIN && errno != EWOULDBLOCK)
+                        log_perror("nyx: accept");
+                    continue;
+                }
+
+                if (!unblock_socket(client))
+                {
+                    close(client);
+                    continue;
+                }
+
+                if (!add_epoll_socket(client, &ev, epfd))
+                {
+                    close(client);
+                    continue;
+                }
+            }
+            /* incoming data from one of the client sockets */
+            else
+            {
+                int fd = event->data.fd;
+
+                memset(buffer, 0, 512);
+                received = recv(fd, buffer, 512, 0);
+
+                if (received < 1)
+                {
+                    if (received < 0)
                     {
-                        log_debug("Connector: caught interrupt");
-                        need_exit = 1;
+                        if (errno == EINTR)
+                        {
+                            log_debug("Connector: caught interrupt");
+                            need_exit = 1;
+                        }
+
+                        if (errno != EAGAIN)
+                            log_perror("nyx: recv");
+                    }
+                }
+                else
+                {
+                    /* parse input buffer */
+                    commands = split_string(buffer);
+
+                    if ((cmd = parse_command(commands)) != NULL)
+                    {
+                        log_debug("Handling command '%s' (%d)",
+                                cmd->name, cmd->type);
+
+                        if (!handle_command(cmd, fd, commands, nyx))
+                        {
+                            log_warn("Failed to process command '%s' (%d)",
+                                    cmd->name, cmd->type);
+                        }
                     }
 
-                    log_perror("nyx: recv");
+                    strings_free((char **)commands);
                 }
-                break;
+
+                close(fd);
             }
-
-            /* parse input buffer */
-            commands = split_string(buffer);
-
-            if ((cmd = parse_command(commands)) != NULL)
-            {
-                log_debug("Handling command '%s' (%d)",
-                        cmd->name, cmd->type);
-
-                if (!handle_command(cmd, client, commands, nyx))
-                {
-                    log_warn("Failed to process command '%s' (%d)",
-                            cmd->name, cmd->type);
-                }
-            }
-
-            strings_free((char **)commands);
-
-            /* TODO: determine when to close the connection */
-            break;
         }
-
-        close(client);
     }
 
+teardown:
     close(sock);
     unlink(NYX_SOCKET_ADDR);
+
+    if (events)
+        free(events);
 
     log_debug("Connector: terminated");
 
