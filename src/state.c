@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -101,6 +102,53 @@ static int
 stop(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
+
+    int times = state->nyx->options.def_grace;
+    pid_t pid = state->pid;
+
+    /* nothing to do */
+    if (state->state == STATE_STOPPED)
+        return 1;
+
+    /* nothing to stop */
+    if (pid < 1)
+        return 1;
+
+    /* first we try SIGTERM */
+    if (kill(pid, SIGTERM) == -1)
+    {
+        /* process does not exist
+         * -> already terminated */
+        if (errno == ESRCH)
+            return 1;
+
+        log_perror("nyx: kill");
+        return 0;
+    }
+
+    while (times-- > 0)
+    {
+        if (kill(pid, 0) == -1)
+        {
+            if (errno == ESRCH)
+                return 1;
+        }
+
+        sleep(1);
+    }
+
+    /* the app failed to terminate after several attempts
+     * -> send a SIGKILL now */
+
+    if (kill(pid, SIGKILL) == -1 && errno != ESRCH)
+    {
+        log_perror("nyx: kill");
+    }
+
+    log_warn("Failed to stop watch '%s' after waiting %d seconds - "
+             "sending SIGKILL now",
+             state->watch->name,
+             state->nyx->options.def_grace);
 
     return 1;
 }
