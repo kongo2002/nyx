@@ -109,16 +109,35 @@ handle_stop(sender_callback_t *cb, const char **input, nyx_t *nyx)
     return 1;
 }
 
+static int
+handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
+{
+    const char *name = input[1];
+    state_t *state = find_state_by_name(nyx->states, name);
+
+    if (state == NULL)
+    {
+        cb->sender(cb, "unknown watch '%s' specified", name);
+        return 0;
+    }
+
+    /* request stop */
+    set_state(state, STATE_STARTING);
+    cb->sender(cb, "requested start for watch '%s'", name);
+
+    return 1;
+}
+
 #define CMD(t, n, h, a) \
     { .type = t, .name = n, .handler = h, .min_args = a, .cmd_length = LEN(n) }
 
 static command_t commands[] =
 {
-    CMD(CMD_PING, "ping", handle_ping, 0),
-    CMD(CMD_VERSION, "version", handle_version, 0),
-    CMD(CMD_TERMINATE, "terminate", handle_terminate, 0),
-    CMD(CMD_START, "start", NULL, 1),
-    CMD(CMD_STOP, "stop", handle_stop, 1),
+    CMD(CMD_PING,       "ping",       handle_ping,       0),
+    CMD(CMD_VERSION,    "version",    handle_version,    0),
+    CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0),
+    CMD(CMD_START,      "start",      handle_start,      1),
+    CMD(CMD_STOP,       "stop",       handle_stop,       1),
 };
 
 #undef CMD

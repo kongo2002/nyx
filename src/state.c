@@ -98,13 +98,6 @@ to_unmonitored(state_t *state, state_e from, state_e to)
     return 1;
 }
 
-static void
-notify_stopped(state_t *state)
-{
-    state->pid = 0;
-    clear_pid(state->watch->name, state->nyx);
-}
-
 static int
 stop(state_t *state, state_e from, state_e to)
 {
@@ -128,10 +121,7 @@ stop(state_t *state, state_e from, state_e to)
         /* process does not exist
          * -> already terminated */
         if (errno == ESRCH)
-        {
-            notify_stopped(state);
             return 1;
-        }
 
         log_perror("nyx: kill");
         return 0;
@@ -142,10 +132,7 @@ stop(state_t *state, state_e from, state_e to)
         if (kill(pid, 0) == -1)
         {
             if (errno == ESRCH)
-            {
-                notify_stopped(state);
                 return 1;
-            }
         }
 
         sleep(1);
@@ -158,8 +145,6 @@ stop(state_t *state, state_e from, state_e to)
     {
         log_perror("nyx: kill");
     }
-
-    notify_stopped(state);
 
     log_warn("Failed to stop watch '%s' after waiting %d seconds - "
              "sending SIGKILL now",
@@ -327,7 +312,8 @@ stopped(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
 
-    set_state(state, STATE_STARTING);
+    if (from != STATE_STOPPING)
+        set_state(state, STATE_STARTING);
 
     return 1;
 }
@@ -443,6 +429,12 @@ dispatch_poll_result(int pid, int running, nyx_t *nyx)
     if (state != NULL)
     {
         state_e next_state = running ? STATE_RUNNING : STATE_STOPPED;
+
+        if (!running)
+        {
+            state->pid = 0;
+            clear_pid(state->watch->name, nyx);
+        }
 
         if (next_state != state->state)
             set_state(state, next_state);
