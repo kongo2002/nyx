@@ -121,7 +121,7 @@ handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
         return 0;
     }
 
-    /* request stop */
+    /* request start */
     set_state(state, STATE_STARTING);
     cb->sender(cb, "requested start for watch '%s'", name);
 
