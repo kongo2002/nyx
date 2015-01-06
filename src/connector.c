@@ -410,7 +410,7 @@ handle_eventfd(struct epoll_event *event, nyx_t *nyx)
 void *
 connector_start(void *state)
 {
-    static int max_conn = 64;
+    static int max_conn = 16;
 
     nyx_t *nyx = state;
     int sock = 0, error = 0, epfd = 0;
