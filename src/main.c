@@ -65,6 +65,12 @@ command_mode(nyx_t *nyx)
     const char *result = NULL;
     command_t *command = NULL;
 
+    if (!nyx->options.commands)
+    {
+        log_error("no command specified at all");
+        return 0;
+    }
+
     if ((command = parse_command(nyx->options.commands)) != NULL)
         result = connector_call(nyx, command);
     else

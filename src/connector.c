@@ -167,6 +167,10 @@ parse_command(const char **input)
     unsigned int args = 0;
     command_t *command = commands;
 
+    /* no input commands given at all */
+    if (input == NULL)
+        return NULL;
+
     while (i < size)
     {
         if (!strncmp(command->name, *input, command->cmd_length))
