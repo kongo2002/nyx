@@ -391,6 +391,22 @@ handle_request(struct epoll_event *event, nyx_t *nyx)
     return success;
 }
 
+static void
+handle_eventfd(struct epoll_event *event, nyx_t *nyx)
+{
+    int err = 0;
+    uint64_t value = 0;
+
+    log_debug("Received epoll event on eventfd interface (%d)", nyx->event);
+
+    err = read(event->data.fd, &value, sizeof(value));
+
+    if (err == -1)
+        log_perror("nyx: read");
+
+    need_exit = 1;
+}
+
 void *
 connector_start(void *state)
 {
@@ -448,9 +464,19 @@ connector_start(void *state)
         goto teardown;
     }
 
-    /* add new socket to epoll instance */
+    /* add new listening socket to epoll instance */
     if (!add_epoll_socket(sock, &ev, epfd))
         goto teardown;
+
+    /* add eventfd socket to epoll as well */
+    if (nyx->event)
+    {
+        if (!unblock_socket(nyx->event))
+            goto teardown;
+
+        if (!add_epoll_socket(nyx->event, &ev, epfd))
+            goto teardown;
+    }
 
     events = xcalloc(max_conn, sizeof(struct epoll_event));
 
@@ -519,6 +545,10 @@ connector_start(void *state)
                     close(client);
                     continue;
                 }
+            }
+            else if (event->data.fd == nyx->event)
+            {
+                handle_eventfd(event, nyx);
             }
             /* incoming data from one of the client sockets */
             else
