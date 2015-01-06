@@ -280,12 +280,6 @@ handle_command(command_t *cmd, int client, const char **input, nyx_t *nyx)
     return retval;
 }
 
-void
-connector_close()
-{
-    need_exit = 1;
-}
-
 static int
 add_epoll_socket(int socket, struct epoll_event *event, int epoll)
 {

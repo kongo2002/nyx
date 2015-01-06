@@ -53,9 +53,6 @@ connector_call(nyx_t *nyx, command_t *cmd);
 command_t *
 parse_command(const char **input);
 
-void
-connector_close();
-
 void *
 connector_start(void *nyx);
 
