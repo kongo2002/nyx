@@ -14,6 +14,7 @@
  */
 
 #include "fs.h"
+#include "log.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -90,6 +91,43 @@ prepare_dir(const char *directory)
     }
 
     return directory;
+}
+
+static const char *pid_dir_defaults[] =
+{
+    "/var/run/nyx",
+    "~/.nyx/pid",
+    "/tmp/nyx/pid",
+    NULL
+};
+
+const char *
+determine_pid_dir(void)
+{
+    int result = 0;
+    const char **dir = pid_dir_defaults;
+
+    while (*dir)
+    {
+        /* check if the directory exists or can be created */
+        if (mkdir_p(*dir))
+        {
+            /* now we should be able to access it as well */
+            result = access(prepare_dir(*dir), W_OK);
+
+            if (result == 0)
+            {
+                log_debug("Using '%s' as nyx PID directory", *dir);
+                return *dir;
+            }
+        }
+
+        dir++;
+    }
+
+    log_error("Failed to determine a PID directory for nyx");
+
+    return NULL;
 }
 
 FILE *

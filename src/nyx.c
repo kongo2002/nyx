@@ -76,35 +76,6 @@ static const struct option long_options[] =
     { NULL }
 };
 
-static const char *pid_dir_defaults[] =
-{
-    "/var/run/nyx",
-    "~/.nyx/pid",
-    "/tmp/nyx/pid",
-    NULL
-};
-
-static const char *
-determine_pid_dir(void)
-{
-    const char **dir = pid_dir_defaults;
-
-    while (*dir)
-    {
-        if (mkdir_p(*dir))
-        {
-            log_debug("Using '%s' as nyx PID directory", *dir);
-            return *dir;
-        }
-
-        dir++;
-    }
-
-    log_error("Failed to determine a PID directory for nyx");
-
-    return NULL;
-}
-
 static void
 handle_child_stop(UNUSED int signum)
 {
