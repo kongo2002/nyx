@@ -28,6 +28,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/eventfd.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -224,6 +225,14 @@ nyx_initialize(int argc, char **args)
     nyx->is_init = nyx->pid == 1;
     nyx->watches = hash_new(8, _watch_destroy);
     nyx->states = list_new(_state_destroy);
+
+    /* initialize eventfd */
+    nyx->event = eventfd(0, 0);
+
+    if (nyx->event < 1)
+    {
+        log_perror("nyx: eventfd");
+    }
 
     /* start connector */
     nyx->connector_thread = xcalloc(1, sizeof(pthread_t));

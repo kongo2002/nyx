@@ -38,6 +38,7 @@ typedef struct
     int is_init;
     int is_daemon;
     const char *pid_dir;
+    int event;
     pthread_t *connector_thread;
     nyx_options_t options;
     hash_t *watches;
