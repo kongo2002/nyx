@@ -25,6 +25,7 @@ typedef struct
 {
     int quiet;
     int no_color;
+    int no_daemon;
     int syslog;
     int def_start_timeout;
     int def_grace;

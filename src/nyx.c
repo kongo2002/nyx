@@ -56,23 +56,25 @@ print_help(void)
     print_usage(stdout);
     puts("\n"
          "Options:\n"
-         "   -c  --config   (path to configuration file)\n"
-         "   -s  --syslog   (log into syslog)\n"
-         "   -q  --quiet    (output error messages only)\n"
-         "   -C  --no-color (no terminal coloring)\n"
-         "   -V  --version  (version information)\n"
-         "   -h  --help     (print this help)");
+         "   -c  --config    (path to configuration file)\n"
+         "   -D  --no-daemon (do not daemonize)\n"
+         "   -s  --syslog    (log into syslog)\n"
+         "   -q  --quiet     (output error messages only)\n"
+         "   -C  --no-color  (no terminal coloring)\n"
+         "   -V  --version   (version information)\n"
+         "   -h  --help      (print this help)");
     exit(EXIT_SUCCESS);
 }
 
 static const struct option long_options[] =
 {
-    { .name = "help",     .has_arg = 0, .flag = NULL, .val = 'h'},
-    { .name = "config",   .has_arg = 0, .flag = NULL, .val = 'c'},
-    { .name = "no-color", .has_arg = 0, .flag = NULL, .val = 'C'},
-    { .name = "quiet",    .has_arg = 0, .flag = NULL, .val = 'q'},
-    { .name = "syslog",   .has_arg = 0, .flag = NULL, .val = 's'},
-    { .name = "version",  .has_arg = 0, .flag = NULL, .val = 'V'},
+    { .name = "help",      .has_arg = 0, .flag = NULL, .val = 'h'},
+    { .name = "config",    .has_arg = 0, .flag = NULL, .val = 'c'},
+    { .name = "no-color",  .has_arg = 0, .flag = NULL, .val = 'C'},
+    { .name = "no-daemon", .has_arg = 0, .flag = NULL, .val = 'D'},
+    { .name = "quiet",     .has_arg = 0, .flag = NULL, .val = 'q'},
+    { .name = "syslog",    .has_arg = 0, .flag = NULL, .val = 's'},
+    { .name = "version",   .has_arg = 0, .flag = NULL, .val = 'V'},
     { NULL }
 };
 
@@ -130,7 +132,7 @@ nyx_initialize(int argc, char **args)
     }
 
     /* parse command line arguments */
-    while ((arg = getopt_long(argc, args, "hqsCVc:", long_options, NULL)) != -1)
+    while ((arg = getopt_long(argc, args, "hqsCDVc:", long_options, NULL)) != -1)
     {
         switch (arg)
         {
@@ -142,6 +144,9 @@ nyx_initialize(int argc, char **args)
                 break;
             case 'C':
                 nyx->options.no_color = 1;
+                break;
+            case 'D':
+                nyx->options.no_daemon = 1;
                 break;
             case 'c':
                 nyx->options.config_file = optarg;
