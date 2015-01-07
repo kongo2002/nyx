@@ -320,6 +320,9 @@ static void
 on_terminate(UNUSED int signum)
 {
     log_debug("Caught termination signal - exiting event manager loop");
+
+    /* setting this one won't do the trick until the
+     * blocking receive returns */
     need_exit = 1;
 }
 

@@ -32,6 +32,15 @@ on_terminate(UNUSED int signum)
     need_exit = 1;
 }
 
+static void
+wait(int timeout)
+{
+    while (!need_exit && timeout-- > 0)
+    {
+        sleep(1);
+    }
+}
+
 int
 poll_loop(nyx_t *nyx, poll_handler_t handler)
 {
@@ -77,7 +86,7 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
         /* in case we were interrupted by a signal
          * we don't want to be stuck in here sleeping */
         if (!need_exit)
-            sleep(POLLING_INTERVAL);
+            wait(POLLING_INTERVAL);
     }
 
     return 1;
