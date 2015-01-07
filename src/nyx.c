@@ -210,7 +210,8 @@ initialize_daemon(nyx_t *nyx)
     /* try to check if a nyx instance is already running */
     if ((pid = is_nyx_running(nyx)) > 0)
     {
-        log_error("nyx instance already running on PID %d", pid);
+        log_error("nyx instance appears to be running on PID %d - PID folder '%s'",
+                  pid, nyx->pid_dir);
         return 0;
     }
 
