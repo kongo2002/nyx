@@ -86,9 +86,13 @@ handle_version(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *n
 }
 
 static int
-handle_terminate(UNUSED sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
+handle_terminate(UNUSED sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 {
     need_exit = 1;
+
+    if (nyx->terminate_handler)
+        nyx->terminate_handler(0);
+
     return 1;
 }
 

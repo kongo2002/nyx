@@ -119,6 +119,8 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
     action.sa_handler = terminate_handler;
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGINT, &action, NULL);
+
+    nyx->terminate_handler = terminate_handler;
 }
 
 static pid_t
@@ -443,7 +445,8 @@ nyx_destroy(nyx_t *nyx)
     if (nyx->event > 0)
         close(nyx->event);
 
-    clear_pid("nyx", nyx);
+    if (nyx->is_daemon)
+        clear_pid("nyx", nyx);
 
     free(nyx);
     nyx = NULL;
