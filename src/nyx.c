@@ -280,7 +280,7 @@ nyx_destroy(nyx_t *nyx)
     /* signal termination via eventfd (if existing) */
     if (nyx->event)
     {
-        uint64_t signal = 1;
+        uint64_t signal = 4;
         signal_error = write(nyx->event, &signal, sizeof(signal));
 
         if (signal_error == -1)
