@@ -90,6 +90,10 @@ handle_terminate(UNUSED sender_callback_t *cb, UNUSED const char **input, nyx_t 
 {
     need_exit = 1;
 
+    /* trigger the eventfd */
+    signal_eventfd(4, nyx);
+
+    /* trigger the termination handler (if specified) */
     if (nyx->terminate_handler)
         nyx->terminate_handler(0);
 

@@ -358,6 +358,8 @@ event_loop(nyx_t *nyx, process_handler_t handler)
 
 out:
     close(socket);
+
+    log_debug("Event manager: terminated");
     return rc;
 }
 

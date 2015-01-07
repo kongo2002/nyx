@@ -386,10 +386,29 @@ nyx_watches_init(nyx_t *nyx)
     return init > 0;
 }
 
+int
+signal_eventfd(uint64_t signal, nyx_t *nyx)
+{
+    int error = 0;
+
+    if (nyx->event < 1)
+        return 0;
+
+    error = write(nyx->event, &signal, sizeof(signal));
+
+    if (error == -1)
+    {
+        log_perror("nyx: write");
+        return 0;
+    }
+
+    return 1;
+}
+
 void
 nyx_destroy(nyx_t *nyx)
 {
-    int signal_error = 0;
+    int signal_sent = 0;
 
     log_debug("Tearing down nyx");
 
@@ -398,15 +417,7 @@ nyx_destroy(nyx_t *nyx)
 
     /* signal termination via eventfd (if existing) */
     if (nyx->event > 0)
-    {
-        uint64_t signal = 4;
-        signal_error = write(nyx->event, &signal, sizeof(signal));
-
-        if (signal_error == -1)
-        {
-            log_perror("nyx: write");
-        }
-    }
+        signal_sent = signal_eventfd(4, nyx);
 
     /* tear down connector first */
     if (nyx->connector_thread)
@@ -415,7 +426,7 @@ nyx_destroy(nyx_t *nyx)
 
         /* signal for termination failed
          * -> we have to force exit */
-        if (signal_error == -1)
+        if (!signal_sent)
             pthread_cancel(connector);
 
         pthread_join(connector, NULL);

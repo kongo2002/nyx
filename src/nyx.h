@@ -19,6 +19,7 @@
 #include "hash.h"
 #include "list.h"
 
+#include <stdint.h>
 #include <sys/types.h>
 
 typedef struct
@@ -61,6 +62,9 @@ nyx_initialize(int argc, char **args);
 
 int
 nyx_watches_init(nyx_t *nyx);
+
+int
+signal_eventfd(uint64_t signal, nyx_t *nyx);
 
 void
 setup_signals(nyx_t *nyx, void (*terminate_handler)(int));
