@@ -18,7 +18,13 @@
 
 #include <stdlib.h>
 
-#define NYX_VERSION "0.0.1"
+#define NYX_VERSION_NUMBER "0.0.1"
+
+#ifndef NDEBUG
+#define NYX_VERSION NYX_VERSION_NUMBER "-debug"
+#else
+#define NYX_VERSION NYX_VERSION_NUMBER
+#endif
 
 #define UNUSED __attribute__((unused))
 

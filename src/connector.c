@@ -82,7 +82,7 @@ handle_ping(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
 static int
 handle_version(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
 {
-    return cb->sender(cb, "version");
+    return cb->sender(cb, NYX_VERSION);
 }
 
 static int
