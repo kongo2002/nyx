@@ -19,11 +19,11 @@
 #include "def.h"
 #include "log.h"
 #include "nyx.h"
+#include "socket.h"
 #include "state.h"
 #include "utils.h"
 
 #include <errno.h>
-#include <fcntl.h>
 #include <stdarg.h>
 #include <string.h>
 #include <sys/epoll.h>
@@ -284,57 +284,12 @@ handle_command(command_t *cmd, int client, const char **input, nyx_t *nyx)
     return retval;
 }
 
-static int
-add_epoll_socket(int socket, struct epoll_event *event, int epoll)
-{
-    int error = 0;
-
-    memset(event, 0, sizeof(struct epoll_event));
-
-    event->events = EPOLLIN;
-    event->data.fd = socket;
-
-    error = epoll_ctl(epoll, EPOLL_CTL_ADD, socket, event);
-
-    if (error == -1)
-        log_perror("nyx: epoll_ctl");
-
-    return !error;
-}
-
 static void
 init_nyx_addr(struct sockaddr_un *addr)
 {
     memset(addr, 0, sizeof(struct sockaddr_un));
     addr->sun_family = AF_UNIX;
     strncpy(addr->sun_path, NYX_SOCKET_ADDR, sizeof(addr->sun_path)-1);
-}
-
-static int
-unblock_socket(int socket)
-{
-    int flags = 0, err = 0;
-
-    flags = fcntl(socket, F_GETFL, 0);
-
-    if (flags == -1)
-    {
-        log_perror("nyx: fcntl");
-        return 0;
-    }
-
-    /* add non-blocking flag */
-    flags |= O_NONBLOCK;
-
-    err = fcntl(socket, F_SETFL, flags);
-
-    if (err == -1)
-    {
-        log_perror("nyx: fcntl");
-        return 0;
-    }
-
-    return 1;
 }
 
 static int
@@ -455,7 +410,7 @@ connector_start(void *state)
     }
 
     /* initialize epoll */
-    epfd = epoll_create(10);
+    epfd = epoll_create(max_conn);
     if (epfd == -1)
     {
         log_perror("nyx: epoll_create");
@@ -559,6 +514,10 @@ connector_start(void *state)
 
 teardown:
     close(sock);
+
+    if (epfd > 0)
+        close(epfd);
+
     unlink(NYX_SOCKET_ADDR);
 
     if (events)

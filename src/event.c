@@ -16,6 +16,7 @@
 #include "def.h"
 #include "event.h"
 #include "log.h"
+#include "socket.h"
 
 #include <errno.h>
 #include <linux/cn_proc.h>
@@ -182,13 +183,32 @@ set_event_data(process_event_data_t *data, struct proc_event *event)
     return 0;
 }
 
+static void handle_eventfd(struct epoll_event *event, nyx_t *nyx)
+{
+    int err = 0;
+    uint64_t value = 0;
+
+    log_debug("Received epoll event on eventfd interface (%d)", nyx->event);
+
+    err = read(event->data.fd, &value, sizeof(value));
+
+    if (err == -1)
+        log_perror("nyx: read");
+
+    need_exit = 1;
+}
+
 /**
  * Handle a single process event
  */
 static int
 handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 {
-    int pid = 0, rc = 0;
+    static int max_conn = 16;
+    int pid = 0, rc = 0, epfd = 0;
+    struct epoll_event ev;
+    struct epoll_event *events = NULL;
+
     process_event_data_t *event_data = new_event_data();
 
     struct __attribute__ ((aligned(NLMSG_ALIGNTO)))
@@ -203,40 +223,95 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 
     log_debug("Starting event manager loop");
 
-    while (!need_exit)
+    /* initialize epoll */
+    epfd = epoll_create(max_conn);
+    if (epfd == -1)
     {
-        rc = recv(nl_sock, &nlcn_msg, sizeof(nlcn_msg), 0);
-
-        /* socket shutdown */
-        if (rc == 0)
-        {
-            rc = 1;
-            break;
-        }
-        else if (rc == -1)
-        {
-            /* interrupted by a signal */
-            if (errno == EINTR)
-            {
-                rc = 1;
-                continue;
-            }
-
-            log_perror("nyx: recv");
-            break;
-        }
-
-        pid = set_event_data(event_data, &nlcn_msg.proc_ev);
-
-        if (pid > 0)
-            handler(pid, event_data, nyx);
+        log_perror("nyx: epoll_create");
+        goto teardown;
     }
 
+    if (!unblock_socket(nl_sock))
+        goto teardown;
+
+    if (!add_epoll_socket(nl_sock, &ev, epfd))
+        goto teardown;
+
+    /* add eventfd socket to epoll as well */
+    if (nyx->event)
+    {
+        if (!unblock_socket(nyx->event))
+            goto teardown;
+
+        if (!add_epoll_socket(nyx->event, &ev, epfd))
+            goto teardown;
+    }
+
+    events = xcalloc(max_conn, sizeof(struct epoll_event));
+
+    while (!need_exit)
+    {
+        int i = 0, n = 0;
+        struct epoll_event *event = NULL;
+
+        n = epoll_wait(epfd, events, max_conn, -1);
+
+        for (i = 0, event = events; i < n; event++, i++)
+        {
+            int fd = event->data.fd;
+
+            /* handle eventfd */
+            if (fd == nyx->event)
+            {
+                handle_eventfd(event, nyx);
+                rc = 1;
+            }
+            else
+            {
+                rc = recv(fd, &nlcn_msg, sizeof(nlcn_msg), 0);
+
+                /* socket shutdown */
+                if (rc == 0)
+                {
+                    rc = 1;
+                    break;
+                }
+                else if (rc == -1)
+                {
+                    /* interrupted by a signal */
+                    if (errno == EINTR)
+                    {
+                        rc = 1;
+                        continue;
+                    }
+
+                    log_perror("nyx: recv");
+                    break;
+                }
+
+                pid = set_event_data(event_data, &nlcn_msg.proc_ev);
+
+                if (pid > 0)
+                    handler(pid, event_data, nyx);
+            }
+        }
+    }
+
+teardown:
     if (event_data != NULL)
     {
         free(event_data);
         event_data = NULL;
     }
+
+    if (events != NULL)
+    {
+        free(events);
+        events = NULL;
+    }
+
+    if (epfd > 0)
+        close(epfd);
 
     return rc;
 }
@@ -265,8 +340,10 @@ event_loop(nyx_t *nyx, process_handler_t handler)
         goto out;
     }
 
+    /* register termination handler */
     setup_signals(nyx, on_terminate);
 
+    /* start listening on process events */
     rc = handle_process_event(socket, nyx, handler);
     if (rc == -1)
     {
