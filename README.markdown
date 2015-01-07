@@ -45,22 +45,24 @@ watches:
 
         # environment variables (optional)
         env:
-            SOME: variable
+            SOME: value
+            FOO: bar
 
 ```
 
 
 ### Command interface
 
-You can interact with a running *nyx* daemon instance with the same executable:
+You can interact with a running *nyx* daemon instance using the same executable:
 
 ```bash
 $ nyx version
-0.0.1
+<<< version
+>>> 0.0.1
 
 ```
 
-At the moment available commands are:
+Right now the following commands are implemented:
 
 - `ping`: ping a running daemon
 - `version`: return the daemon version
