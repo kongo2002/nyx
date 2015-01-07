@@ -422,7 +422,7 @@ connector_start(void *state)
         goto teardown;
 
     /* add eventfd socket to epoll as well */
-    if (nyx->event)
+    if (nyx->event > 0)
     {
         if (!unblock_socket(nyx->event))
             goto teardown;

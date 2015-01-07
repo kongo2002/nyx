@@ -278,7 +278,7 @@ nyx_destroy(nyx_t *nyx)
         return;
 
     /* signal termination via eventfd (if existing) */
-    if (nyx->event)
+    if (nyx->event > 0)
     {
         uint64_t signal = 4;
         signal_error = write(nyx->event, &signal, sizeof(signal));
@@ -322,6 +322,9 @@ nyx_destroy(nyx_t *nyx)
         free(nyx->options.commands);
         nyx->options.commands = NULL;
     }
+
+    if (nyx->event > 0)
+        close(nyx->event);
 
     free(nyx);
     nyx = NULL;
