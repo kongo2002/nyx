@@ -48,7 +48,7 @@ typedef struct
 } command_t;
 
 const char *
-connector_call(nyx_t *nyx, command_t *cmd);
+connector_call(const char **commands);
 
 command_t *
 parse_command(const char **input);

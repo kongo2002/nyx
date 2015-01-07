@@ -72,7 +72,10 @@ command_mode(nyx_t *nyx)
     }
 
     if ((command = parse_command(nyx->options.commands)) != NULL)
-        result = connector_call(nyx, command);
+    {
+        printf("<<< %s\n", command->name);
+        result = connector_call(nyx->options.commands);
+    }
     else
     {
         log_error("Invalid command '%s'", nyx->options.commands[0]);
@@ -81,7 +84,7 @@ command_mode(nyx_t *nyx)
 
     if (result != NULL)
     {
-        printf("%s\n", result);
+        printf(">>> %s\n", result);
 
         free((void *)result);
         result = NULL;

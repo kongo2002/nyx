@@ -97,7 +97,7 @@ handle_terminate(UNUSED sender_callback_t *cb, UNUSED const char **input, nyx_t 
     if (nyx->terminate_handler)
         nyx->terminate_handler(0);
 
-    return 1;
+    return cb->sender(cb, "ok");
 }
 
 static int
@@ -108,7 +108,7 @@ handle_stop(sender_callback_t *cb, const char **input, nyx_t *nyx)
 
     if (state == NULL)
     {
-        cb->sender(cb, "unknown watch '%s' specified", name);
+        cb->sender(cb, "unknown watch '%s'", name);
         return 0;
     }
 
@@ -127,7 +127,7 @@ handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
 
     if (state == NULL)
     {
-        cb->sender(cb, "unknown watch '%s' specified", name);
+        cb->sender(cb, "unknown watch '%s'", name);
         return 0;
     }
 
@@ -204,10 +204,10 @@ parse_command(const char **input)
 }
 
 static ssize_t
-send_command(int socket, nyx_t *nyx)
+send_command(int socket, const char **commands)
 {
     ssize_t sum = 0, sent = 0;
-    const char **cmd = nyx->options.commands;
+    const char **cmd = commands;
 
     while (*cmd && (sent = send(socket, *cmd, strlen(*cmd), 0)) > 0)
     {
@@ -225,7 +225,7 @@ send_command(int socket, nyx_t *nyx)
 }
 
 const char *
-connector_call(nyx_t *nyx, UNUSED command_t *cmd)
+connector_call(const char **commands)
 {
     int sock = 0, err = 0;
     char buffer[512] = {0};
@@ -253,7 +253,7 @@ connector_call(nyx_t *nyx, UNUSED command_t *cmd)
         return NULL;
     }
 
-    if (send_command(sock, nyx) == -1)
+    if (send_command(sock, commands) == -1)
     {
         log_perror("nyx: send");
     }
