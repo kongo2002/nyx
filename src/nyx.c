@@ -19,6 +19,7 @@
 #include "hash.h"
 #include "log.h"
 #include "nyx.h"
+#include "process.h"
 #include "state.h"
 #include "watch.h"
 
@@ -120,6 +121,21 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
     sigaction(SIGINT, &action, NULL);
 }
 
+static pid_t
+is_nyx_running(nyx_t *nyx)
+{
+    pid_t nyx_pid = determine_pid("nyx", nyx);
+
+    /* there is no nyx pid at all */
+    if (nyx_pid < 1)
+        return 0;
+
+    if (check_process_running(nyx_pid))
+        return nyx_pid;
+
+    return 0;
+}
+
 static int
 daemonize(nyx_t *nyx)
 {
@@ -161,6 +177,9 @@ daemonize(nyx_t *nyx)
     }
     else
     {
+        if (!write_pid(pid, "nyx", nyx))
+            log_warn("Failed to persist PID (%d) of running nyx instance", pid);
+
         nyx->pid = pid;
 
         log_info("Daemonized nyx on PID %d", pid);
@@ -174,6 +193,7 @@ static int
 initialize_daemon(nyx_t *nyx)
 {
     int err = 0;
+    pid_t pid = 0;
 
     /* set default options */
     nyx->options.def_start_timeout = 5;
@@ -187,6 +207,14 @@ initialize_daemon(nyx_t *nyx)
     nyx->pid = getpid();
     nyx->is_init = nyx->pid == 1;
 
+    /* try to check if a nyx instance is already running */
+    if ((pid = is_nyx_running(nyx)) > 0)
+    {
+        log_error("nyx instance already running on PID %d", pid);
+        return 0;
+    }
+
+    /* nyx should run as a daemon process */
     if (!nyx->is_init && !nyx->options.no_daemon)
     {
         if (!daemonize(nyx))
@@ -194,6 +222,15 @@ initialize_daemon(nyx_t *nyx)
             log_error("Failed to daemonize nyx");
             free(nyx);
             return 0;
+        }
+    }
+    /* otherwise in the foreground */
+    else
+    {
+        if (!write_pid(nyx->pid, "nyx", nyx))
+        {
+            log_warn("Failed to persist PID (%d) of running nyx instance",
+                    nyx->pid);
         }
     }
 
@@ -404,6 +441,8 @@ nyx_destroy(nyx_t *nyx)
 
     if (nyx->event > 0)
         close(nyx->event);
+
+    clear_pid("nyx", nyx);
 
     free(nyx);
     nyx = NULL;
