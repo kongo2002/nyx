@@ -43,38 +43,18 @@ struct parse_info_t
     void *data;
 };
 
-typedef struct config_t config_t;
-typedef struct config_value_t config_value_t;
-
-typedef enum config_value_e
+typedef enum
 {
-    CONFIG_MAP,
-    CONFIG_LIST,
-    CONFIG_NUMBER,
-    CONFIG_STRING,
-    CONFIG_SIZE
-} config_value_e;
-
-struct config_value_t
-{
-    config_value_e type;
-    union
-    {
-        hash_t *map;
-        config_value_t *list_type;
-    };
-};
-
-struct config_t
-{
-    const char *key;
-    config_value_t value;
-};
+    CFG_SCALAR,
+    CFG_LIST,
+    CFG_MAP,
+    CFG_SIZE
+} config_parser_type_e;
 
 struct config_parser_map
 {
     const char *key;
-    handler_func_t handler;
+    handler_func_t handler[CFG_SIZE];
     void *data;
 };
 

@@ -79,7 +79,7 @@ get_scalar_value(yaml_event_t *event)
     return (char *)event->data.scalar.value;
 }
 
-static handler_func_t
+static handler_func_t *
 get_handler_from_map(struct config_parser_map *map, const char *key)
 {
     struct config_parser_map *mapping = map;
@@ -93,19 +93,6 @@ get_handler_from_map(struct config_parser_map *map, const char *key)
     }
 
     return NULL;
-}
-
-static handler_func_t
-get_handler_from_map_fallback(struct config_parser_map *map, const char *key, handler_func_t fallback)
-{
-    handler_func_t handler = get_handler_from_map(map, key);
-
-    if (handler != NULL)
-        return handler;
-
-    log_warn("Unknown config key '%s'", key);
-
-    return fallback;
 }
 
 static void
@@ -172,7 +159,7 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 {
     const char *key;
     struct config_parser_map *map = NULL;
-    handler_func_t handler = NULL;
+    handler_func_t *handler = NULL;
 
     key = get_scalar_value(event);
 
@@ -190,14 +177,14 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
     {
         log_warn("Unknown config key '%s'", key);
 
-        info->handler[YAML_SCALAR_EVENT] = &handle_scalar_value;
-        info->handler[YAML_MAPPING_START_EVENT] = &handle_mapping;
+        info->handler[YAML_SCALAR_EVENT] = handle_scalar_value;
+        info->handler[YAML_MAPPING_START_EVENT] = handle_mapping;
     }
     else
     {
-        info->handler[YAML_SCALAR_EVENT] = handler;
-        info->handler[YAML_MAPPING_START_EVENT] = handler;
-        info->handler[YAML_SEQUENCE_START_EVENT] = handler;
+        info->handler[YAML_SCALAR_EVENT] = handler[CFG_SCALAR];
+        info->handler[YAML_MAPPING_START_EVENT] = handler[CFG_MAP];
+        info->handler[YAML_SEQUENCE_START_EVENT] = handler[CFG_LIST];
     }
 
     return info;
@@ -338,14 +325,23 @@ handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *da
     return new_info;
 }
 
+#define SCALAR_HANDLER(name_, func_) \
+    { .key = name_, .handler = { func_, NULL, NULL } }
+
+#define MAP_HANDLER(name_, func_) \
+    { .key = name_, .handler = { NULL, NULL, func_ } }
+
+#define HANDLERS(name_, sfunc_, lfunc_, mfunc_) \
+    { .key = name_, .handler = { sfunc_, lfunc_, mfunc_ } }
+
 static struct config_parser_map watch_value_map[] =
 {
-    { .key = "name", .handler = handle_watch_map_value_name },
-    { .key = "uid", .handler = handle_watch_map_value_uid },
-    { .key = "gid", .handler = handle_watch_map_value_gid },
-    { .key = "start", .handler = handle_watch_map_value_start },
-    { .key = "dir", .handler = handle_watch_map_value_dir },
-    { .key = "env", .handler = handle_watch_env },
+    SCALAR_HANDLER("name", handle_watch_map_value_name),
+    SCALAR_HANDLER("uid", handle_watch_map_value_uid),
+    SCALAR_HANDLER("gid", handle_watch_map_value_gid),
+    SCALAR_HANDLER("dir", handle_watch_map_value_dir),
+    MAP_HANDLER("env", handle_watch_env),
+    HANDLERS("start", handle_watch_map_value_start, NULL, NULL),
     { NULL }
 };
 
@@ -361,7 +357,7 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
 {
     const char *key;
     watch_t *watch = data;
-    handler_func_t handler = NULL;
+    handler_func_t *handler = NULL;
 
     log_debug("handle_watch_map_key");
 
@@ -371,10 +367,20 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
     if (key == NULL || watch == NULL)
         return NULL;
 
-    handler = get_handler_from_map_fallback(watch_value_map, key, unknown_watch_key);
+    handler = get_handler_from_map(watch_value_map, key);
 
-    info->handler[YAML_SCALAR_EVENT] = handler;
-    info->handler[YAML_MAPPING_START_EVENT] = handler;
+    if (handler == NULL)
+    {
+        info->handler[YAML_SCALAR_EVENT] = unknown_watch_key;
+        info->handler[YAML_MAPPING_START_EVENT] = unknown_watch_key;
+        info->handler[YAML_SEQUENCE_START_EVENT] = unknown_watch_key;
+    }
+    else
+    {
+        info->handler[YAML_SCALAR_EVENT] = handler[CFG_SCALAR];
+        info->handler[YAML_MAPPING_START_EVENT] = handler[CFG_MAP];
+        info->handler[YAML_SEQUENCE_START_EVENT] = handler[CFG_LIST];
+    }
 
     return info;
 }
@@ -447,9 +453,13 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
 
 static struct config_parser_map root_map[] =
 {
-    { .key = "watches", .handler = &handle_watches },
+    MAP_HANDLER("watches", handle_watches),
     { NULL }
 };
+
+#undef SCALAR_HANDLER
+#undef MAP_HANDLER
+#undef HANDLERS
 
 parse_info_t *
 parse_info_new(nyx_t *nyx)
