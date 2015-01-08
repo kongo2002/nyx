@@ -33,6 +33,9 @@
 void *
 xcalloc(size_t count, size_t size);
 
+void *
+xcalloc1(size_t size);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */
