@@ -40,13 +40,34 @@ empty_or_whitespace(const char *str)
 }
 
 const char **
+strings_to_null_terminated(list_t *list)
+{
+    unsigned long i = 0, size = list_size(list);
+    const char **output = NULL;
+    list_node_t *node = NULL;
+
+    if (size > 0)
+    {
+        output = xcalloc(size + 1, sizeof(char *));
+
+        node = list->head;
+        while (node)
+        {
+            output[i++] = node->data;
+            node = node->next;
+        }
+    }
+
+    list_destroy(list);
+    return output;
+}
+
+const char **
 split_string(const char *str)
 {
-    unsigned long i = 0, size = 0;
     static const char *whitespace = " \t";
     char *string, *token, *to_free;
     const char **output;
-    list_node_t *node;
     list_t *tokens;
 
     if (str == NULL || *str == '\0')
@@ -62,21 +83,7 @@ split_string(const char *str)
             list_add(tokens, strdup(token));
     }
 
-    size = list_size(tokens);
-
-    if (size < 1)
-        return NULL;
-
-    output = xcalloc(size + 1, sizeof(char *));
-
-    node = tokens->head;
-    while (node)
-    {
-        output[i++] = node->data;
-        node = node->next;
-    }
-
-    list_destroy(tokens);
+    output = strings_to_null_terminated(tokens);
     free(to_free);
 
     return output;

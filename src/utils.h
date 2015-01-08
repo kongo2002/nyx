@@ -16,6 +16,11 @@
 #ifndef __NYX_UTILS_H__
 #define __NYX_UTILS_H__
 
+#include "list.h"
+
+const char **
+strings_to_null_terminated(list_t *list);
+
 const char **
 split_string(const char *string);
 

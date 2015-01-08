@@ -319,6 +319,58 @@ handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
     return new_info;
 }
 
+static parse_info_t *
+handle_watch_string(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    log_debug("handle_watch_string");
+
+    const char *value = get_scalar_value(event);
+    list_t *list = data;
+
+    if (list == NULL || value == NULL)
+        return NULL;
+
+    list_add(list, strdup(value));
+
+    return info;
+}
+
+static parse_info_t *
+handle_watch_strings_end(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    log_debug("handle_watch_strings_end");
+
+    parse_info_t *parent = parser_up(info, event, data);
+
+    list_t *list = data;
+    watch_t *watch = parent->data;
+
+    if (list == NULL || watch == NULL)
+        return NULL;
+
+    watch->start = strings_to_null_terminated(list);
+
+    parent->handler[YAML_SCALAR_EVENT] = handle_watch_map_key;
+
+    return parent;
+}
+
+static parse_info_t *
+handle_watch_strings(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    log_debug("handle_watch_strings");
+
+    parse_info_t *new_info = parse_info_new_child(info);
+    list_t *list = list_new(NULL);
+
+    new_info->data = list;
+
+    new_info->handler[YAML_SCALAR_EVENT] = handle_watch_string;
+    new_info->handler[YAML_SEQUENCE_END_EVENT] = handle_watch_strings_end;
+
+    return new_info;
+}
+
 #define SCALAR_HANDLER(name_, func_) \
     { .key = name_, .handler = { func_, NULL, NULL } }
 
@@ -335,7 +387,7 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("gid", handle_watch_map_value_gid),
     SCALAR_HANDLER("dir", handle_watch_map_value_dir),
     MAP_HANDLER("env", handle_watch_env),
-    HANDLERS("start", handle_watch_map_value_start, NULL, NULL),
+    HANDLERS("start", handle_watch_map_value_start, handle_watch_strings, NULL),
     { NULL }
 };
 
