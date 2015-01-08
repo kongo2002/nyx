@@ -273,7 +273,7 @@ DECLARE_WATCH_STR_LIST_VALUE(start)
 static const char *env_key = NULL;
 
 static parse_info_t *
-handle_watch_env_value(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+handle_watch_env_value(parse_info_t *info, yaml_event_t *event, void *data)
 {
     const char *env_value = get_scalar_value(event);
 
@@ -290,13 +290,13 @@ handle_watch_env_value(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED vo
         env_key = NULL;
     }
 
-    info->handler[YAML_SCALAR_EVENT] = &handle_watch_env_key;
+    info->handler[YAML_SCALAR_EVENT] = handle_watch_env_key;
 
     return info;
 }
 
 static parse_info_t *
-handle_watch_env_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+handle_watch_env_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
     const char *new_env_key = get_scalar_value(event);
 
@@ -304,13 +304,13 @@ handle_watch_env_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void
 
     env_key = strdup(new_env_key);
 
-    info->handler[YAML_SCALAR_EVENT] = &handle_watch_env_value;
+    info->handler[YAML_SCALAR_EVENT] = handle_watch_env_value;
 
     return info;
 }
 
 static parse_info_t *
-handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
 {
     log_debug("handle_watch_env");
 
@@ -319,8 +319,8 @@ handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *da
 
     watch->env = hash_new(8, free);
 
-    new_info->handler[YAML_SCALAR_EVENT] = &handle_watch_env_key;
-    new_info->handler[YAML_MAPPING_END_EVENT] = &parser_up;
+    new_info->handler[YAML_SCALAR_EVENT] = handle_watch_env_key;
+    new_info->handler[YAML_MAPPING_END_EVENT] = parser_up;
 
     return new_info;
 }
@@ -392,7 +392,7 @@ handle_watch_map_end(parse_info_t *info, yaml_event_t *event, void *data)
 
     /* reset data (last watch instance) */
     parent->data = NULL;
-    parent->handler[YAML_SCALAR_EVENT] = &handle_watch;
+    parent->handler[YAML_SCALAR_EVENT] = handle_watch;
 
     return parent;
 }
@@ -406,8 +406,8 @@ handle_watch_map(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *da
 
     new = parse_info_new_child(info);
 
-    new->handler[YAML_SCALAR_EVENT] = &handle_watch_map_key;
-    new->handler[YAML_MAPPING_END_EVENT] = &handle_watch_map_end;
+    new->handler[YAML_SCALAR_EVENT] = handle_watch_map_key;
+    new->handler[YAML_MAPPING_END_EVENT] = handle_watch_map_end;
 
     return new;
 }
@@ -429,8 +429,8 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
     hash_add(info->nyx->watches, w_name, watch);
 
     reset_handlers(info);
-    info->handler[YAML_MAPPING_START_EVENT] = &handle_watch_map;
-    info->handler[YAML_MAPPING_END_EVENT] = &handle_mapping_end;
+    info->handler[YAML_MAPPING_START_EVENT] = handle_watch_map;
+    info->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
 
     info->data = watch;
 
@@ -446,7 +446,7 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
 
     /* either name of the watch
      * or a sequence of watches */
-    info->handler[YAML_SCALAR_EVENT] = &handle_watch;
+    info->handler[YAML_SCALAR_EVENT] = handle_watch;
 
     return info;
 }
