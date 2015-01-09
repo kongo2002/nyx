@@ -224,12 +224,11 @@ send_command(int socket, const char **commands)
     return sum;
 }
 
-const char *
+int
 connector_call(const char **commands)
 {
-    int sock = 0, err = 0;
+    int sock = 0, err = 0, success = 0;
     char buffer[512] = {0};
-    const char *result = NULL;
     struct sockaddr_un addr;
 
     /* create a UNIX domain, connection based socket */
@@ -238,7 +237,7 @@ connector_call(const char **commands)
     if (sock == -1)
     {
         log_perror("nyx: socket");
-        return NULL;
+        return 0;
     }
 
     memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -250,7 +249,7 @@ connector_call(const char **commands)
     if (err == -1)
     {
         log_perror("nyx: connect");
-        return NULL;
+        return 0;
     }
 
     if (send_command(sock, commands) == -1)
@@ -261,7 +260,8 @@ connector_call(const char **commands)
     {
         if ((err = recv(sock, buffer, 512, 0)) > 0)
         {
-            result = strndup(buffer, 512);
+            printf(">>> %s\n", buffer);
+            success = 1;
         }
         else if (err < 0)
         {
@@ -270,7 +270,7 @@ connector_call(const char **commands)
     }
 
     close(sock);
-    return result;
+    return success;
 }
 
 static int

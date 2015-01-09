@@ -62,7 +62,7 @@ daemon_mode(nyx_t *nyx)
 static int
 command_mode(nyx_t *nyx)
 {
-    const char *result = NULL;
+    int success = 0;
     command_t *command = NULL;
 
     if (!nyx->options.commands)
@@ -74,7 +74,7 @@ command_mode(nyx_t *nyx)
     if ((command = parse_command(nyx->options.commands)) != NULL)
     {
         printf("<<< %s\n", command->name);
-        result = connector_call(nyx->options.commands);
+        success = connector_call(nyx->options.commands);
     }
     else
     {
@@ -82,15 +82,7 @@ command_mode(nyx_t *nyx)
         return 0;
     }
 
-    if (result != NULL)
-    {
-        printf(">>> %s\n", result);
-
-        free((void *)result);
-        result = NULL;
-    }
-
-    return 1;
+    return success;
 }
 
 int

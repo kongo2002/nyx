@@ -47,7 +47,7 @@ typedef struct
     unsigned int min_args;
 } command_t;
 
-const char *
+int
 connector_call(const char **commands);
 
 command_t *
