@@ -25,6 +25,7 @@ typedef struct watch_t
     const char *gid;
     const char **start;
     const char *dir;
+    const char *pid_file;
     hash_t *env;
 } watch_t;
 

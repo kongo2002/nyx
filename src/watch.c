@@ -68,10 +68,11 @@ watch_destroy(watch_t *watch)
 {
     strings_free((char **)watch->start);
 
-    if (watch->name) free((void *)watch->name);
-    if (watch->uid)  free((void *)watch->uid);
-    if (watch->gid)  free((void *)watch->gid);
-    if (watch->dir)  free((void *)watch->dir);
+    if (watch->name)     free((void *)watch->name);
+    if (watch->uid)      free((void *)watch->uid);
+    if (watch->gid)      free((void *)watch->gid);
+    if (watch->dir)      free((void *)watch->dir);
+    if (watch->pid_file) free((void *)watch->pid_file);
 
     if (watch->env)
         hash_destroy(watch->env);
@@ -122,6 +123,7 @@ watch_dump(watch_t *watch)
     dump_not_empty("uid", watch->uid);
     dump_not_empty("gid", watch->gid);
     dump_not_empty("dir", watch->dir);
+    dump_not_empty("pid_file", watch->pid_file);
 
     if (watch->env)
     {

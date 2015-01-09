@@ -258,6 +258,7 @@ DECLARE_WATCH_STR_VALUE(name)
 DECLARE_WATCH_STR_VALUE(uid)
 DECLARE_WATCH_STR_VALUE(gid)
 DECLARE_WATCH_STR_VALUE(dir)
+DECLARE_WATCH_STR_VALUE(pid_file)
 DECLARE_WATCH_STR_LIST_VALUE(start)
 
 #undef DECLARE_WATCH_STR_VALUE
@@ -386,6 +387,7 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("uid", handle_watch_map_value_uid),
     SCALAR_HANDLER("gid", handle_watch_map_value_gid),
     SCALAR_HANDLER("dir", handle_watch_map_value_dir),
+    SCALAR_HANDLER("pid_file", handle_watch_map_value_pid_file),
     MAP_HANDLER("env", handle_watch_env),
     HANDLERS("start", handle_watch_map_value_start, handle_watch_strings, NULL),
     { NULL }
@@ -652,7 +654,7 @@ parse_config(nyx_t *nyx)
 
     if (success)
     {
-        log_info("Parsed %d watch definitions", hash_count(nyx->watches));
+        log_info("Found %d watch definitions", hash_count(nyx->watches));
 
         hash_foreach(nyx->watches, dump_watch);
     }
