@@ -43,11 +43,16 @@ watches:
         # working directory (optional)
         dir: /home/user
 
+        # log (stdout) file (optional)
+        log_file: /tmp/app.log
+
+        # error (stderr) file (optional)
+        error_file: /tmp/app.err
+
         # environment variables (optional)
         env:
             SOME: value
             FOO: bar
-
 ```
 
 
