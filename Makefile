@@ -5,11 +5,13 @@ INCLUDES := -I.
 LIBS     := -lyaml -lpthread
 
 SRCS     := $(wildcard src/*.c)
-OBJECTS  := $(patsubst src/%.c,src/%.o,$(SRCS))
+OBJECTS  := $(patsubst src/%.c,src/%.o, $(SRCS))
 DEPS     := $(OBJECTS:.o=.d)
 
 TSRCS    := $(wildcard tests/*.c)
-TOBJECTS := $(patsubst tests/%.c,tests/%.o,$(TSRCS))
+TOBJECTS := $(patsubst tests/%.c,tests/%.o, $(TSRCS))
+TLIBS    := -lcmocka
+TDEPS    := $(filter-out src/main.o, $(OBJECTS))
 
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
@@ -27,8 +29,8 @@ all: nyx
 nyx: $(OBJECTS)
 	$(CC) $(OBJECTS) -o nyx $(LIBS)
 
-test: $(TOBJECTS)
-	$(CC) $(TOBJECTS) -o test $(LIBS)
+test: $(TOBJECTS) $(TDEPS)
+	$(CC) $(TOBJECTS) $(TDEPS) -o test $(LIBS) $(TLIBS)
 
 tests/%.o: tests/%.c
 	$(CC) -c $(CXXFLAGS) $(INCLUDES) -o $@ $<
