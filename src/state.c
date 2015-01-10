@@ -176,6 +176,19 @@ set_environment(const watch_t *watch)
     free(iter);
 }
 
+static void
+close_fds(void)
+{
+    int fd, max;
+
+    /* determine maximum */
+    if ((max = getdtablesize()) == -1)
+        max = 256;
+
+    for (fd = 3 /* stderr + 1 */; fd < max; fd++)
+        close(fd);
+}
+
 static pid_t
 spawn(state_t *state)
 {
@@ -304,6 +317,7 @@ spawn(state_t *state)
         }
 
         set_environment(watch);
+        close_fds();
 
         execvp(executable, (char * const *)args);
 
