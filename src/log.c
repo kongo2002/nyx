@@ -37,7 +37,9 @@ log_init(nyx_t *nyx)
     quiet = nyx->options.quiet;
 #endif
 
-    color = !nyx->options.no_color;
+    color = !nyx->options.no_color &&
+        !nyx->options.syslog &&
+        (nyx->options.no_daemon || !nyx->is_daemon);
 }
 
 void
