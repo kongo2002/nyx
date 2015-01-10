@@ -129,8 +129,7 @@ log_msg(log_level_e level, const char *msg, size_t length)
 
     fputc('\n', stdout);
 
-    /* restore errno? */
-    /* errno = error; */
+    errno = error;
 }
 
 static void
