@@ -22,13 +22,18 @@
 void
 test_list_create(UNUSED void **state)
 {
+    int i = 0, size = 100;
+
     list_t *list = list_new(free);
 
     assert_int_equal(0, list_size(list));
 
-    list_add(list, strdup("foo"));
+    for (i = 0; i < size; i++)
+    {
+        list_add(list, strdup("foo"));
+    }
 
-    assert_int_equal(1, list_size(list));
+    assert_int_equal(size, list_size(list));
 
     list_destroy(list);
 }
