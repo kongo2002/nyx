@@ -23,8 +23,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <unistd.h>
 
+static volatile int use_syslog = 0;
 static volatile int quiet = 0;
 static volatile int color = 1;
 
@@ -40,12 +42,20 @@ log_init(nyx_t *nyx)
     color = !nyx->options.no_color &&
         !nyx->options.syslog &&
         (nyx->options.no_daemon || !nyx->is_daemon);
+
+    use_syslog = nyx->options.syslog &&
+        nyx->is_daemon &&
+        !nyx->options.no_daemon;
+
+    if (use_syslog)
+        openlog("nyx", LOG_NDELAY, LOG_USER);
 }
 
 void
 log_shutdown(void)
 {
-    /* nothing for now */
+    if (use_syslog)
+        closelog();
 }
 
 static const char *
@@ -53,17 +63,17 @@ get_log_color(log_level_e level, size_t *length)
 {
     const char *color;
 
-    if (level & LOG_INFO)
+    if (level & NYX_LOG_INFO)
         color = "\033[36m";
-    else if (level & LOG_WARN)
+    else if (level & NYX_LOG_WARN)
         color = "\033[33m";
-    else if (level & LOG_CRITICAL)
+    else if (level & NYX_LOG_CRITICAL)
         color = "\033[31;1m";
-    else if (level & LOG_DEBUG)
+    else if (level & NYX_LOG_DEBUG)
         color = "\033[37m";
-    else if (level & LOG_PERROR)
+    else if (level & NYX_LOG_PERROR)
         color = "\033[35m";
-    else if (level & LOG_ERROR)
+    else if (level & NYX_LOG_ERROR)
         color = "\033[31;1m";
     else
         color = "\033[32m";
@@ -73,21 +83,42 @@ get_log_color(log_level_e level, size_t *length)
     return color;
 }
 
+static int
+get_syslog_level(log_level_e level)
+{
+    int lvl = LOG_INFO;
+
+    if (level & NYX_LOG_INFO)
+        lvl = LOG_INFO;
+    else if (level & NYX_LOG_WARN)
+        lvl = LOG_WARNING;
+    else if (level & NYX_LOG_CRITICAL)
+        lvl = LOG_CRIT;
+    else if (level & NYX_LOG_DEBUG)
+        lvl = LOG_DEBUG;
+    else if (level & NYX_LOG_PERROR)
+        lvl = LOG_ERR;
+    else if (level & NYX_LOG_ERROR)
+        lvl = LOG_ERR;
+
+    return lvl;
+}
+
 static inline const char *
 get_log_prefix(log_level_e level)
 {
     switch (level)
     {
-        case LOG_DEBUG:
+        case NYX_LOG_DEBUG:
             return "[D] ";
-        case LOG_WARN:
+        case NYX_LOG_WARN:
             return "[W] ";
-        case LOG_PERROR:
-        case LOG_ERROR:
+        case NYX_LOG_PERROR:
+        case NYX_LOG_ERROR:
             return "[E] ";
-        case LOG_CRITICAL:
+        case NYX_LOG_CRITICAL:
             return "[C] ";
-        case LOG_INFO:
+        case NYX_LOG_INFO:
         default:
             return "[I] ";
     }
@@ -114,7 +145,7 @@ log_msg(log_level_e level, const char *msg, size_t length)
     fwrite(msg, length, 1, stdout);
 
     /* errno specific handling */
-    if (level & LOG_PERROR)
+    if (level & NYX_LOG_PERROR)
     {
         char buffer[512];
         char *error_msg = strerror_r(error, buffer, 511);
@@ -154,12 +185,20 @@ log_message(log_level_e level, const char *format, ...)
         va_list vas;
         va_start(vas, format);
 
-        log_format_msg(level, format, vas);
+        if (use_syslog)
+        {
+            int priority = get_syslog_level(level);
+            vsyslog(priority, format, vas);
+        }
+        else
+        {
+            log_format_msg(level, format, vas);
+        }
 
         va_end(vas);
     }
 
-    if (level & LOG_CRITICAL)
+    if (level & NYX_LOG_CRITICAL)
         abort();
 }
 
@@ -174,19 +213,19 @@ log_message(log_level_e level, const char *format, ...)
             log_format_msg(level_, format, vas); \
             va_end(vas); \
         } \
-        if ((level_) & LOG_CRITICAL) abort(); \
+        if ((level_) & NYX_LOG_CRITICAL) abort(); \
     }
 
 #ifndef NDEBUG
-DECLARE_LOG_FUNC (debug,           LOG_DEBUG)
+DECLARE_LOG_FUNC (debug,           NYX_LOG_DEBUG)
 #endif
 
-DECLARE_LOG_FUNC (info,            LOG_INFO)
-DECLARE_LOG_FUNC (warn,            LOG_WARN)
-DECLARE_LOG_FUNC (error,           LOG_ERROR)
-DECLARE_LOG_FUNC (perror,          LOG_PERROR)
-DECLARE_LOG_FUNC (critical,        LOG_CRITICAL)
-DECLARE_LOG_FUNC (critical_perror, LOG_CRITICAL | LOG_PERROR)
+DECLARE_LOG_FUNC (info,            NYX_LOG_INFO)
+DECLARE_LOG_FUNC (warn,            NYX_LOG_WARN)
+DECLARE_LOG_FUNC (error,           NYX_LOG_ERROR)
+DECLARE_LOG_FUNC (perror,          NYX_LOG_PERROR)
+DECLARE_LOG_FUNC (critical,        NYX_LOG_CRITICAL)
+DECLARE_LOG_FUNC (critical_perror, NYX_LOG_CRITICAL | NYX_LOG_PERROR)
 
 #undef DECLARE_LOG_FUNC
 

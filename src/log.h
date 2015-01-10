@@ -22,12 +22,12 @@
 
 typedef enum
 {
-    LOG_DEBUG    = 1 << 0,
-    LOG_INFO     = 1 << 1,
-    LOG_WARN     = 1 << 2,
-    LOG_ERROR    = 1 << 3,
-    LOG_PERROR   = 1 << 4,
-    LOG_CRITICAL = 1 << 5
+    NYX_LOG_DEBUG    = 1 << 0,
+    NYX_LOG_INFO     = 1 << 1,
+    NYX_LOG_WARN     = 1 << 2,
+    NYX_LOG_ERROR    = 1 << 3,
+    NYX_LOG_PERROR   = 1 << 4,
+    NYX_LOG_CRITICAL = 1 << 5
 } log_level_e;
 
 void
