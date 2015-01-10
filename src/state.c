@@ -176,25 +176,6 @@ set_environment(const watch_t *watch)
     free(iter);
 }
 
-static void
-open_or_devnull(const char *file, int flag)
-{
-    if (file)
-    {
-        if (open(file, flag) != -1)
-            return;
-        else
-        {
-            /* specified failed to open
-             * -> try /dev/null instead */
-            log_perror("nyx: open");
-        }
-    }
-
-    if (open("/dev/null", flag) == -1)
-        log_perror("nyx: open");
-}
-
 static pid_t
 spawn(state_t *state)
 {
@@ -262,23 +243,62 @@ spawn(state_t *state)
         }
 
         /* set current directory */
+        log_debug("Changing current directory to '%s'", dir);
+
         if (chdir(dir) == -1)
             log_perror("nyx: chdir");
 
-        /* close open file descriptors */
-        close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
-
         /* stdin */
+        close(STDIN_FILENO);
+
         if (open("/dev/null", O_RDONLY) == -1)
             log_perror("nyx: open");
 
         /* stdout */
-        open_or_devnull(watch->log_file, O_WRONLY);
+        close(STDOUT_FILENO);
+
+        if (watch->log_file)
+        {
+            if (open(watch->log_file,
+                        O_RDWR | O_APPEND | O_CREAT,
+                        S_IRUSR | S_IWUSR | S_IRGRP) == -1)
+            {
+                fprintf(stderr, "Failed to open log file '%s'",
+                        watch->log_file);
+                exit(EXIT_FAILURE);
+            }
+        }
+        else
+        {
+            if (open("/dev/null", O_WRONLY) == -1)
+            {
+                fprintf(stderr, "Failed to open /dev/null");
+                exit(EXIT_FAILURE);
+            }
+        }
 
         /* stderr */
-        open_or_devnull(watch->error_file, O_RDWR);
+        close(STDERR_FILENO);
+
+        if (watch->error_file)
+        {
+            if (open(watch->error_file,
+                        O_RDWR | O_APPEND | O_CREAT,
+                        S_IRUSR | S_IWUSR | S_IRGRP) == -1)
+            {
+                fprintf(stdout, "Failed to open error file '%s'",
+                        watch->error_file);
+                exit(EXIT_FAILURE);
+            }
+        }
+        else
+        {
+            if (open("/dev/null", O_RDWR) == -1)
+            {
+                fprintf(stdout, "Failed to open /dev/null");
+                exit(EXIT_FAILURE);
+            }
+        }
 
         set_environment(watch);
 
@@ -286,9 +306,9 @@ spawn(state_t *state)
 
         if (errno == ENOENT)
         {
-            log_warn("Start command '%s' of watch '%s' is not executable "
-                     "or does not exist at all",
-                     executable, watch->name);
+            fprintf(stderr, "Start command '%s' of watch '%s' is not "
+                    "executable or does not exist at all",
+                    executable, watch->name);
 
             /* TODO: remove watch? */
 
