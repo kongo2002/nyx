@@ -4,11 +4,12 @@ CXXFLAGS := -Wall -Wextra -std=gnu89
 INCLUDES := -I.
 LIBS     := -lyaml -lpthread
 
-VPATH    := src
-
 SRCS     := $(wildcard src/*.c)
 OBJECTS  := $(patsubst src/%.c,src/%.o,$(SRCS))
 DEPS     := $(OBJECTS:.o=.d)
+
+TSRCS    := $(wildcard tests/*.c)
+TOBJECTS := $(patsubst tests/%.c,tests/%.o,$(TSRCS))
 
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
@@ -26,7 +27,13 @@ all: nyx
 nyx: $(OBJECTS)
 	$(CC) $(OBJECTS) -o nyx $(LIBS)
 
-src/%.o: %.c
+test: $(TOBJECTS)
+	$(CC) $(TOBJECTS) -o test $(LIBS)
+
+tests/%.o: tests/%.c
+	$(CC) -c $(CXXFLAGS) $(INCLUDES) -o $@ $<
+
+src/%.o: src/%.c
 	$(CC) -c $(CXXFLAGS) $(INCLUDES) -MMD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 
 tags: $(SRCS)
@@ -35,6 +42,8 @@ tags: $(SRCS)
 clean:
 	@rm -rf src/*.o
 	@rm -rf src/*.d
+	@rm -rf tests/*.o
 	@rm -f nyx
+	@rm -f test
 
 rebuild: clean all
