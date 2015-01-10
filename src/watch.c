@@ -118,7 +118,7 @@ watch_validate(watch_t *watch)
 
         if (!valid)
         {
-            log_error("PID file directory '%s' does not exists and/or "
+            log_error("PID file directory '%s' does not exist and/or "
                       "is not writable", watch->pid_file);
         }
 
@@ -131,7 +131,7 @@ watch_validate(watch_t *watch)
 
         if (!valid)
         {
-            log_error("Log file directory '%s' does not exists and/or "
+            log_error("Log file directory '%s' does not exist and/or "
                       "is not writable", watch->log_file);
         }
 
@@ -143,7 +143,7 @@ watch_validate(watch_t *watch)
 
         if (!valid)
         {
-            log_error("Error file directory '%s' does not exists and/or "
+            log_error("Error file directory '%s' does not exist and/or "
                       "is not writable", watch->error_file);
         }
 
