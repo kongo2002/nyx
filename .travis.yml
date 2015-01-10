@@ -20,4 +20,4 @@ before_script:
     - cd ../..
     - rm -rf cmocka-0.4.1
 
-script: make && make test && ./test
+script: make && make check

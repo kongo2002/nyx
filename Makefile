@@ -20,7 +20,7 @@ else
     CXXFLAGS+= -O2 -DNDEBUG
 endif
 
-.PHONY: all clean rebuild
+.PHONY: all clean rebuild check
 
 all: nyx
 
@@ -28,6 +28,9 @@ all: nyx
 
 nyx: $(OBJECTS)
 	$(CC) $(OBJECTS) -o nyx $(LIBS)
+
+check: test
+	@./test
 
 test: $(TOBJECTS) $(TDEPS)
 	$(CC) $(TOBJECTS) $(TDEPS) -o test $(LIBS) $(TLIBS)
