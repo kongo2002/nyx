@@ -20,6 +20,9 @@
 #include <sys/types.h>
 
 int
+dir_writable(const char *directory);
+
+int
 dir_exists(const char *directory);
 
 int

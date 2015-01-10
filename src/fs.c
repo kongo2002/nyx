@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <grp.h>
+#include <libgen.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -170,6 +171,30 @@ dir_exists(const char *directory)
     /* no need to check errno */
 
     return 0;
+}
+
+int
+dir_writable(const char *directory)
+{
+    int writable = 0;
+    int error = 0;
+    char *copy = strdup(prepare_dir(directory));
+    const char *dir = dirname(copy);
+
+    if (dir_exists(dir))
+    {
+        error = access(dir, W_OK);
+
+        if (error == -1)
+            log_perror("nyx: access");
+
+        if (error == 0)
+            writable = 1;
+    }
+
+    free(copy);
+
+    return writable;
 }
 
 int

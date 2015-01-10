@@ -68,11 +68,13 @@ watch_destroy(watch_t *watch)
 {
     strings_free((char **)watch->start);
 
-    if (watch->name)     free((void *)watch->name);
-    if (watch->uid)      free((void *)watch->uid);
-    if (watch->gid)      free((void *)watch->gid);
-    if (watch->dir)      free((void *)watch->dir);
-    if (watch->pid_file) free((void *)watch->pid_file);
+    if (watch->name)       free((void *)watch->name);
+    if (watch->uid)        free((void *)watch->uid);
+    if (watch->gid)        free((void *)watch->gid);
+    if (watch->dir)        free((void *)watch->dir);
+    if (watch->pid_file)   free((void *)watch->pid_file);
+    if (watch->log_file)   free((void *)watch->log_file);
+    if (watch->error_file) free((void *)watch->error_file);
 
     if (watch->env)
         hash_destroy(watch->env);
@@ -110,6 +112,44 @@ watch_validate(watch_t *watch)
         result &= valid;
     }
 
+    if (watch->pid_file)
+    {
+        valid = dir_writable(watch->pid_file);
+
+        if (!valid)
+        {
+            log_error("PID file directory '%s' does not exists and/or "
+                      "is not writable", watch->pid_file);
+        }
+
+        result &= valid;
+    }
+
+    if (watch->log_file)
+    {
+        valid = dir_writable(watch->log_file);
+
+        if (!valid)
+        {
+            log_error("Log file directory '%s' does not exists and/or "
+                      "is not writable", watch->log_file);
+        }
+
+        result &= valid;
+    }
+    if (watch->error_file)
+    {
+        valid = dir_writable(watch->error_file);
+
+        if (!valid)
+        {
+            log_error("Error file directory '%s' does not exists and/or "
+                      "is not writable", watch->error_file);
+        }
+
+        result &= valid;
+    }
+
     return result;
 }
 
@@ -124,6 +164,8 @@ watch_dump(watch_t *watch)
     dump_not_empty("gid", watch->gid);
     dump_not_empty("dir", watch->dir);
     dump_not_empty("pid_file", watch->pid_file);
+    dump_not_empty("log_file", watch->log_file);
+    dump_not_empty("error_file", watch->error_file);
 
     if (watch->env)
     {

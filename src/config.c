@@ -259,6 +259,8 @@ DECLARE_WATCH_STR_VALUE(uid)
 DECLARE_WATCH_STR_VALUE(gid)
 DECLARE_WATCH_STR_VALUE(dir)
 DECLARE_WATCH_STR_VALUE(pid_file)
+DECLARE_WATCH_STR_VALUE(log_file)
+DECLARE_WATCH_STR_VALUE(error_file)
 DECLARE_WATCH_STR_LIST_VALUE(start)
 
 #undef DECLARE_WATCH_STR_VALUE
@@ -388,6 +390,8 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("gid", handle_watch_map_value_gid),
     SCALAR_HANDLER("dir", handle_watch_map_value_dir),
     SCALAR_HANDLER("pid_file", handle_watch_map_value_pid_file),
+    SCALAR_HANDLER("log_file", handle_watch_map_value_log_file),
+    SCALAR_HANDLER("error_file", handle_watch_map_value_error_file),
     MAP_HANDLER("env", handle_watch_env),
     HANDLERS("start", handle_watch_map_value_start, handle_watch_strings, NULL),
     { NULL }
