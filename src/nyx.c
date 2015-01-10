@@ -161,21 +161,19 @@ daemonize(nyx_t *nyx)
             return 0;
         }
 
-        /* close open file descriptors */
+        /* reopen file descriptors */
+
         close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
-
-        /* TODO: redirect somewhere? */
-
         if (open("/dev/null", O_RDONLY) == -1)
-            log_perror("nyx: open");
+            log_critical_perror("nyx: open");
 
+        close(STDOUT_FILENO);
         if (open("/dev/null", O_WRONLY) == -1)
-            log_perror("nyx: open");
+            log_critical_perror("nyx: open");
 
+        close(STDERR_FILENO);
         if (open("/dev/null", O_RDWR) == -1)
-            log_perror("nyx: open");
+            log_critical_perror("nyx: open");
     }
     else
     {
