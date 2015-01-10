@@ -252,7 +252,10 @@ spawn(state_t *state)
         close(STDIN_FILENO);
 
         if (open("/dev/null", O_RDONLY) == -1)
-            log_perror("nyx: open");
+        {
+            fprintf(stderr, "Failed to open /dev/null");
+            exit(EXIT_FAILURE);
+        };
 
         /* stdout */
         close(STDOUT_FILENO);
