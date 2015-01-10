@@ -186,14 +186,9 @@ log_message(log_level_e level, const char *format, ...)
         va_start(vas, format);
 
         if (use_syslog)
-        {
-            int priority = get_syslog_level(level);
-            vsyslog(priority, format, vas);
-        }
+            vsyslog(get_syslog_level(level), format, vas);
         else
-        {
             log_format_msg(level, format, vas);
-        }
 
         va_end(vas);
     }
@@ -210,7 +205,10 @@ log_message(log_level_e level, const char *format, ...)
         { \
             va_list vas; \
             va_start(vas, format); \
-            log_format_msg(level_, format, vas); \
+            if (use_syslog) \
+                vsyslog(get_syslog_level(level_), format, vas); \
+            else \
+                log_format_msg(level_, format, vas); \
             va_end(vas); \
         } \
         if ((level_) & NYX_LOG_CRITICAL) abort(); \
