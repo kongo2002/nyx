@@ -176,6 +176,25 @@ set_environment(const watch_t *watch)
     free(iter);
 }
 
+static void
+open_or_devnull(const char *file, int flag)
+{
+    if (file)
+    {
+        if (open(file, flag) != -1)
+            return;
+        else
+        {
+            /* specified failed to open
+             * -> try /dev/null instead */
+            log_perror("nyx: open");
+        }
+    }
+
+    if (open("/dev/null", flag) == -1)
+        log_perror("nyx: open");
+}
+
 static pid_t
 spawn(state_t *state)
 {
@@ -251,16 +270,15 @@ spawn(state_t *state)
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
 
-        /* TODO: redirect somewhere? */
-
+        /* stdin */
         if (open("/dev/null", O_RDONLY) == -1)
             log_perror("nyx: open");
 
-        if (open("/dev/null", O_WRONLY) == -1)
-            log_perror("nyx: open");
+        /* stdout */
+        open_or_devnull(watch->log_file, O_WRONLY);
 
-        if (open("/dev/null", O_RDWR) == -1)
-            log_perror("nyx: open");
+        /* stderr */
+        open_or_devnull(watch->error_file, O_RDWR);
 
         set_environment(watch);
 
