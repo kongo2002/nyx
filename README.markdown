@@ -76,6 +76,41 @@ Right now the following commands are implemented:
 - `terminate`: terminate the nyx daemon
 
 
+## Building
+
+On most linux systems building should be as simple as cloning the git repository
+and running `make`:
+
+```bash
+$ git clone git://github.com/kongo2002/nyx.git
+$ cd nyx
+$ make
+$ ./nyx --help
+```
+
+In order to run the test suite afterwards you may run:
+
+```bash
+$ make check
+```
+
+### Release
+
+The non-debug (release) build can be compiled with:
+
+```bash
+$ make DEBUG=0
+```
+
+
+### Requirements
+
+The following libraries are necessary to build and run *nyx*:
+
+- `yaml`
+- `cmocka` *(for unit tests only)*
+
+
 ## Maintainer
 
 The project is written by Gregor Uhlenheuer. You can reach me at
