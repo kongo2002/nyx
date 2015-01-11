@@ -19,6 +19,9 @@
 void
 test_list_create(void **state);
 
+void
+test_list_add(void **state);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

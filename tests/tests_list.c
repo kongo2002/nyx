@@ -22,6 +22,16 @@
 void
 test_list_create(UNUSED void **state)
 {
+    list_t *list = list_new(free);
+
+    assert_int_equal(0, list_size(list));
+
+    list_destroy(list);
+}
+
+void
+test_list_add(UNUSED void **state)
+{
     int i = 0, size = 100;
 
     list_t *list = list_new(free);

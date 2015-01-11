@@ -25,7 +25,8 @@ main(UNUSED int argc, UNUSED char **argv)
 {
     const UnitTest tests[] =
     {
-        unit_test(test_list_create)
+        unit_test(test_list_create),
+        unit_test(test_list_add)
     };
 
     return run_tests(tests);
