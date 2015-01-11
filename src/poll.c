@@ -61,7 +61,10 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
             pid_t pid = state->pid;
 
             if (pid < 1)
+            {
                 pid = determine_pid(state->watch->name, nyx);
+                state->pid = pid;
+            }
 
             if (pid > 0)
             {

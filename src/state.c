@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 typedef int (*transition_func_t)(state_t *, state_e, state_e);
@@ -319,22 +320,61 @@ spawn(state_t *state)
         set_environment(watch);
         close_fds();
 
-        execvp(executable, (char * const *)args);
-
-        if (errno == ENOENT)
+        /* we 'double-fork' in case we are not running in
+         * 'init-mode' where nyx acts as the init process (pid 1) */
+        if (!state->nyx->is_init)
         {
-            fprintf(stderr, "Start command '%s' of watch '%s' is not "
-                    "executable or does not exist at all",
-                    executable, watch->name);
+            pid_t inner_pid = fork();
 
-            /* TODO: remove watch? */
+            if (inner_pid == 0)
+            {
+                execvp(executable, (char * const *)args);
 
-            exit(EXIT_SUCCESS);
+                if (errno == ENOENT)
+                {
+                    fprintf(stderr, "Start command '%s' of watch '%s' is not "
+                            "executable or does not exist at all",
+                            executable, watch->name);
+
+                    /* TODO: remove watch? */
+
+                    exit(EXIT_SUCCESS);
+                }
+
+                log_critical_perror("nyx: execvp %s", executable);
+            }
+            else if (inner_pid == -1)
+            {
+                log_perror("nyx: fork");
+                exit(EXIT_FAILURE);
+            }
+            else
+            {
+                write_pid(inner_pid, state->watch->name, state->nyx);
+                exit(EXIT_SUCCESS);
+            }
         }
+        else
+        {
+            execvp(executable, (char * const *)args);
 
-        log_critical_perror("nyx: execvp %s", executable);
+            if (errno == ENOENT)
+            {
+                fprintf(stderr, "Start command '%s' of watch '%s' is not "
+                        "executable or does not exist at all",
+                        executable, watch->name);
+
+                /* TODO: remove watch? */
+
+                exit(EXIT_SUCCESS);
+            }
+
+            log_critical_perror("nyx: execvp %s", executable);
+        }
     }
 
+    /* this pid might be the wrong one
+     * in case of a 'double-fork' */
     return pid;
 }
 
@@ -344,11 +384,20 @@ start_state(state_t *state)
     /* start program */
     pid_t pid = spawn(state);
 
-    /* keep track of child pid */
     if (pid > 0)
     {
-        state->pid = pid;
-        write_pid(pid, state->watch->name, state->nyx);
+        /* keep track of child pid (in init-mode) */
+        if (state->nyx->is_init)
+        {
+            state->pid = pid;
+            write_pid(pid, state->watch->name, state->nyx);
+        }
+        else
+        {
+            /* wait for the intermediate forked process
+             * to terminate */
+            waitpid(pid, NULL, 0);
+        }
     }
 }
 
