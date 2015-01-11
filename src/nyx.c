@@ -106,19 +106,22 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
     struct sigaction action =
     {
         .sa_flags = SA_NOCLDSTOP | SA_RESTART,
-        .sa_handler = handle_child_stop
+        .sa_handler = terminate_handler
     };
 
     sigfillset(&action.sa_mask);
 
-    /* register SIGCHLD handler */
-    sigaction(SIGCHLD, &action, NULL);
-
     /* register handler for termination:
      * SIGTERM and SIGINT */
-    action.sa_handler = terminate_handler;
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGINT, &action, NULL);
+
+    /* register SIGCHLD handler */
+    if (nyx->is_init)
+    {
+        action.sa_handler = handle_child_stop;
+        sigaction(SIGCHLD, &action, NULL);
+    }
 
     nyx->terminate_handler = terminate_handler;
 }
