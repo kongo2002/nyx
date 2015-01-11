@@ -52,6 +52,17 @@ test_hash_add(UNUSED void **state)
 
     assert_int_equal(size, hash_count(hash));
 
+    for (i = 0; i < size; i++)
+    {
+        sprintf(buffer, "key%d", i);
+        char *value = hash_get(hash, buffer);
+
+        assert_non_null(value);
+
+        sprintf(buffer, "value%d", i);
+        assert_string_equal(buffer, value);
+    }
+
     hash_destroy(hash);
 }
 
