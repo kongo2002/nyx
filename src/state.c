@@ -190,6 +190,144 @@ close_fds(void)
         close(fd);
 }
 
+static void
+spawn_exec(state_t *state)
+{
+    pid_t sid = 0;
+    uid_t uid = 0;
+    gid_t gid = 0;
+    mode_t old_mode;
+
+    const watch_t *watch = state->watch;
+    const char **args = watch->start;
+    const char *executable = *args;
+    const char *dir = dir_exists(watch->dir) ? watch->dir : "/";
+
+    /* determine user and group */
+    if (watch->uid)
+        get_user(watch->uid, &uid, &gid);
+
+    if (watch->gid)
+        get_group(watch->gid, &gid);
+
+    /* TODO */
+    old_mode = umask(0);
+
+    log_debug("Reset umask - old mask: %04o", old_mode);
+
+    /* create session */
+    if ((sid = setsid()) == -1)
+        log_perror("nyx: setsid");
+    else
+    {
+        log_debug("Created new session group: %d", sid);
+    }
+
+    /* set user/group */
+    if (gid)
+    {
+        gid_t groups[] = { gid };
+
+        if (setgroups(1, groups) == -1)
+            log_perror("nyx: setgroups");
+
+        if (setgid(gid) == -1)
+            log_perror("nyx: setgid");
+    }
+
+    if (uid && gid)
+    {
+        if (initgroups(watch->uid, gid) == -1)
+            log_perror("nyx: initgroups");
+    }
+
+    if (uid)
+    {
+        if (setuid(uid) == -1)
+            log_perror("nyx: setuid");
+    }
+
+    /* set current directory */
+    log_debug("Changing current directory to '%s'", dir);
+
+    if (chdir(dir) == -1)
+        log_perror("nyx: chdir");
+
+    /* stdin */
+    close(STDIN_FILENO);
+
+    if (open("/dev/null", O_RDONLY) == -1)
+    {
+        fprintf(stderr, "Failed to open /dev/null");
+        exit(EXIT_FAILURE);
+    };
+
+    /* stdout */
+    close(STDOUT_FILENO);
+
+    if (watch->log_file)
+    {
+        if (open(watch->log_file,
+                    O_RDWR | O_APPEND | O_CREAT,
+                    S_IRUSR | S_IWUSR | S_IRGRP) == -1)
+        {
+            fprintf(stderr, "Failed to open log file '%s'",
+                    watch->log_file);
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        if (open("/dev/null", O_WRONLY) == -1)
+        {
+            fprintf(stderr, "Failed to open /dev/null");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    /* stderr */
+    close(STDERR_FILENO);
+
+    if (watch->error_file)
+    {
+        if (open(watch->error_file,
+                    O_RDWR | O_APPEND | O_CREAT,
+                    S_IRUSR | S_IWUSR | S_IRGRP) == -1)
+        {
+            fprintf(stdout, "Failed to open error file '%s'",
+                    watch->error_file);
+            exit(EXIT_FAILURE);
+        }
+    }
+    else
+    {
+        if (open("/dev/null", O_RDWR) == -1)
+        {
+            fprintf(stdout, "Failed to open /dev/null");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    set_environment(watch);
+    close_fds();
+
+    /* on success this call won't return */
+    execvp(executable, (char * const *)args);
+
+    if (errno == ENOENT)
+    {
+        fprintf(stderr, "Start command '%s' of watch '%s' is not "
+                "executable or does not exist at all",
+                executable, watch->name);
+
+        /* TODO: remove watch? */
+
+        exit(EXIT_SUCCESS);
+    }
+
+    log_critical_perror("nyx: execvp %s", executable);
+}
+
 static pid_t
 spawn(state_t *state)
 {
@@ -202,174 +340,28 @@ spawn(state_t *state)
     /* child process */
     if (pid == 0)
     {
-        pid_t sid = 0;
-        uid_t uid = 0;
-        gid_t gid = 0;
-        mode_t old_mode;
-
-        const watch_t *watch = state->watch;
-        const char **args = watch->start;
-        const char *executable = *args;
-        const char *dir = dir_exists(watch->dir) ? watch->dir : "/";
-
-        /* determine user and group */
-        if (watch->uid)
-            get_user(watch->uid, &uid, &gid);
-
-        if (watch->gid)
-            get_group(watch->gid, &gid);
-
-        /* TODO */
-        old_mode = umask(0);
-
-        log_debug("Reset umask - old mask: %04o", old_mode);
-
-        /* create session */
-        if ((sid = setsid()) == -1)
-            log_perror("nyx: setsid");
+        /* in 'init mode' we have to fork only once */
+        if (state->nyx->is_init)
+        {
+            /* this call won't return */
+            spawn_exec(state);
+        }
+        /* otherwise we want to 'double fork' */
         else
-        {
-            log_debug("Created new session group: %d", sid);
-        }
-
-        /* set user/group */
-        if (gid)
-        {
-            gid_t groups[] = { gid };
-
-            if (setgroups(1, groups) == -1)
-                log_perror("nyx: setgroups");
-
-            if (setgid(gid) == -1)
-                log_perror("nyx: setgid");
-        }
-
-        if (uid && gid)
-        {
-            if (initgroups(watch->uid, gid) == -1)
-                log_perror("nyx: initgroups");
-        }
-
-        if (uid)
-        {
-            if (setuid(uid) == -1)
-                log_perror("nyx: setuid");
-        }
-
-        /* set current directory */
-        log_debug("Changing current directory to '%s'", dir);
-
-        if (chdir(dir) == -1)
-            log_perror("nyx: chdir");
-
-        /* stdin */
-        close(STDIN_FILENO);
-
-        if (open("/dev/null", O_RDONLY) == -1)
-        {
-            fprintf(stderr, "Failed to open /dev/null");
-            exit(EXIT_FAILURE);
-        };
-
-        /* stdout */
-        close(STDOUT_FILENO);
-
-        if (watch->log_file)
-        {
-            if (open(watch->log_file,
-                        O_RDWR | O_APPEND | O_CREAT,
-                        S_IRUSR | S_IWUSR | S_IRGRP) == -1)
-            {
-                fprintf(stderr, "Failed to open log file '%s'",
-                        watch->log_file);
-                exit(EXIT_FAILURE);
-            }
-        }
-        else
-        {
-            if (open("/dev/null", O_WRONLY) == -1)
-            {
-                fprintf(stderr, "Failed to open /dev/null");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        /* stderr */
-        close(STDERR_FILENO);
-
-        if (watch->error_file)
-        {
-            if (open(watch->error_file,
-                        O_RDWR | O_APPEND | O_CREAT,
-                        S_IRUSR | S_IWUSR | S_IRGRP) == -1)
-            {
-                fprintf(stdout, "Failed to open error file '%s'",
-                        watch->error_file);
-                exit(EXIT_FAILURE);
-            }
-        }
-        else
-        {
-            if (open("/dev/null", O_RDWR) == -1)
-            {
-                fprintf(stdout, "Failed to open /dev/null");
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        set_environment(watch);
-        close_fds();
-
-        /* we 'double-fork' in case we are not running in
-         * 'init-mode' where nyx acts as the init process (pid 1) */
-        if (!state->nyx->is_init)
         {
             pid_t inner_pid = fork();
 
+            if (inner_pid == -1)
+                log_critical_perror("nyx: fork");
+
             if (inner_pid == 0)
             {
-                execvp(executable, (char * const *)args);
-
-                if (errno == ENOENT)
-                {
-                    fprintf(stderr, "Start command '%s' of watch '%s' is not "
-                            "executable or does not exist at all",
-                            executable, watch->name);
-
-                    /* TODO: remove watch? */
-
-                    exit(EXIT_SUCCESS);
-                }
-
-                log_critical_perror("nyx: execvp %s", executable);
-            }
-            else if (inner_pid == -1)
-            {
-                log_perror("nyx: fork");
-                exit(EXIT_FAILURE);
-            }
-            else
-            {
-                write_pid(inner_pid, state->watch->name, state->nyx);
-                exit(EXIT_SUCCESS);
-            }
-        }
-        else
-        {
-            execvp(executable, (char * const *)args);
-
-            if (errno == ENOENT)
-            {
-                fprintf(stderr, "Start command '%s' of watch '%s' is not "
-                        "executable or does not exist at all",
-                        executable, watch->name);
-
-                /* TODO: remove watch? */
-
-                exit(EXIT_SUCCESS);
+                /* this call won't return */
+                spawn_exec(state);
             }
 
-            log_critical_perror("nyx: execvp %s", executable);
+            write_pid(inner_pid, state->watch->name, state->nyx);
+            exit(EXIT_SUCCESS);
         }
     }
 
@@ -384,20 +376,17 @@ start_state(state_t *state)
     /* start program */
     pid_t pid = spawn(state);
 
-    if (pid > 0)
+    /* keep track of child pid (in init-mode) */
+    if (state->nyx->is_init)
     {
-        /* keep track of child pid (in init-mode) */
-        if (state->nyx->is_init)
-        {
-            state->pid = pid;
-            write_pid(pid, state->watch->name, state->nyx);
-        }
-        else
-        {
-            /* wait for the intermediate forked process
-             * to terminate */
-            waitpid(pid, NULL, 0);
-        }
+        state->pid = pid;
+        write_pid(pid, state->watch->name, state->nyx);
+    }
+    else
+    {
+        /* wait for the intermediate forked process
+         * to terminate */
+        waitpid(pid, NULL, 0);
     }
 }
 
