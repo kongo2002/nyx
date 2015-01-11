@@ -30,6 +30,7 @@ typedef struct
     int syslog;
     int def_start_timeout;
     int def_grace;
+    int polling_interval;
     const char *config_file;
     const char **commands;
 } nyx_options_t;

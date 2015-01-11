@@ -21,8 +21,6 @@
 
 #include <unistd.h>
 
-static const unsigned int POLLING_INTERVAL = 5;
-
 static volatile int need_exit = 0;
 
 static void
@@ -44,11 +42,12 @@ wait(int timeout)
 int
 poll_loop(nyx_t *nyx, poll_handler_t handler)
 {
+    int interval = nyx->options.polling_interval;
     list_t *states = nyx->states;
 
     setup_signals(nyx, on_terminate);
 
-    log_debug("Starting polling manager loop");
+    log_debug("Starting polling manager loop (interval: %d sec)", interval);
 
     while (!need_exit)
     {
@@ -89,7 +88,7 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
         /* in case we were interrupted by a signal
          * we don't want to be stuck in here sleeping */
         if (!need_exit)
-            wait(POLLING_INTERVAL);
+            wait(interval);
     }
 
     return 1;

@@ -56,6 +56,9 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 static parse_info_t *
 handle_watch_env_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data);
 
+static parse_info_t *
+handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
+
 static int
 check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
 {
@@ -510,10 +513,67 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
     return new_info;
 }
 
-static parse_info_t *
-handle_nyx_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+#define DECLARE_NYX_INT_VALUE(name_) \
+    static parse_info_t * \
+    handle_nyx_value_##name_(parse_info_t *info, yaml_event_t *event, UNUSED void *data) \
+    { \
+        nyx_t *nyx = info->nyx; \
+        const char *value = get_scalar_value(event); \
+        if (value == NULL) \
+            return NULL; \
+        int int_value = atoi(value); \
+        if (int_value < 1) \
+            log_warn("Invalid numeric value: '%s'", value); \
+        else \
+            nyx->options.name_ = int_value; \
+        info->handler[YAML_SCALAR_EVENT] = handle_nyx_key; \
+        return info; \
+    }
+
+DECLARE_NYX_INT_VALUE(polling_interval)
+
+#undef DECLARE_NYX_INT_VALUE
+
+static struct config_parser_map nyx_value_map[] =
 {
+    SCALAR_HANDLER("polling_interval", handle_nyx_value_polling_interval),
+};
+
+static parse_info_t *
+unknown_nyx_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    /* no op */
+    return info;
+}
+
+static parse_info_t *
+handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
+{
+    const char *key;
+    handler_func_t *handler = NULL;
+
     log_debug("handle_nyx_key");
+
+    key = get_scalar_value(event);
+
+    /* empty key or not a scalar at all */
+    if (key == NULL)
+        return NULL;
+
+    handler = get_handler_from_map(nyx_value_map, key);
+
+    if (handler == NULL)
+    {
+        info->handler[YAML_SCALAR_EVENT] = unknown_nyx_key;
+        info->handler[YAML_MAPPING_START_EVENT] = unknown_nyx_key;
+        info->handler[YAML_SEQUENCE_START_EVENT] = unknown_nyx_key;
+    }
+    else
+    {
+        info->handler[YAML_SCALAR_EVENT] = handler[CFG_SCALAR];
+        info->handler[YAML_MAPPING_START_EVENT] = handler[CFG_MAP];
+        info->handler[YAML_SEQUENCE_START_EVENT] = handler[CFG_LIST];
+    }
 
     return info;
 }
