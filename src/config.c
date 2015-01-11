@@ -182,7 +182,12 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
     }
     else
     {
-        info->handler[YAML_SCALAR_EVENT] = handler[CFG_SCALAR];
+        handler_func_t scalar_handler = handler[CFG_SCALAR];
+
+        if (scalar_handler == NULL)
+            scalar_handler = handle_scalar_key;
+
+        info->handler[YAML_SCALAR_EVENT] = scalar_handler;
         info->handler[YAML_MAPPING_START_EVENT] = handler[CFG_MAP];
         info->handler[YAML_SEQUENCE_START_EVENT] = handler[CFG_LIST];
     }
@@ -317,7 +322,7 @@ handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
     watch->env = hash_new(free);
 
     new_info->handler[YAML_SCALAR_EVENT] = handle_watch_env_key;
-    new_info->handler[YAML_MAPPING_END_EVENT] = parser_up;
+    new_info->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
 
     return new_info;
 }
@@ -440,6 +445,8 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_watch_map_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
+    log_debug("handle_watch_map_end");
+
     parse_info_t *parent = parser_up(info, event, data);
 
     /* reset data (last watch instance) */
@@ -494,18 +501,41 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
 {
     log_debug("handle watches");
 
-    reset_handlers(info);
+    parse_info_t *new_info = parse_info_new_child(info);
 
-    /* either name of the watch
-     * or a sequence of watches */
-    info->handler[YAML_SCALAR_EVENT] = handle_watch;
+    /* name of the watch */
+    new_info->handler[YAML_SCALAR_EVENT] = handle_watch;
+    new_info->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
+
+    return new_info;
+}
+
+static parse_info_t *
+handle_nyx_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    log_debug("handle_nyx_key");
 
     return info;
+}
+
+static parse_info_t *
+handle_nyx(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    log_debug("handle_nyx");
+
+    parse_info_t *new_info = parse_info_new_child(info);
+
+    /* handle several (default) config values */
+    new_info->handler[YAML_SCALAR_EVENT] = handle_nyx_key;
+    new_info->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
+
+    return new_info;
 }
 
 static struct config_parser_map root_map[] =
 {
     MAP_HANDLER("watches", handle_watches),
+    MAP_HANDLER("nyx", handle_nyx),
     { NULL }
 };
 
