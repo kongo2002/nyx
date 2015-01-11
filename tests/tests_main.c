@@ -13,13 +13,9 @@
  * limitations under the License.
  */
 
-#include "../src/def.h"
-
 #include "tests.h"
 #include "tests_list.h"
 #include "tests_hash.h"
-
-#include <stdio.h>
 
 int
 main(UNUSED int argc, UNUSED char **argv)
