@@ -53,7 +53,7 @@ typedef struct
 } hash_iter_t;
 
 hash_t *
-hash_new(int size, callback_t free_value);
+hash_new(callback_t free_value);
 
 void
 hash_destroy(hash_t *hash);

@@ -314,7 +314,7 @@ handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
     parse_info_t *new_info = parse_info_new_child(info);
     watch_t *watch = data;
 
-    watch->env = hash_new(8, free);
+    watch->env = hash_new(free);
 
     new_info->handler[YAML_SCALAR_EVENT] = handle_watch_env_key;
     new_info->handler[YAML_MAPPING_END_EVENT] = parser_up;

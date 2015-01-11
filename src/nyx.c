@@ -235,7 +235,7 @@ initialize_daemon(nyx_t *nyx)
         }
     }
 
-    nyx->watches = hash_new(8, _watch_destroy);
+    nyx->watches = hash_new(_watch_destroy);
     nyx->states = list_new(_state_destroy);
 
     /* initialize eventfd with an initial value of '0' */

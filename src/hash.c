@@ -21,7 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAP_KEY_MAXLEN 100
+#define NYX_HASH_MAX_FACTOR 1.3
+#define NYX_HASH_INITIAL_SIZE 8
+#define NYX_HASH_KEY_MAXLEN 100
 
 static unsigned long
 hash_string(const char *str)
@@ -36,14 +38,12 @@ hash_string(const char *str)
 }
 
 hash_t *
-hash_new(int size, callback_t free_value)
+hash_new(callback_t free_value)
 {
-    hash_t *hash = xcalloc(1, sizeof(hash_t));
+    hash_t *hash = xcalloc1(sizeof(hash_t));
 
-    size = size > 0 ? size : 4;
-
-    hash->bucket_count = size;
-    hash->buckets = xcalloc(size, sizeof(bucket_t));
+    hash->bucket_count = NYX_HASH_INITIAL_SIZE;
+    hash->buckets = xcalloc(NYX_HASH_INITIAL_SIZE, sizeof(bucket_t));
     hash->free_value = free_value;
 
     return hash;
@@ -64,7 +64,7 @@ get_pair(bucket_t *bucket, const char *key, unsigned int *idx)
     while (*idx < count)
     {
         if (pair->key != NULL &&
-            strncmp(pair->key, key, MAP_KEY_MAXLEN) == 0)
+            strncmp(pair->key, key, NYX_HASH_KEY_MAXLEN) == 0)
             return pair;
 
         pair++; (*idx)++;
@@ -139,6 +139,57 @@ get_bucket(hash_t *hash, const char *key)
     return &(hash->buckets[keyhash % hash->bucket_count]);
 }
 
+static void
+rehash(hash_t* hash)
+{
+    unsigned int i = 0;
+    unsigned int old_bucket_count = hash->bucket_count;
+    hash->bucket_count = old_bucket_count * 2;
+
+    bucket_t *new_bucket = NULL;
+    bucket_t *old_bucket = hash->buckets;
+    bucket_t *old_buckets = hash->buckets;
+
+    hash->buckets = xcalloc(hash->bucket_count, sizeof(bucket_t));
+
+    /* iterate old buckets */
+    while (i < old_bucket_count)
+    {
+        unsigned int j = 0, pairs = old_bucket->count;
+        pair_t *pair = old_bucket->pairs;
+
+        while (j < pairs)
+        {
+            /* find new bucket */
+            new_bucket = get_bucket(hash, pair->key);
+
+            if (new_bucket->count < 1)
+            {
+                new_bucket->pairs = xcalloc1(sizeof(pair_t));
+            }
+            else
+            {
+                new_bucket->pairs = realloc(new_bucket->pairs,
+                        sizeof(pair_t) * (new_bucket->count + 1));
+            }
+
+            memmove(&new_bucket->pairs[new_bucket->count],
+                    pair, sizeof(pair_t));
+
+            new_bucket->count++;
+
+            j++; pair++;
+        }
+
+        if (old_bucket->pairs)
+            free(old_bucket->pairs);
+
+        i++; old_bucket++;
+    }
+
+    free(old_buckets);
+}
+
 int
 hash_add(hash_t *hash, const char *key, void *data)
 {
@@ -177,7 +228,7 @@ hash_add(hash_t *hash, const char *key, void *data)
 
     /* determine maximum key length */
     keylen = strlen(key);
-    len = keylen > MAP_KEY_MAXLEN ? MAP_KEY_MAXLEN : keylen;
+    len = keylen > NYX_HASH_KEY_MAXLEN ? NYX_HASH_KEY_MAXLEN : keylen;
 
     /* copy and assign key */
     key_cpy = xcalloc(len+1, sizeof(char));
@@ -188,6 +239,10 @@ hash_add(hash_t *hash, const char *key, void *data)
 
     bucket->count++;
     hash->count++;
+
+    double factor = (double)(hash->count) / hash->bucket_count;
+    if (factor >= NYX_HASH_MAX_FACTOR)
+        rehash(hash);
 
     return 1;
 }
