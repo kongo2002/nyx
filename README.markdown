@@ -11,6 +11,25 @@ The project is inspired by [god][god] - the great ruby process monitor.
 ## Usage
 
 
+### Docker
+
+*nyx* is built especially with [docker][docker] usage in mind. This means *nyx*
+is designed to be used as a [docker][docker] *ENTRYPOINT* that mimics the
+behavior of the usual `init` process. That way you won't have issues with
+*zombie processes* and such while keeping your applications monitored.
+
+You could use something like the following in your base docker image:
+
+```bash
+ADD ./config.yaml /config.yaml
+
+# it is important you use the 'exec' form of ENTRYPOINT
+# for the process to be run directly (PID 1) without being
+# invoked through /bin/sh -c
+ENTRYPOINT ["nyx", "-c", "/config.yaml", "-D"]
+```
+
+
 ### Daemon
 
 The main *nyx* application is the so-called *daemon* that is started by
@@ -133,3 +152,4 @@ The project is written by Gregor Uhlenheuer. You can reach me at
 [mail]: mailto:kongo2002@gmail.com
 [apache]: http://www.apache.org/licenses/LICENSE-2.0
 [yaml]: http://www.yaml.org/
+[docker]: https://www.docker.com/
