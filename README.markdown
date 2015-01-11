@@ -26,7 +26,7 @@ ADD ./config.yaml /config.yaml
 # it is important you use the 'exec' form of ENTRYPOINT
 # for the process to be run directly (PID 1) without being
 # invoked through /bin/sh -c
-ENTRYPOINT ["nyx", "-c", "/config.yaml", "-D"]
+ENTRYPOINT ["nyx", "-c", "/config.yaml"]
 ```
 
 
