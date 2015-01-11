@@ -72,7 +72,7 @@ print_help(void)
 static const struct option long_options[] =
 {
     { .name = "help",      .has_arg = 0, .flag = NULL, .val = 'h'},
-    { .name = "config",    .has_arg = 0, .flag = NULL, .val = 'c'},
+    { .name = "config",    .has_arg = 1, .flag = NULL, .val = 'c'},
     { .name = "no-color",  .has_arg = 0, .flag = NULL, .val = 'C'},
     { .name = "no-daemon", .has_arg = 0, .flag = NULL, .val = 'D'},
     { .name = "quiet",     .has_arg = 0, .flag = NULL, .val = 'q'},
