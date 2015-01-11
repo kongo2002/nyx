@@ -13,26 +13,15 @@
  * limitations under the License.
  */
 
-#include "../src/def.h"
+#ifndef __NYX_TESTS_HASH_H__
+#define __NYX_TESTS_HASH_H__
 
-#include "tests.h"
-#include "tests_list.h"
-#include "tests_hash.h"
+void
+test_hash_create(void **state);
 
-#include <stdio.h>
+void
+test_hash_add(void **state);
 
-int
-main(UNUSED int argc, UNUSED char **argv)
-{
-    const UnitTest tests[] =
-    {
-        unit_test(test_list_create),
-        unit_test(test_list_add),
-        unit_test(test_hash_create),
-        unit_test(test_hash_add)
-    };
-
-    return run_tests(tests);
-}
+#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

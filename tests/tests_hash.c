@@ -13,26 +13,47 @@
  * limitations under the License.
  */
 
-#include "../src/def.h"
-
 #include "tests.h"
-#include "tests_list.h"
 #include "tests_hash.h"
+#include "../src/hash.h"
 
 #include <stdio.h>
+#include <string.h>
 
-int
-main(UNUSED int argc, UNUSED char **argv)
+void
+test_hash_create(UNUSED void **state)
 {
-    const UnitTest tests[] =
-    {
-        unit_test(test_list_create),
-        unit_test(test_list_add),
-        unit_test(test_hash_create),
-        unit_test(test_hash_add)
-    };
+    hash_t *hash = hash_new(free);
 
-    return run_tests(tests);
+    assert_int_equal(0, hash_count(hash));
+
+    hash_destroy(hash);
 }
+
+void
+test_hash_add(UNUSED void **state)
+{
+    unsigned int i = 0, size = 512;
+    char *value = NULL;
+    char buffer[512] = {0};
+
+    hash_t *hash = hash_new(free);
+
+    assert_int_equal(0, hash_count(hash));
+
+    for (i = 0; i < size; i++)
+    {
+        sprintf(buffer, "value%d", i);
+        value = strdup(buffer);
+
+        sprintf(buffer, "key%d", i);
+        hash_add(hash, buffer, value);
+    }
+
+    assert_int_equal(size, hash_count(hash));
+
+    hash_destroy(hash);
+}
+
 
 /* vim: set et sw=4 sts=4 tw=80: */
