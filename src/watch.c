@@ -92,6 +92,13 @@ watch_validate(watch_t *watch)
 
     result &= watch->name && *watch->name;
 
+    valid = watch->start != NULL && *watch->start != NULL;
+
+    if (!valid)
+        log_error("No 'start' specified");
+
+    result &= valid;
+
     if (watch->uid)
     {
         valid = get_user(watch->uid, &uid, &gid);
