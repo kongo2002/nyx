@@ -38,15 +38,23 @@ hash_string(const char *str)
 }
 
 hash_t *
-hash_new(callback_t free_value)
+hash_new_initial(unsigned int initial_size, callback_t free_value)
 {
     hash_t *hash = xcalloc1(sizeof(hash_t));
 
-    hash->bucket_count = NYX_HASH_INITIAL_SIZE;
-    hash->buckets = xcalloc(NYX_HASH_INITIAL_SIZE, sizeof(bucket_t));
+    initial_size = initial_size > 0 ? initial_size : NYX_HASH_INITIAL_SIZE;
+
+    hash->bucket_count = initial_size;
+    hash->buckets = xcalloc(initial_size, sizeof(bucket_t));
     hash->free_value = free_value;
 
     return hash;
+}
+
+hash_t *
+hash_new(callback_t free_value)
+{
+    return hash_new_initial(NYX_HASH_INITIAL_SIZE, free_value);
 }
 
 static pair_t *

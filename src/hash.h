@@ -55,6 +55,9 @@ typedef struct
 hash_t *
 hash_new(callback_t free_value);
 
+hash_t *
+hash_new_initial(unsigned int initial_size, callback_t free_value);
+
 void
 hash_destroy(hash_t *hash);
 
