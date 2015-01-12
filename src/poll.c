@@ -31,8 +31,10 @@ on_terminate(UNUSED int signum)
 }
 
 static void
-wait(int timeout)
+wait_interval(int timeout)
 {
+    /* in case we were interrupted by a signal
+     * we don't want to be stuck in here sleeping */
     while (!need_exit && timeout-- > 0)
     {
         sleep(1);
@@ -85,10 +87,7 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
             node = node->next;
         }
 
-        /* in case we were interrupted by a signal
-         * we don't want to be stuck in here sleeping */
-        if (!need_exit)
-            wait(interval);
+        wait_interval(interval);
     }
 
     return 1;
