@@ -40,6 +40,12 @@ timestack_add(timestack_t *timestack, int value);
 void
 timestack_clear(timestack_t *timestack);
 
+int
+timestack_oldest(timestack_t *timestack);
+
+int
+timestack_newest(timestack_t *timestack);
+
 void
 timestack_dump(timestack_t *timestack);
 

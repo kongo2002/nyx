@@ -66,6 +66,26 @@ timestack_destroy(timestack_t *timestack)
     free(timestack);
 }
 
+int
+timestack_newest(timestack_t *timestack)
+{
+    if (timestack->count < 1)
+        return 0;
+
+    return timestack->elements[0].value;
+}
+
+int
+timestack_oldest(timestack_t *timestack)
+{
+    unsigned idx = timestack->count;
+
+    if (idx < 1)
+        return 0;
+
+    return timestack->elements[idx-1].value;
+}
+
 void
 timestack_dump(timestack_t *timestack)
 {
