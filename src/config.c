@@ -39,22 +39,22 @@ static const char * yaml_event_names[] =
 };
 
 static parse_info_t *
-handle_mapping(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
+handle_mapping(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data);
 
 static parse_info_t *
-handle_scalar_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
+handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data);
 
 static parse_info_t *
 handle_scalar_value(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
 static parse_info_t *
-handle_watch_map_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
+handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data);
 
 static parse_info_t *
 handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
 static parse_info_t *
-handle_watch_env_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data);
+handle_watch_env_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
 static parse_info_t *
 handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
@@ -135,7 +135,7 @@ handle_document_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void 
     log_debug("handle_document: end");
 
     reset_handlers(info);
-    info->handler[YAML_STREAM_END_EVENT] = &handle_stream_end;
+    info->handler[YAML_STREAM_END_EVENT] = handle_stream_end;
 
     return info;
 }
@@ -152,7 +152,7 @@ handle_scalar_value(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 
     log_debug("handle_scalar_value: '%s'", event->data.scalar.value);
 
-    info->handler[YAML_SCALAR_EVENT] = &handle_scalar_key;
+    info->handler[YAML_SCALAR_EVENT] = handle_scalar_key;
 
     return info;
 }
@@ -213,8 +213,8 @@ handle_mapping(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
 
     parse_info_t *new = parse_info_new_child(info);
 
-    new->handler[YAML_SCALAR_EVENT] = &handle_scalar_key;
-    new->handler[YAML_MAPPING_END_EVENT] = &handle_mapping_end;
+    new->handler[YAML_SCALAR_EVENT] = handle_scalar_key;
+    new->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
 
     return new;
 }
@@ -225,8 +225,8 @@ handle_document(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *dat
     log_debug("handle_document: start");
 
     reset_handlers(info);
-    info->handler[YAML_MAPPING_START_EVENT] = &handle_mapping;
-    info->handler[YAML_DOCUMENT_END_EVENT] = &handle_document_end;
+    info->handler[YAML_MAPPING_START_EVENT] = handle_mapping;
+    info->handler[YAML_DOCUMENT_END_EVENT] = handle_document_end;
 
     return info;
 }
@@ -237,8 +237,8 @@ handle_stream(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
     log_debug("handle_stream: start");
 
     reset_handlers(info);
-    info->handler[YAML_DOCUMENT_START_EVENT] = &handle_document;
-    info->handler[YAML_STREAM_END_EVENT] = &handle_stream_end;
+    info->handler[YAML_DOCUMENT_START_EVENT] = handle_document;
+    info->handler[YAML_STREAM_END_EVENT] = handle_stream_end;
 
     return info;
 }
@@ -252,7 +252,7 @@ handle_stream(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
         if (value == NULL || watch == NULL) \
             return NULL; \
         watch->name_ = func_(value); \
-        info->handler[YAML_SCALAR_EVENT] = &handle_watch_map_key; \
+        info->handler[YAML_SCALAR_EVENT] = handle_watch_map_key; \
         return info; \
     }
 
