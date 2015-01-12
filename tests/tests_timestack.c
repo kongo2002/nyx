@@ -14,24 +14,39 @@
  */
 
 #include "tests.h"
-#include "tests_hash.h"
-#include "tests_list.h"
 #include "tests_timestack.h"
+#include "../src/timestack.h"
 
-int
-main(UNUSED int argc, UNUSED char **argv)
+#include <string.h>
+
+void
+test_timestack_create(UNUSED void **state)
 {
-    const UnitTest tests[] =
-    {
-        unit_test(test_list_create),
-        unit_test(test_list_add),
-        unit_test(test_hash_create),
-        unit_test(test_hash_add),
-        unit_test(test_timestack_create),
-        unit_test(test_timestack_add)
-    };
+    timestack_t *timestack = timestack_new(4);
 
-    return run_tests(tests);
+    assert_int_equal(0, timestack->count);
+
+    timestack_destroy(timestack);
+}
+
+void
+test_timestack_add(UNUSED void **state)
+{
+    unsigned i = 0, count = 100;
+
+    timestack_t *timestack = timestack_new(4);
+
+    assert_int_equal(0, timestack->count);
+
+    for (i = 0; i < count; i++)
+    {
+        timestack_add(timestack, i);
+    }
+
+    assert_int_equal(4, timestack->count);
+
+    timestack_dump(timestack);
+    timestack_destroy(timestack);
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

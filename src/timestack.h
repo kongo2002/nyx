@@ -13,25 +13,39 @@
  * limitations under the License.
  */
 
-#include "tests.h"
-#include "tests_hash.h"
-#include "tests_list.h"
-#include "tests_timestack.h"
+#ifndef __NYX_TIMESTACK_H__
+#define __NYX_TIMESTACK_H__
 
-int
-main(UNUSED int argc, UNUSED char **argv)
+#include <time.h>
+
+typedef struct
 {
-    const UnitTest tests[] =
-    {
-        unit_test(test_list_create),
-        unit_test(test_list_add),
-        unit_test(test_hash_create),
-        unit_test(test_hash_add),
-        unit_test(test_timestack_create),
-        unit_test(test_timestack_add)
-    };
+    time_t time;
+    int value;
+} timestack_elem_t;
 
-    return run_tests(tests);
-}
+typedef struct
+{
+    unsigned count;
+    unsigned max;
+    timestack_elem_t *elements;
+} timestack_t;
+
+timestack_t *
+timestack_new(unsigned max);
+
+void
+timestack_add(timestack_t *timestack, int value);
+
+void
+timestack_clear(timestack_t *timestack);
+
+void
+timestack_dump(timestack_t *timestack);
+
+void
+timestack_destroy(timestack_t *timestack);
+
+#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

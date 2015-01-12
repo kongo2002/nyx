@@ -13,25 +13,15 @@
  * limitations under the License.
  */
 
-#include "tests.h"
-#include "tests_hash.h"
-#include "tests_list.h"
-#include "tests_timestack.h"
+#ifndef __NYX_TESTS_TIMESTACK_H__
+#define __NYX_TESTS_TIMESTACK_H__
 
-int
-main(UNUSED int argc, UNUSED char **argv)
-{
-    const UnitTest tests[] =
-    {
-        unit_test(test_list_create),
-        unit_test(test_list_add),
-        unit_test(test_hash_create),
-        unit_test(test_hash_add),
-        unit_test(test_timestack_create),
-        unit_test(test_timestack_add)
-    };
+void
+test_timestack_create(void **state);
 
-    return run_tests(tests);
-}
+void
+test_timestack_add(void **state);
+
+#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */
