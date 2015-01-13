@@ -31,7 +31,8 @@ main(UNUSED int argc, UNUSED char **argv)
         unit_test(test_timestack_create),
         unit_test(test_timestack_add),
         unit_test(test_proc_system_info),
-        unit_test(test_proc_total_memory_size)
+        unit_test(test_proc_total_memory_size),
+        unit_test(test_proc_stat)
     };
 
     return run_tests(tests);

@@ -45,4 +45,20 @@ test_proc_total_memory_size(UNUSED void **state)
     printf("Total memory: %lu kB\n", mem_size);
 }
 
+void
+test_proc_stat(UNUSED void **state)
+{
+    int success = 0;
+    sys_proc_stat_t *stat = sys_proc_new();
+
+    success = sys_proc_read(stat);
+
+    assert_int_not_equal(0, success);
+
+    sys_proc_dump(stat);
+
+    free(stat);
+}
+
+
 /* vim: set et sw=4 sts=4 tw=80: */

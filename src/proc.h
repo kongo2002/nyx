@@ -31,6 +31,24 @@ typedef struct
 
 } sys_info_t;
 
+typedef struct
+{
+    unsigned long long user_time;
+    unsigned long long nice_time;
+    unsigned long long system_time;
+    unsigned long long idle_time;
+    unsigned long long iowait_time;
+} sys_proc_stat_t;
+
+sys_proc_stat_t *
+sys_proc_new(void);
+
+void
+sys_proc_dump(sys_proc_stat_t *stat);
+
+int
+sys_proc_read(sys_proc_stat_t *stat);
+
 sys_info_t *
 sys_info_new(void);
 

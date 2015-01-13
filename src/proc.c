@@ -19,6 +19,53 @@
 
 #include <stdio.h>
 
+sys_proc_stat_t *
+sys_proc_new(void)
+{
+    sys_proc_stat_t *stat = xcalloc1(sizeof(sys_proc_stat_t));
+
+    return stat;
+}
+
+void
+sys_proc_dump(sys_proc_stat_t *stat)
+{
+    log_info("System process info:");
+    log_info("  User time:    %llu", stat->user_time);
+    log_info("  Nice time:    %llu", stat->nice_time);
+    log_info("  System time:  %llu", stat->system_time);
+    log_info("  Idle time:    %llu", stat->idle_time);
+    log_info("  IO wait time: %llu", stat->iowait_time);
+}
+
+int
+sys_proc_read(sys_proc_stat_t *stat)
+{
+    FILE *proc = fopen("/proc/stat", "r");
+
+    if (proc == NULL)
+    {
+        log_perror("nyx: fopen");
+        return 0;
+    }
+
+    if (fscanf(proc, "%*s %llu %llu %llu %llu %llu",
+                &stat->user_time,
+                &stat->nice_time,
+                &stat->system_time,
+                &stat->idle_time,
+                &stat->iowait_time) != 5)
+    {
+        log_error("Failed to parse /proc/stat");
+        fclose(proc);
+
+        return 0;
+    }
+
+    fclose(proc);
+    return 1;
+}
+
 sys_info_t *
 sys_info_new(void)
 {
@@ -50,7 +97,7 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid)
                &sys->virtual_size,
                &sys->resident_set_size) != 7)
     {
-        log_error("Parsing of %s failed", buffer);
+        log_error("Failed to parse %s", buffer);
         fclose(proc);
 
         return 0;
@@ -74,7 +121,7 @@ total_memory_size(void)
 
     if (fscanf(proc, "MemTotal: %lu kB", &mem_size) != 1)
     {
-        log_error("Parsing of /proc/meminfo failed");
+        log_error("Failed to parse /proc/meminfo");
         mem_size = 0;
     }
 
