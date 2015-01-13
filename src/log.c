@@ -28,7 +28,7 @@
 
 static volatile int use_syslog = 0;
 static volatile int quiet = 0;
-static volatile int color = 1;
+static volatile int color = 0;
 
 void
 log_init(nyx_t *nyx)
