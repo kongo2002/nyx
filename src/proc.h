@@ -13,28 +13,36 @@
  * limitations under the License.
  */
 
-#include "tests.h"
-#include "tests_hash.h"
-#include "tests_list.h"
-#include "tests_proc.h"
-#include "tests_timestack.h"
+#ifndef __NYX_PROC_H__
+#define __NYX_PROC_H__
+
+#include <stdlib.h>
+
+typedef struct
+{
+    pid_t pid;                      /* 1  */
+    unsigned long user_time;        /* 14 */
+    unsigned long system_time;      /* 15 */
+    long child_user_time;           /* 16 */
+    long child_system_time;         /* 17 */
+    unsigned long long start_time;  /* 22 */
+    unsigned long virtual_size;     /* 23 */
+    long resident_set_size;         /* 24 */
+
+} sys_info_t;
+
+sys_info_t *
+sys_info_new(void);
+
+void
+sys_info_dump(sys_info_t *sys);
 
 int
-main(UNUSED int argc, UNUSED char **argv)
-{
-    const UnitTest tests[] =
-    {
-        unit_test(test_list_create),
-        unit_test(test_list_add),
-        unit_test(test_hash_create),
-        unit_test(test_hash_add),
-        unit_test(test_timestack_create),
-        unit_test(test_timestack_add),
-        unit_test(test_proc_system_info),
-        unit_test(test_proc_total_memory_size)
-    };
+sys_info_read_proc(sys_info_t *sys, pid_t pid);
 
-    return run_tests(tests);
-}
+unsigned long
+total_memory_size(void);
+
+#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

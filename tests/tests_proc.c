@@ -14,27 +14,35 @@
  */
 
 #include "tests.h"
-#include "tests_hash.h"
-#include "tests_list.h"
 #include "tests_proc.h"
-#include "tests_timestack.h"
+#include "../src/proc.h"
 
-int
-main(UNUSED int argc, UNUSED char **argv)
+#include <stdio.h>
+#include <unistd.h>
+
+void
+test_proc_system_info(UNUSED void **state)
 {
-    const UnitTest tests[] =
-    {
-        unit_test(test_list_create),
-        unit_test(test_list_add),
-        unit_test(test_hash_create),
-        unit_test(test_hash_add),
-        unit_test(test_timestack_create),
-        unit_test(test_timestack_add),
-        unit_test(test_proc_system_info),
-        unit_test(test_proc_total_memory_size)
-    };
+    int success = 0;
+    sys_info_t *info = sys_info_new();
 
-    return run_tests(tests);
+    success = sys_info_read_proc(info, getpid());
+
+    assert_int_not_equal(0, success);
+
+    sys_info_dump(info);
+
+    free(info);
+}
+
+void
+test_proc_total_memory_size(UNUSED void **state)
+{
+    unsigned long mem_size = total_memory_size();
+
+    assert_int_not_equal(0, mem_size);
+
+    printf("Total memory: %lu kB\n", mem_size);
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */
