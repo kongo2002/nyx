@@ -55,6 +55,9 @@ typedef struct
 nyx_proc_t *
 nyx_proc_new(unsigned snapshots);
 
+void
+nyx_proc_destroy(nyx_proc_t *proc);
+
 sys_proc_stat_t *
 sys_proc_new(void);
 

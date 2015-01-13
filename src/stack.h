@@ -44,12 +44,14 @@
         stack->elements = xcalloc(size, sizeof(type_)); \
         return stack; \
     } \
+    \
     void \
     stack_##name_##_destroy(stack_##name_##_t *stack) \
     { \
         free(stack->elements); \
         free(stack); \
     } \
+    \
     type_ * \
     stack_##name_##_add(stack_##name_##_t *stack) \
     { \

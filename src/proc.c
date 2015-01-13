@@ -32,6 +32,14 @@ nyx_proc_new(unsigned snapshots)
     return proc;
 }
 
+void
+nyx_proc_destroy(nyx_proc_t *proc)
+{
+    hash_destroy(proc->processes);
+    stack_sys_proc_destroy(proc->sys_procs);
+    free(proc);
+}
+
 sys_proc_stat_t *
 sys_proc_new(void)
 {
