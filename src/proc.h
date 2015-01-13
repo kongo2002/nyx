@@ -16,6 +16,9 @@
 #ifndef __NYX_PROC_H__
 #define __NYX_PROC_H__
 
+#include "hash.h"
+#include "stack.h"
+
 #include <stdlib.h>
 
 typedef struct
@@ -39,6 +42,18 @@ typedef struct
     unsigned long long idle_time;
     unsigned long long iowait_time;
 } sys_proc_stat_t;
+
+DECLARE_STACK(sys_proc_stat_t, sys_proc)
+
+typedef struct
+{
+    unsigned long total_memory;
+    stack_sys_proc_t *sys_procs;
+    hash_t *processes;
+} nyx_proc_t;
+
+nyx_proc_t *
+nyx_proc_new(unsigned snapshots);
 
 sys_proc_stat_t *
 sys_proc_new(void);

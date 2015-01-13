@@ -19,6 +19,19 @@
 
 #include <stdio.h>
 
+nyx_proc_t *
+nyx_proc_new(unsigned snapshots)
+{
+    nyx_proc_t *proc = xcalloc1(sizeof(nyx_proc_t));
+
+    /* TODO: dispose func */
+    proc->processes = hash_new(NULL);
+    proc->total_memory = total_memory_size();
+    proc->sys_procs = stack_sys_proc_new(snapshots);
+
+    return proc;
+}
+
 sys_proc_stat_t *
 sys_proc_new(void)
 {
@@ -140,5 +153,7 @@ sys_info_dump(sys_info_t *sys)
     log_info("  Virtual size:      %lu", sys->virtual_size);
     log_info("  Resident set:      %ld", sys->resident_set_size);
 }
+
+IMPLEMENT_STACK(sys_proc_stat_t, sys_proc)
 
 /* vim: set et sw=4 sts=4 tw=80: */
