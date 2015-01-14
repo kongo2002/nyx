@@ -47,6 +47,29 @@ list_find(list_t *list, int (*predicate)(void *))
 }
 
 void
+list_remove(list_t *list, list_node_t *node)
+{
+    if (node->prev)
+        node->prev->next = node->next;
+
+    if (node->next)
+        node->next->prev = node->prev;
+
+    if (node == list->head)
+        list->head = node->next;
+
+    if (node == list->tail)
+        list->tail = node->prev;
+
+    list->count--;
+
+    if (list->free_func)
+        list->free_func(node->data);
+
+    free(node);
+}
+
+void
 list_add(list_t *list, void *data)
 {
     list_node_t *node = xcalloc(1, sizeof(list_node_t));

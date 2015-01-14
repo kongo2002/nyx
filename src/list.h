@@ -47,6 +47,9 @@ void
 list_add(list_t *list, void *data);
 
 void
+list_remove(list_t *list, list_node_t *node);
+
+void
 list_foreach(list_t *list, void (*func)(unsigned long, void *));
 
 unsigned long
