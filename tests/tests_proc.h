@@ -25,6 +25,9 @@ test_proc_stat(void **state);
 void
 test_proc_total_memory_size(void **state);
 
+void
+test_proc_num_cpus(void **state);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

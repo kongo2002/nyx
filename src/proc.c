@@ -27,6 +27,7 @@ nyx_proc_new(unsigned snapshots)
     /* TODO: dispose func */
     proc->processes = hash_new(NULL);
     proc->total_memory = total_memory_size();
+    proc->num_cpus = num_cpus();
     proc->sys_procs = stack_sys_proc_new(snapshots);
 
     return proc;
@@ -70,6 +71,8 @@ sys_proc_read(sys_proc_stat_t *stat)
         return 0;
     }
 
+    /* right now we are interested in the first line (cpu ...)
+     * only which represents the overall cpu usage */
     if (fscanf(proc, "%*s %llu %llu %llu %llu %llu",
                 &stat->user_time,
                 &stat->nice_time,
@@ -148,6 +151,30 @@ total_memory_size(void)
 
     fclose(proc);
     return mem_size;
+}
+
+int
+num_cpus(void)
+{
+    int cpus = -1;
+    FILE *proc = fopen("/proc/stat", "r");
+    char buffer[256] = {0};
+
+    if (proc == NULL)
+    {
+        log_perror("nyx: fopen");
+        return 0;
+    }
+
+    while (fgets(buffer, 256, proc))
+    {
+        if (strstr(buffer, "cpu") != buffer)
+            break;
+        cpus++;
+    }
+
+    fclose(proc);
+    return cpus;
 }
 
 void

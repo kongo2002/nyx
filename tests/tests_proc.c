@@ -46,6 +46,16 @@ test_proc_total_memory_size(UNUSED void **state)
 }
 
 void
+test_proc_num_cpus(UNUSED void **state)
+{
+    int cpus = num_cpus();
+
+    assert_true(cpus > 0);
+
+    printf("Number of CPUs: %d\n", cpus);
+}
+
+void
 test_proc_stat(UNUSED void **state)
 {
     int success = 0;

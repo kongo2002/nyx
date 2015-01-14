@@ -41,6 +41,7 @@ typedef struct
     unsigned long long system_time;
     unsigned long long idle_time;
     unsigned long long iowait_time;
+    unsigned long long period;
 } sys_proc_stat_t;
 
 DECLARE_STACK(sys_proc_stat_t, sys_proc)
@@ -48,6 +49,7 @@ DECLARE_STACK(sys_proc_stat_t, sys_proc)
 typedef struct
 {
     unsigned long total_memory;
+    int num_cpus;
     stack_sys_proc_t *sys_procs;
     hash_t *processes;
 } nyx_proc_t;
@@ -78,6 +80,9 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid);
 
 unsigned long
 total_memory_size(void);
+
+int
+num_cpus(void);
 
 #endif
 
