@@ -44,6 +44,7 @@ typedef struct
     int event;
     void (*terminate_handler)(int);
     pthread_t *connector_thread;
+    pthread_t *proc_thread;
     nyx_options_t options;
     hash_t *watches;
     list_t *states;

@@ -16,14 +16,13 @@
 #ifndef __NYX_PROC_H__
 #define __NYX_PROC_H__
 
-#include "hash.h"
+#include "nyx.h"
 #include "stack.h"
 
 #include <stdlib.h>
 
 typedef struct
 {
-    pid_t pid;                      /* 1  */
     unsigned long user_time;        /* 14 */
     unsigned long system_time;      /* 15 */
     long child_user_time;           /* 16 */
@@ -32,7 +31,17 @@ typedef struct
     unsigned long virtual_size;     /* 23 */
     long resident_set_size;         /* 24 */
 
+    unsigned long long total_time;
+
 } sys_info_t;
+
+typedef struct
+{
+    pid_t pid;
+    sys_info_t info;
+    double cpu_usage;
+    double mem_usage;
+} proc_stat_t;
 
 typedef struct
 {
@@ -41,6 +50,8 @@ typedef struct
     unsigned long long system_time;
     unsigned long long idle_time;
     unsigned long long iowait_time;
+
+    unsigned long long total;
     unsigned long long period;
 } sys_proc_stat_t;
 
@@ -50,12 +61,25 @@ typedef struct
 {
     unsigned long total_memory;
     int num_cpus;
-    stack_sys_proc_t *sys_procs;
-    hash_t *processes;
+    sys_proc_stat_t sys_proc;
+    list_t *processes;
+    nyx_t *nyx;
 } nyx_proc_t;
 
 nyx_proc_t *
-nyx_proc_new(unsigned snapshots);
+nyx_proc_new(void);
+
+nyx_proc_t *
+nyx_proc_init(nyx_t *nyx);
+
+void
+nyx_proc_terminate(void);
+
+void *
+nyx_proc_start(void *state);
+
+proc_stat_t *
+proc_stat_new(pid_t pid);
 
 void
 nyx_proc_destroy(nyx_proc_t *proc);

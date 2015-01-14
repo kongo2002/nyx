@@ -18,26 +18,179 @@
 #include "proc.h"
 
 #include <stdio.h>
+#include <unistd.h>
+
+static volatile int need_exit = 0;
 
 nyx_proc_t *
-nyx_proc_new(unsigned snapshots)
+nyx_proc_new(void)
 {
     nyx_proc_t *proc = xcalloc1(sizeof(nyx_proc_t));
 
     /* TODO: dispose func */
-    proc->processes = hash_new(NULL);
+    proc->processes = list_new(free);
     proc->total_memory = total_memory_size();
     proc->num_cpus = num_cpus();
-    proc->sys_procs = stack_sys_proc_new(snapshots);
+
+    return proc;
+}
+
+proc_stat_t *
+proc_stat_new(pid_t pid)
+{
+    proc_stat_t *stat = xcalloc1(sizeof(proc_stat_t));
+
+    stat->pid = pid;
+
+    return stat;
+}
+
+static unsigned long long
+calculate_sys_period(sys_proc_stat_t *stat)
+{
+    /* read current statistics */
+    sys_proc_stat_t current;
+
+    if (!sys_proc_read(&current))
+        return 0;
+
+    /* calculate diff */
+    current.period = current.total - stat->total;
+
+    memcpy(stat, &current, sizeof(sys_proc_stat_t));
+
+    return current.period;
+}
+
+static unsigned long long
+calculate_proc_diff(proc_stat_t *proc)
+{
+    unsigned long long diff = 0;
+
+    /* read current process statistics */
+    sys_info_t current;
+
+    if (!sys_info_read_proc(&current, proc->pid))
+        return 0;
+
+    /* calculate diff */
+    diff = current.total_time - proc->info.total_time;
+
+    memcpy(&proc->info, &current, sizeof(sys_info_t));
+
+    return diff;
+}
+
+static void
+calculate_proc_cpu_usage(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long period)
+{
+    unsigned max = sys->num_cpus * 100;
+    unsigned long long diff = 0;
+
+    diff = calculate_proc_diff(stat);
+
+    stat->cpu_usage = MAX(0, MIN(max, ((double)diff) / period * max));
+}
+
+nyx_proc_t *
+nyx_proc_init(nyx_t *nyx)
+{
+    int success = 0;
+    nyx_proc_t *proc = nyx_proc_new();
+    proc->nyx = nyx;
+
+    /* validate some basic values */
+    if (proc->total_memory < 1)
+    {
+        log_error("Unable to determine total memory size");
+        nyx_proc_destroy(proc);
+
+        return NULL;
+    }
+
+    if (proc->num_cpus < 1)
+    {
+        log_error("Unable to determine number of CPUs");
+        nyx_proc_destroy(proc);
+
+        return NULL;
+    }
+
+    success = sys_proc_read(&proc->sys_proc);
+
+    if (!success)
+    {
+        log_error("Failed to read system statistics");
+        nyx_proc_destroy(proc);
+
+        return NULL;
+    }
+
+    /* sleep for at least 100 ms */
+    usleep(100000);
+
+    /* add myself to watched processes */
+    proc_stat_t *me = proc_stat_new(nyx->pid);
+    list_add(proc->processes, me);
+
+    /* get current nyx process statistics */
+    success = sys_info_read_proc(&me->info, me->pid);
+
+    if (!success)
+    {
+        log_error("Failed to read process statistics of nyx");
+        nyx_proc_destroy(proc);
+
+        return NULL;
+    }
 
     return proc;
 }
 
 void
+nyx_proc_terminate(void)
+{
+    need_exit = 1;
+}
+
+void *
+nyx_proc_start(void *state)
+{
+    nyx_proc_t *sys = state;
+
+    log_debug("Starting proc watch");
+
+    while (!need_exit)
+    {
+        unsigned long long period = calculate_sys_period(&sys->sys_proc);
+        list_node_t *node = sys->processes->head;
+
+        while (node)
+        {
+            proc_stat_t *proc = node->data;
+
+            calculate_proc_cpu_usage(proc, sys, period);
+
+            log_debug("Process (%d): CPU %4.1f", proc->pid, proc->cpu_usage);
+
+            node = node->next;
+        }
+
+        sleep(1);
+    }
+
+    /* clear own resources */
+    nyx_proc_destroy(sys);
+
+    log_debug("Stopped proc watch");
+
+    return NULL;
+}
+
+void
 nyx_proc_destroy(nyx_proc_t *proc)
 {
-    hash_destroy(proc->processes);
-    stack_sys_proc_destroy(proc->sys_procs);
+    list_destroy(proc->processes);
     free(proc);
 }
 
@@ -86,6 +239,14 @@ sys_proc_read(sys_proc_stat_t *stat)
         return 0;
     }
 
+    /* calculate sum */
+    stat->total =
+        stat->user_time +
+        stat->nice_time +
+        stat->system_time +
+        stat->idle_time +
+        stat->iowait_time;
+
     fclose(proc);
     return 1;
 }
@@ -111,21 +272,25 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid)
         return 0;
     }
 
-    if (fscanf(proc, "%d %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
+    if (fscanf(proc, "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
                "%lu %ld %ld %*d %*d %*d %*d %*u %lu %ld",
-               &sys->pid,
                &sys->user_time,
                &sys->system_time,
                &sys->child_user_time,
                &sys->child_user_time,
                &sys->virtual_size,
-               &sys->resident_set_size) != 7)
+               &sys->resident_set_size) != 6)
     {
         log_error("Failed to parse %s", buffer);
         fclose(proc);
 
         return 0;
     }
+
+    sys->total_time = sys->user_time +
+        sys->system_time +
+        sys->child_user_time +
+        sys->child_system_time;
 
     fclose(proc);
     return 1;
@@ -180,7 +345,7 @@ num_cpus(void)
 void
 sys_info_dump(sys_info_t *sys)
 {
-    log_info("Process info PID %d:", sys->pid);
+    log_info("Process info:");
     log_info("  User time:         %lu", sys->user_time);
     log_info("  System time:       %lu", sys->system_time);
     log_info("  Child user time:   %ld", sys->child_user_time);
