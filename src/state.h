@@ -17,6 +17,7 @@
 #define __NYX_STATE_H__
 
 #include "event.h"
+#include "nyx.h"
 #include "watch.h"
 
 #include <semaphore.h>

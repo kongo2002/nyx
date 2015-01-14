@@ -16,10 +16,8 @@
 #include "connector.h"
 #include "def.h"
 #include "fs.h"
-#include "hash.h"
 #include "log.h"
 #include "nyx.h"
-#include "proc.h"
 #include "process.h"
 #include "state.h"
 #include "watch.h"
@@ -266,22 +264,24 @@ initialize_daemon(nyx_t *nyx)
     }
 
     /* try to initialize proc watch/thread */
-    nyx_proc_t *proc = nyx_proc_init(nyx);
+    nyx->proc = nyx_proc_init(nyx->pid);
 
-    if (proc != NULL)
+    if (nyx->proc != NULL)
     {
         nyx->proc_thread = xcalloc1(sizeof(pthread_t));
 
-        err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, proc);
+        err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx->proc);
 
         if (err)
         {
             log_perror("nyx: pthread_create");
             log_error("Failed to initialize proc watch - unable to monitor process' statistics");
 
-            free(proc);
             free(nyx->proc_thread);
             nyx->proc_thread = NULL;
+
+            free(nyx->proc);
+            nyx->proc = NULL;
         }
     }
 
@@ -466,6 +466,12 @@ nyx_destroy(nyx_t *nyx)
 
         free(nyx->proc_thread);
         nyx->proc_thread = NULL;
+    }
+
+    if (nyx->proc)
+    {
+        nyx_proc_destroy(nyx->proc);
+        nyx->proc = NULL;
     }
 
     if (nyx->states)

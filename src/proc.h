@@ -16,7 +16,7 @@
 #ifndef __NYX_PROC_H__
 #define __NYX_PROC_H__
 
-#include "nyx.h"
+#include "list.h"
 #include "stack.h"
 
 #include <stdlib.h>
@@ -39,6 +39,7 @@ typedef struct
 {
     pid_t pid;
     sys_info_t info;
+    const char *name;
     double cpu_usage;
     double mem_usage;
 } proc_stat_t;
@@ -63,14 +64,13 @@ typedef struct
     int num_cpus;
     sys_proc_stat_t sys_proc;
     list_t *processes;
-    nyx_t *nyx;
 } nyx_proc_t;
 
 nyx_proc_t *
 nyx_proc_new(void);
 
 nyx_proc_t *
-nyx_proc_init(nyx_t *nyx);
+nyx_proc_init(pid_t pid);
 
 void
 nyx_proc_terminate(void);
@@ -79,7 +79,13 @@ void *
 nyx_proc_start(void *state);
 
 proc_stat_t *
-proc_stat_new(pid_t pid);
+proc_stat_new(pid_t pid, const char *name);
+
+void
+nyx_proc_remove(nyx_proc_t *proc, pid_t pid);
+
+void
+nyx_proc_add(nyx_proc_t *proc, pid_t pid, const char *name);
 
 void
 nyx_proc_destroy(nyx_proc_t *proc);

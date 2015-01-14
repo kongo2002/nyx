@@ -416,6 +416,9 @@ running(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
 
+    if (state->nyx->proc && state->pid)
+        nyx_proc_add(state->nyx->proc, state->pid, state->watch->name);
+
     return 1;
 }
 
@@ -494,12 +497,18 @@ dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
     switch (event_data->type)
     {
         case EVENT_EXIT:
+            if (nyx->proc)
+                nyx_proc_remove(nyx->proc, pid);
+
             state = find_state_by_pid(nyx->states, pid);
 
             if (state != NULL)
             {
                 if (state->state != STATE_STOPPED)
                     set_state(state, STATE_STOPPED);
+
+                state->pid = 0;
+                clear_pid(state->watch->name, nyx);
             }
             break;
         case EVENT_FORK:
@@ -527,6 +536,9 @@ dispatch_poll_result(int pid, int running, nyx_t *nyx)
         {
             state->pid = 0;
             clear_pid(state->watch->name, nyx);
+
+            if (nyx->proc)
+                nyx_proc_remove(nyx->proc, pid);
         }
 
         if (next_state != state->state)

@@ -36,11 +36,12 @@ nyx_proc_new(void)
 }
 
 proc_stat_t *
-proc_stat_new(pid_t pid)
+proc_stat_new(pid_t pid, const char *name)
 {
     proc_stat_t *stat = xcalloc1(sizeof(proc_stat_t));
 
     stat->pid = pid;
+    stat->name = name;
 
     return stat;
 }
@@ -69,6 +70,7 @@ calculate_proc_diff(proc_stat_t *proc)
 
     /* read current process statistics */
     sys_info_t current;
+    memset(&current, 0, sizeof(sys_info_t));
 
     if (!sys_info_read_proc(&current, proc->pid))
         return 0;
@@ -89,15 +91,17 @@ calculate_proc_cpu_usage(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long 
 
     diff = calculate_proc_diff(stat);
 
-    stat->cpu_usage = MAX(0, MIN(max, ((double)diff) / period * max));
+    if (period > 0)
+        stat->cpu_usage = MAX(0, MIN(max, ((double)diff) / period * max));
+    else
+        stat->cpu_usage = 0;
 }
 
 nyx_proc_t *
-nyx_proc_init(nyx_t *nyx)
+nyx_proc_init(pid_t pid)
 {
     int success = 0;
     nyx_proc_t *proc = nyx_proc_new();
-    proc->nyx = nyx;
 
     /* validate some basic values */
     if (proc->total_memory < 1)
@@ -127,7 +131,7 @@ nyx_proc_init(nyx_t *nyx)
     }
 
     /* add myself to watched processes */
-    proc_stat_t *me = proc_stat_new(nyx->pid);
+    proc_stat_t *me = proc_stat_new(pid, "nyx");
     list_add(proc->processes, me);
 
     /* get current nyx process statistics */
@@ -145,6 +149,33 @@ nyx_proc_init(nyx_t *nyx)
     usleep(100000);
 
     return proc;
+}
+
+void
+nyx_proc_remove(nyx_proc_t *proc, pid_t pid)
+{
+    list_node_t *node = proc->processes->head;
+
+    while (node)
+    {
+        proc_stat_t *stat = node->data;
+
+        if (stat->pid == pid)
+        {
+            list_remove(proc->processes, node);
+            break;
+        }
+
+        node = node->next;
+    }
+}
+
+void
+nyx_proc_add(nyx_proc_t *proc, pid_t pid, const char *name)
+{
+    proc_stat_t *stat = proc_stat_new(pid, name);
+
+    list_add(proc->processes, stat);
 }
 
 void
@@ -171,16 +202,14 @@ nyx_proc_start(void *state)
 
             calculate_proc_cpu_usage(proc, sys, period);
 
-            log_debug("Process (%d): CPU %4.1f", proc->pid, proc->cpu_usage);
+            log_debug("Process '%s' (%d): CPU %4.1f",
+                    proc->name, proc->pid, proc->cpu_usage);
 
             node = node->next;
         }
 
         sleep(1);
     }
-
-    /* clear own resources */
-    nyx_proc_destroy(sys);
 
     log_debug("Stopped proc watch");
 
