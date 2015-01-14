@@ -87,13 +87,17 @@ calculate_proc_diff(proc_stat_t *proc)
 static void
 calculate_proc_cpu_usage(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long period)
 {
+    double usage = 0;
     unsigned max = sys->num_cpus * 100;
     unsigned long long diff = 0;
 
     diff = calculate_proc_diff(stat);
 
     if (period > 0)
-        stat->cpu_usage = MAX(0, MIN(max, ((double)diff) / period * max));
+    {
+        usage = ((double)diff) / period * max;
+        stat->cpu_usage = MAX(0, MIN(max, usage));
+    }
     else
         stat->cpu_usage = 0;
 }
