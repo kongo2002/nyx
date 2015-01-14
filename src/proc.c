@@ -51,6 +51,7 @@ calculate_sys_period(sys_proc_stat_t *stat)
 {
     /* read current statistics */
     sys_proc_stat_t current;
+    memset(&current, 0, sizeof(sys_proc_stat_t));
 
     if (!sys_proc_read(&current))
         return 0;
