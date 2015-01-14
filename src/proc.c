@@ -126,9 +126,6 @@ nyx_proc_init(nyx_t *nyx)
         return NULL;
     }
 
-    /* sleep for at least 100 ms */
-    usleep(100000);
-
     /* add myself to watched processes */
     proc_stat_t *me = proc_stat_new(nyx->pid);
     list_add(proc->processes, me);
@@ -143,6 +140,9 @@ nyx_proc_init(nyx_t *nyx)
 
         return NULL;
     }
+
+    /* sleep for at least 100 ms */
+    usleep(100000);
 
     return proc;
 }
@@ -211,6 +211,7 @@ sys_proc_dump(sys_proc_stat_t *stat)
     log_info("  System time:  %llu", stat->system_time);
     log_info("  Idle time:    %llu", stat->idle_time);
     log_info("  IO wait time: %llu", stat->iowait_time);
+    log_info("  Total time:   %llu", stat->total);
 }
 
 int
@@ -352,6 +353,7 @@ sys_info_dump(sys_info_t *sys)
     log_info("  Child system time: %ld", sys->child_system_time);
     log_info("  Virtual size:      %lu", sys->virtual_size);
     log_info("  Resident set:      %ld", sys->resident_set_size);
+    log_info("  Total time:        %llu", sys->total_time);
 }
 
 IMPLEMENT_STACK(sys_proc_stat_t, sys_proc)
