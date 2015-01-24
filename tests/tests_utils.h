@@ -13,25 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_UTILS_H__
-#define __NYX_UTILS_H__
-
-#include "list.h"
-
-const char **
-strings_to_null_terminated(list_t *list);
-
-char
-get_size_unit(unsigned long kbytes, unsigned long *out_bytes);
-
-unsigned long
-parse_size_unit(const char *input);
-
-const char **
-split_string(const char *string);
+#ifndef __NYX_TESTS_UTILS_H__
+#define __NYX_TESTS_UTILS_H__
 
 void
-strings_free(char **strings);
+test_parse_size_unit(void **state);
 
 #endif
 

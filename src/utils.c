@@ -15,6 +15,7 @@
 
 #include "def.h"
 #include "list.h"
+#include "log.h"
 #include "utils.h"
 
 #include <ctype.h>
@@ -66,6 +67,47 @@ get_size_unit(unsigned long kbytes, unsigned long *out_bytes)
 
     *out_bytes = kbytes;
     return 'K';
+}
+
+unsigned long
+parse_size_unit(const char *input)
+{
+    char unit;
+    int matched = 0;
+    unsigned long size = 0;
+
+    if ((matched = sscanf(input, "%lu %c", &size, &unit)) >= 1)
+    {
+        /* no unit specified
+         * -> default to kilobytes */
+        if (matched == 1)
+            return size;
+
+        switch (unit)
+        {
+            case 'k':
+            case 'K':
+                return size;
+            case 'm':
+            case 'M':
+                return size * ONE_M;
+            case 'g':
+            case 'G':
+                return size * ONE_G;
+            case 't':
+            case 'T':
+                return size * ONE_T;
+            default:
+                log_error("Invalid unit specified: '%c'", unit);
+                return 0;
+        }
+    }
+    else if (matched == -1)
+    {
+        log_perror("nyx: sscanf");
+    }
+
+    return 0;
 }
 
 const char **

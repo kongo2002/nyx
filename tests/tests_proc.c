@@ -52,7 +52,7 @@ test_proc_page_size(UNUSED void **state)
 
     assert_int_not_equal(0, page_size);
 
-    printf("Page size: %ld", page_size);
+    printf("Page size: %ld\n", page_size);
 }
 
 void

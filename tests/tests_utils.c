@@ -14,32 +14,26 @@
  */
 
 #include "tests.h"
-#include "tests_hash.h"
-#include "tests_list.h"
-#include "tests_proc.h"
 #include "tests_utils.h"
-#include "tests_timestack.h"
+#include "../src/utils.h"
 
-int
-main(UNUSED int argc, UNUSED char **argv)
+void
+test_parse_size_unit(UNUSED void **state)
 {
-    const UnitTest tests[] =
-    {
-        unit_test(test_list_create),
-        unit_test(test_list_add),
-        unit_test(test_hash_create),
-        unit_test(test_hash_add),
-        unit_test(test_timestack_create),
-        unit_test(test_timestack_add),
-        unit_test(test_proc_system_info),
-        unit_test(test_proc_total_memory_size),
-        unit_test(test_proc_stat),
-        unit_test(test_proc_num_cpus),
-        unit_test(test_proc_page_size),
-        unit_test(test_parse_size_unit)
-    };
+    assert_true(25 == parse_size_unit(" 25"));
+    assert_true(25 == parse_size_unit(" 25 "));
+    assert_true(25 == parse_size_unit("25"));
+    assert_true(25 == parse_size_unit("25k"));
+    assert_true(25 == parse_size_unit("25 k"));
+    assert_true(25 == parse_size_unit("25 K"));
+    assert_true(25 == parse_size_unit("25 Kb "));
 
-    return run_tests(tests);
+    assert_true(1024 == parse_size_unit("1 Mb "));
+    assert_true(1024 == parse_size_unit("1Mb "));
+    assert_true(1024 == parse_size_unit(" 1 mb "));
+    assert_true(20480 == parse_size_unit(" 20 m "));
+
+    assert_true(2097152 == parse_size_unit("2G"));
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */
