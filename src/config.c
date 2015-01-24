@@ -262,6 +262,9 @@ handle_stream(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 #define DECLARE_WATCH_STR_LIST_VALUE(name_) \
     DECLARE_WATCH_STR_FUNC(name_, split_string)
 
+#define DECLARE_WATCH_SIZE_UNIT(name_) \
+    DECLARE_WATCH_STR_FUNC(name_, parse_size_unit)
+
 DECLARE_WATCH_STR_VALUE(name)
 DECLARE_WATCH_STR_VALUE(uid)
 DECLARE_WATCH_STR_VALUE(gid)
@@ -270,9 +273,11 @@ DECLARE_WATCH_STR_VALUE(pid_file)
 DECLARE_WATCH_STR_VALUE(log_file)
 DECLARE_WATCH_STR_VALUE(error_file)
 DECLARE_WATCH_STR_LIST_VALUE(start)
+DECLARE_WATCH_SIZE_UNIT(max_memory)
 
 #undef DECLARE_WATCH_STR_VALUE
 #undef DECLARE_WATCH_STR_LIST_VALUE
+#undef DECLARE_WATCH_SIZE_UNIT
 #undef DECLARE_WATCH_STR_FUNC
 
 static const char *env_key = NULL;
@@ -400,6 +405,7 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("pid_file", handle_watch_map_value_pid_file),
     SCALAR_HANDLER("log_file", handle_watch_map_value_log_file),
     SCALAR_HANDLER("error_file", handle_watch_map_value_error_file),
+    SCALAR_HANDLER("max_memory", handle_watch_map_value_max_memory),
     MAP_HANDLER("env", handle_watch_env),
     HANDLERS("start", handle_watch_map_value_start, handle_watch_strings, NULL),
     { NULL }

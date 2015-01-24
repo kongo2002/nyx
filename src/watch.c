@@ -174,6 +174,9 @@ watch_dump(watch_t *watch)
     dump_not_empty("log_file", watch->log_file);
     dump_not_empty("error_file", watch->error_file);
 
+    if (watch->max_memory)
+        log_info("  max_memory: %lu", watch->max_memory);
+
     if (watch->env)
     {
         log_info("  env: [");

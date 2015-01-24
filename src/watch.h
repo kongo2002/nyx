@@ -28,6 +28,8 @@ typedef struct watch_t
     const char *pid_file;
     const char *log_file;
     const char *error_file;
+    unsigned max_cpu;
+    unsigned long max_memory;
     hash_t *env;
 } watch_t;
 
