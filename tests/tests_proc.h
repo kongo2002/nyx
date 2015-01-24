@@ -26,6 +26,9 @@ void
 test_proc_total_memory_size(void **state);
 
 void
+test_proc_page_size(void **state);
+
+void
 test_proc_num_cpus(void **state);
 
 #endif

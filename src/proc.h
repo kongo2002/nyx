@@ -41,7 +41,7 @@ typedef struct
     sys_info_t info;
     const char *name;
     double cpu_usage;
-    double mem_usage;
+    long mem_usage;
 } proc_stat_t;
 
 typedef struct
@@ -61,6 +61,7 @@ DECLARE_STACK(sys_proc_stat_t, sys_proc)
 typedef struct
 {
     unsigned long total_memory;
+    long page_size;
     int num_cpus;
     sys_proc_stat_t sys_proc;
     list_t *processes;
@@ -110,6 +111,9 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid);
 
 unsigned long
 total_memory_size(void);
+
+long
+get_page_size(void);
 
 int
 num_cpus(void);

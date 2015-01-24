@@ -30,6 +30,7 @@ nyx_proc_new(void)
     /* TODO: dispose func */
     proc->processes = list_new(free);
     proc->total_memory = total_memory_size();
+    proc->page_size = get_page_size();
     proc->num_cpus = num_cpus();
 
     return proc;
@@ -76,7 +77,10 @@ calculate_proc_diff(proc_stat_t *proc)
     if (!sys_info_read_proc(&current, proc->pid))
         return 0;
 
-    /* calculate diff */
+    /* memory usage */
+    proc->mem_usage = current.resident_set_size;
+
+    /* calculate cpu diff/usage */
     diff = current.total_time - proc->info.total_time;
 
     memcpy(&proc->info, &current, sizeof(sys_info_t));
@@ -85,7 +89,7 @@ calculate_proc_diff(proc_stat_t *proc)
 }
 
 static void
-calculate_proc_cpu_usage(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long period)
+calculate_proc_stats(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long period)
 {
     double usage = 0;
     unsigned max = sys->num_cpus * 100;
@@ -120,6 +124,14 @@ nyx_proc_init(pid_t pid)
     if (proc->num_cpus < 1)
     {
         log_error("Unable to determine number of CPUs");
+        nyx_proc_destroy(proc);
+
+        return NULL;
+    }
+
+    if (proc->page_size < 1)
+    {
+        log_error("Unable to determine page size");
         nyx_proc_destroy(proc);
 
         return NULL;
@@ -205,10 +217,11 @@ nyx_proc_start(void *state)
         {
             proc_stat_t *proc = node->data;
 
-            calculate_proc_cpu_usage(proc, sys, period);
+            calculate_proc_stats(proc, sys, period);
 
-            log_debug("Process '%s' (%d): CPU %4.1f",
-                    proc->name, proc->pid, proc->cpu_usage);
+            log_debug("Process '%s' (%d): CPU %4.1f%% MEM %4.1f%%",
+                    proc->name, proc->pid, proc->cpu_usage,
+                    ((double)proc->mem_usage * sys->page_size / sys->total_memory * 100.0));
 
             node = node->next;
         }
@@ -329,6 +342,20 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid)
 
     fclose(proc);
     return 1;
+}
+
+long
+get_page_size(void)
+{
+    long value = 0;
+
+    if ((value = sysconf(_SC_PAGESIZE)) == -1)
+    {
+        log_perror("nyx: sysconf");
+        return 0;
+    }
+
+    return value;
 }
 
 unsigned long

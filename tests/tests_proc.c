@@ -46,6 +46,16 @@ test_proc_total_memory_size(UNUSED void **state)
 }
 
 void
+test_proc_page_size(UNUSED void **state)
+{
+    long page_size = get_page_size();
+
+    assert_int_not_equal(0, page_size);
+
+    printf("Page size: %ld", page_size);
+}
+
+void
 test_proc_num_cpus(UNUSED void **state)
 {
     int cpus = num_cpus();
