@@ -457,8 +457,6 @@ nyx_destroy(nyx_t *nyx)
 {
     int signal_sent = 0;
 
-    log_debug("Tearing down nyx");
-
     if (nyx == NULL)
         return;
 

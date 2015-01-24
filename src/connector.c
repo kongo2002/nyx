@@ -138,6 +138,23 @@ handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
     return 1;
 }
 
+static int
+handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
+{
+    const char *name = input[1];
+    state_t *state = find_state_by_name(nyx->states, name);
+
+    if (state == NULL)
+    {
+        cb->sender(cb, "unknown watch '%s'", name);
+        return 0;
+    }
+
+    cb->sender(cb, "%s: %s", name, state_to_string(state->state));
+
+    return 1;
+}
+
 #define CMD(t, n, h, a) \
     { .type = t, .name = n, .handler = h, .min_args = a, .cmd_length = LEN(n) }
 
@@ -148,6 +165,7 @@ static command_t commands[] =
     CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0),
     CMD(CMD_START,      "start",      handle_start,      1),
     CMD(CMD_STOP,       "stop",       handle_stop,       1),
+    CMD(CMD_STATUS,     "status",     handle_status,     1)
 };
 
 #undef CMD
@@ -208,6 +226,8 @@ send_command(int socket, const char **commands)
 {
     ssize_t sum = 0, sent = 0;
     const char **cmd = commands;
+
+    printf("<<< %s\n", *cmd);
 
     while (*cmd && (sent = send(socket, *cmd, strlen(*cmd), 0)) > 0)
     {

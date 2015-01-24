@@ -73,7 +73,6 @@ command_mode(nyx_t *nyx)
 
     if ((command = parse_command(nyx->options.commands)) != NULL)
     {
-        printf("<<< %s\n", command->name);
         success = connector_call(nyx->options.commands);
     }
     else
