@@ -34,6 +34,12 @@ test_parse_size_unit(UNUSED void **state)
     assert_true(20480 == parse_size_unit(" 20 m "));
 
     assert_true(2097152 == parse_size_unit("2G"));
+
+    assert_true(2097152 == parse_size_unit("2G"));
+
+    assert_int_equal(0, parse_size_unit("226X"));
+    assert_int_equal(0, parse_size_unit("226 x"));
+    assert_int_equal(0, parse_size_unit("x 226"));
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */
