@@ -21,6 +21,12 @@
 
 #include <stdlib.h>
 
+typedef enum
+{
+    PROC_MAX_CPU,
+    PROC_MAX_MEMORY
+} proc_event_e;
+
 typedef struct
 {
     unsigned long user_time;        /* 14 */
@@ -45,8 +51,12 @@ typedef struct
     const char *name;
     /** process CPU usage (in percent) */
     double cpu_usage;
-    /** process memory usage (in kB) */
+    /** process memory usage (in kb) */
     long mem_usage;
+    /** maximum CPU usage */
+    double max_cpu_usage;
+    /** maximum memory usage (in kb) */
+    long max_mem_usage;
 } proc_stat_t;
 
 typedef struct
@@ -75,6 +85,8 @@ typedef struct
     sys_proc_stat_t sys_proc;
     /** list of watched processes */
     list_t *processes;
+    /** process event handler */
+    int (*event_handler)(proc_event_e, proc_stat_t *);
 } nyx_proc_t;
 
 nyx_proc_t *

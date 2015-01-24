@@ -220,11 +220,32 @@ nyx_proc_start(void *state)
         {
             proc_stat_t *proc = node->data;
 
+            /* calculate process' statistics */
             calculate_proc_stats(proc, sys, period);
 
             log_debug("Process '%s' (%d): CPU %4.1f%% MEM %5.2f%%",
                     proc->name, proc->pid, proc->cpu_usage,
                     ((double)proc->mem_usage / sys->total_memory * 100.0));
+
+            /* no event handler registered
+             * -> nothing to be done anyways */
+            int handle_events = sys->event_handler != NULL;
+
+            /* handle CPU events? */
+            if (handle_events &&
+                    proc->max_cpu_usage &&
+                    proc->cpu_usage >= proc->max_cpu_usage)
+            {
+                handle_events = sys->event_handler(PROC_MAX_CPU, proc);
+            }
+
+            /* handle memory events? */
+            if (handle_events &&
+                    proc->max_mem_usage &&
+                    proc->mem_usage >= proc->max_mem_usage)
+            {
+                sys->event_handler(PROC_MAX_MEMORY, proc);
+            }
 
             node = node->next;
         }
