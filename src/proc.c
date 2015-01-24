@@ -16,6 +16,7 @@
 #include "def.h"
 #include "log.h"
 #include "proc.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -247,8 +248,11 @@ nyx_proc_start(void *state)
                     proc->max_mem_usage &&
                     proc->mem_usage >= proc->max_mem_usage)
             {
-                log_warn("Process '%s' (%d) exceeds its memory usage maximum of %ld kb",
-                        proc->name, proc->pid, proc->max_mem_usage);
+                unsigned long bytes;
+                char unit = get_size_unit(proc->max_mem_usage, &bytes);
+
+                log_warn("Process '%s' (%d) exceeds its memory usage maximum of %ld%c",
+                        proc->name, proc->pid, bytes, unit);
 
                 sys->event_handler(PROC_MAX_MEMORY, proc);
             }

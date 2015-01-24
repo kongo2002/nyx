@@ -21,6 +21,9 @@
 const char **
 strings_to_null_terminated(list_t *list);
 
+char
+get_size_unit(unsigned long kbytes, unsigned long *out_bytes);
+
 const char **
 split_string(const char *string);
 

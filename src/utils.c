@@ -39,6 +39,35 @@ empty_or_whitespace(const char *str)
     return 1;
 }
 
+#define ONE_M 1024L
+#define ONE_G (ONE_M * ONE_M)
+#define ONE_T (ONE_G * ONE_G)
+
+char
+get_size_unit(unsigned long kbytes, unsigned long *out_bytes)
+{
+    if (kbytes > 10 * ONE_T)
+    {
+        *out_bytes = kbytes / ONE_T;
+        return 'T';
+    }
+
+    if (kbytes > 100 * ONE_G)
+    {
+        *out_bytes = kbytes / ONE_G;
+        return 'G';
+    }
+
+    if (kbytes > 100 * ONE_M)
+    {
+        *out_bytes = kbytes / ONE_M;
+        return 'M';
+    }
+
+    *out_bytes = kbytes;
+    return 'K';
+}
+
 const char **
 strings_to_null_terminated(list_t *list)
 {
