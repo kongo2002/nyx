@@ -97,6 +97,10 @@ calculate_proc_stats(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long peri
 
     diff = calculate_proc_diff(stat);
 
+    /* correct mem_usage from 'number of pages' to 'in kilobytes' unit */
+    if (stat->mem_usage)
+        stat->mem_usage = stat->mem_usage * sys->page_size / 1024;
+
     if (period > 0)
     {
         usage = ((double)diff) / period * max;
@@ -219,9 +223,9 @@ nyx_proc_start(void *state)
 
             calculate_proc_stats(proc, sys, period);
 
-            log_debug("Process '%s' (%d): CPU %4.1f%% MEM %4.1f%%",
+            log_debug("Process '%s' (%d): CPU %4.1f%% MEM %5.2f%%",
                     proc->name, proc->pid, proc->cpu_usage,
-                    ((double)proc->mem_usage * sys->page_size / sys->total_memory * 100.0));
+                    ((double)proc->mem_usage / sys->total_memory * 100.0));
 
             node = node->next;
         }
