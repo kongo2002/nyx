@@ -177,6 +177,9 @@ watch_dump(watch_t *watch)
     if (watch->max_memory)
         log_info("  max_memory: %lu", watch->max_memory);
 
+    if (watch->max_cpu)
+        log_info("  max_cpu: %u%%", watch->max_cpu);
+
     if (watch->env)
     {
         log_info("  env: [");

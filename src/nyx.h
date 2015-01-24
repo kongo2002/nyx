@@ -29,9 +29,9 @@ typedef struct
     int no_color;
     int no_daemon;
     int syslog;
-    int def_start_timeout;
-    int def_grace;
-    int polling_interval;
+    unsigned int def_start_timeout;
+    unsigned int def_grace;
+    unsigned int polling_interval;
     const char *config_file;
     const char **commands;
 } nyx_options_t;

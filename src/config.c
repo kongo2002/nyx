@@ -243,6 +243,20 @@ handle_stream(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
     return info;
 }
 
+static unsigned int
+uatoi(const char *str)
+{
+    int value = atoi(str);
+
+    if (value < 0)
+    {
+        log_warn("Invalid numeric value: '%s'", str);
+        return 0;
+    }
+
+    return value;
+}
+
 #define DECLARE_WATCH_STR_FUNC(name_, func_) \
     static parse_info_t * \
     handle_watch_map_value_##name_(parse_info_t *info, yaml_event_t *event, void *data) \
@@ -274,6 +288,7 @@ DECLARE_WATCH_STR_VALUE(log_file)
 DECLARE_WATCH_STR_VALUE(error_file)
 DECLARE_WATCH_STR_LIST_VALUE(start)
 DECLARE_WATCH_SIZE_UNIT(max_memory)
+DECLARE_WATCH_STR_FUNC(max_cpu, uatoi)
 
 #undef DECLARE_WATCH_STR_VALUE
 #undef DECLARE_WATCH_STR_LIST_VALUE
@@ -406,6 +421,7 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("log_file", handle_watch_map_value_log_file),
     SCALAR_HANDLER("error_file", handle_watch_map_value_error_file),
     SCALAR_HANDLER("max_memory", handle_watch_map_value_max_memory),
+    SCALAR_HANDLER("max_cpu", handle_watch_map_value_max_cpu),
     MAP_HANDLER("env", handle_watch_env),
     HANDLERS("start", handle_watch_map_value_start, handle_watch_strings, NULL),
     { NULL }
@@ -527,11 +543,7 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
         const char *value = get_scalar_value(event); \
         if (value == NULL) \
             return NULL; \
-        int int_value = atoi(value); \
-        if (int_value < 1) \
-            log_warn("Invalid numeric value: '%s'", value); \
-        else \
-            nyx->options.name_ = int_value; \
+        nyx->options.name_ = uatoi(value); \
         info->handler[YAML_SCALAR_EVENT] = handle_nyx_key; \
         return info; \
     }
