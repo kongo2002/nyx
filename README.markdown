@@ -75,6 +75,24 @@ watches:
 ```
 
 
+##### Program arguments
+
+The program arguments of the `start` configuration value may be specified in a
+YAML list style as well (which is especially useful with arguments containing
+whitespace):
+
+
+```yaml
+watches:
+    app:
+        start: [
+            '/usr/bin/app',
+            '-f',
+            '/etc/app/config.file'
+        ]
+```
+
+
 ### Command interface
 
 You can interact with a running *nyx* daemon instance using the same executable:
