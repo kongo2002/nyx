@@ -13,6 +13,16 @@ TOBJECTS := $(patsubst tests/%.c,tests/%.o, $(TSRCS))
 TLIBS    := -lcmocka
 TDEPS    := $(filter-out src/main.o, $(OBJECTS))
 
+# install directories
+
+PREFIX     ?= /usr/local
+MANPREFIX  ?= $(PREFIX)/share/man
+DOCDIR     ?= $(PREFIX)/share/doc
+
+INSTALLDIR := $(DESTDIR)$(PREFIX)
+MANPREFIX  := $(DESTDIR)$(MANPREFIX)
+DOCDIR     := $(DESTDIR)$(DOCDIR)
+
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
     CXXFLAGS+= -O0 -ggdb
@@ -20,7 +30,7 @@ else
     CXXFLAGS+= -O2 -DNDEBUG
 endif
 
-.PHONY: all clean rebuild check
+.PHONY: all clean rebuild check install uninstall
 
 all: nyx
 
@@ -43,6 +53,16 @@ src/%.o: src/%.c
 
 tags: $(SRCS)
 	ctags -R --c-kinds=+lp --fields=+iaS --extra=+q --language-force=C .
+
+install: nyx
+	install -d $(INSTALLDIR)/bin
+	install nyx $(INSTALLDIR)/bin/nyx
+	install -d $(DOCDIR)/nyx
+	install -m644 README.markdown LICENSE $(DOCDIR)/nyx
+
+uninstall:
+	rm -rf $(INSTALLDIR)/bin/nyx
+	rm -rf $(DOCDIR)/nyx
 
 clean:
 	@rm -rf src/*.o
