@@ -236,6 +236,9 @@ nyx_proc_start(void *state)
                     proc->max_cpu_usage &&
                     proc->cpu_usage >= proc->max_cpu_usage)
             {
+                log_warn("Process '%s' (%d) exceeds its CPU usage maximum of %f%%",
+                        proc->name, proc->pid, proc->max_cpu_usage);
+
                 handle_events = sys->event_handler(PROC_MAX_CPU, proc);
             }
 
@@ -244,6 +247,9 @@ nyx_proc_start(void *state)
                     proc->max_mem_usage &&
                     proc->mem_usage >= proc->max_mem_usage)
             {
+                log_warn("Process '%s' (%d) exceeds its memory usage maximum of %ld kb",
+                        proc->name, proc->pid, proc->max_mem_usage);
+
                 sys->event_handler(PROC_MAX_MEMORY, proc);
             }
 
