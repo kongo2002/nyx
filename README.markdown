@@ -108,6 +108,7 @@ Right now the following commands are implemented:
 
 - `ping`: ping a running daemon
 - `version`: return the daemon version
+- `status <watch>`: get the status of the specified watch
 - `start <watch>`: send a start command to the specified watch
 - `stop <watch>`: send a stop command to the specified watch
 - `terminate`: terminate the nyx daemon
