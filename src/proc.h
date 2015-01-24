@@ -37,10 +37,15 @@ typedef struct
 
 typedef struct
 {
+    /** process ID */
     pid_t pid;
+    /** process statistics */
     sys_info_t info;
+    /** process name */
     const char *name;
+    /** process CPU usage (in percent) */
     double cpu_usage;
+    /** process memory usage (in kB) */
     long mem_usage;
 } proc_stat_t;
 
@@ -60,10 +65,15 @@ DECLARE_STACK(sys_proc_stat_t, sys_proc)
 
 typedef struct
 {
+    /** total system memory (in kB) */
     unsigned long total_memory;
+    /** system page size (in bytes) */
     long page_size;
+    /** number of CPUs */
     int num_cpus;
+    /** current system statistics */
     sys_proc_stat_t sys_proc;
+    /** list of watched processes */
     list_t *processes;
 } nyx_proc_t;
 
