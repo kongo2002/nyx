@@ -263,28 +263,6 @@ initialize_daemon(nyx_t *nyx)
         nyx->connector_thread = NULL;
     }
 
-    /* try to initialize proc watch/thread */
-    nyx->proc = nyx_proc_init(nyx->pid);
-
-    if (nyx->proc != NULL)
-    {
-        nyx->proc_thread = xcalloc1(sizeof(pthread_t));
-
-        err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx->proc);
-
-        if (err)
-        {
-            log_perror("nyx: pthread_create");
-            log_error("Failed to initialize proc watch - unable to monitor process' statistics");
-
-            free(nyx->proc_thread);
-            nyx->proc_thread = NULL;
-
-            free(nyx->proc);
-            nyx->proc = NULL;
-        }
-    }
-
     return 1;
 }
 
@@ -369,10 +347,40 @@ nyx_initialize(int argc, char **args)
     return nyx;
 }
 
+static int
+nyx_proc_initialize(nyx_t *nyx)
+{
+    int err = 0;
+
+    /* try to initialize proc watch/thread */
+    nyx->proc = nyx_proc_init(nyx->pid);
+
+    if (nyx->proc != NULL)
+    {
+        nyx->proc_thread = xcalloc1(sizeof(pthread_t));
+
+        err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx->proc);
+
+        if (err)
+        {
+            log_perror("nyx: pthread_create");
+            log_error("Failed to initialize proc watch - unable to monitor process' statistics");
+
+            free(nyx->proc_thread);
+            nyx->proc_thread = NULL;
+
+            free(nyx->proc);
+            nyx->proc = NULL;
+        }
+    }
+
+    return nyx->proc != NULL;
+}
+
 int
 nyx_watches_init(nyx_t *nyx)
 {
-    int rc = 1, init = 0;
+    int rc = 1, init = 0, proc_required = 0;
     const char *key = NULL;
     void *data = NULL;
     hash_iter_t *iter = hash_iter_start(nyx->watches);
@@ -402,10 +410,26 @@ nyx_watches_init(nyx_t *nyx)
         if (rc != 0)
             log_critical_perror("Failed to create thread, error: %d", rc);
 
+        if (watch->max_cpu > 0 || watch->max_memory > 0)
+            proc_required = 1;
+
         init++;
     }
 
     free(iter);
+
+    if (proc_required)
+    {
+        if (nyx_proc_initialize(nyx))
+        {
+            log_debug("Initialized proc system for at least one watch");
+        }
+    }
+    else
+    {
+        log_debug("No watch requiring proc system - skip initialization");
+    }
+
     return init > 0;
 }
 

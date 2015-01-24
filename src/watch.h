@@ -31,6 +31,7 @@ typedef struct watch_t
     unsigned max_cpu;
     unsigned long max_memory;
     hash_t *env;
+    int invalid;
 } watch_t;
 
 watch_t *
