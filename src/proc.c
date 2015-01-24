@@ -27,7 +27,6 @@ nyx_proc_new(void)
 {
     nyx_proc_t *proc = xcalloc1(sizeof(nyx_proc_t));
 
-    /* TODO: dispose func */
     proc->processes = list_new(free);
     proc->total_memory = total_memory_size();
     proc->page_size = get_page_size();
