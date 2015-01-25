@@ -155,29 +155,65 @@ handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
     return 1;
 }
 
-#define CMD(t, n, h, a) \
-    { .type = t, .name = n, .handler = h, .min_args = a, .cmd_length = LEN(n) }
+#define CMD(t, n, h, a, d) \
+    { .type = t, .name = n, .handler = h, .min_args = a, .cmd_length = LEN(n), \
+      .description = d }
 
 static command_t commands[] =
 {
-    CMD(CMD_PING,       "ping",       handle_ping,       0),
-    CMD(CMD_VERSION,    "version",    handle_version,    0),
-    CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0),
-    CMD(CMD_START,      "start",      handle_start,      1),
-    CMD(CMD_STOP,       "stop",       handle_stop,       1),
-    CMD(CMD_STATUS,     "status",     handle_status,     1)
+    CMD(CMD_PING,       "ping",       handle_ping,       0,
+            "ping the nyx server"),
+    CMD(CMD_VERSION,    "version",    handle_version,    0,
+            "request the nyx server version"),
+    CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0,
+            "terminate the nyx server"),
+    CMD(CMD_START,      "start",      handle_start,      1,
+            "start the specified watch"),
+    CMD(CMD_STOP,       "stop",       handle_stop,       1,
+            "stop the specified watch"),
+    CMD(CMD_STATUS,     "status",     handle_status,     1,
+            "request the watch's status")
 };
 
 #undef CMD
+
+static unsigned int
+command_max_length(void)
+{
+    int idx = 0;
+    unsigned int len = 0;
+
+    while (idx < CMD_SIZE)
+    {
+        unsigned int cmd_len = commands[idx++].cmd_length;
+        len = MAX(len, cmd_len);
+    }
+
+    return len;
+}
+
+static void
+print_command(FILE *out, unsigned int pad, command_t *cmd)
+{
+    unsigned int i = 0;
+
+    fprintf(out, "  %s", cmd->name);
+
+    for (i = cmd->cmd_length; i < pad; i++)
+        fputc(' ', out);
+
+    fprintf(out, "%s\n", cmd->description);
+}
 
 void
 print_commands(FILE *out)
 {
     int idx = 0;
+    unsigned int pad_to = command_max_length() + 2;
 
     while (idx < CMD_SIZE)
     {
-        fprintf(out, "  %s\n", commands[idx++].name);
+        print_command(out, pad_to, &commands[idx++]);
     }
 }
 

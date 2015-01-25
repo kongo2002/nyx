@@ -46,6 +46,7 @@ typedef struct
     command_handler handler;
     size_t cmd_length;
     unsigned int min_args;
+    const char *description;
 } command_t;
 
 int
