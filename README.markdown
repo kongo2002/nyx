@@ -126,11 +126,18 @@ $ make
 $ ./nyx --help
 ```
 
+System-wide installation can be achieved with a regular:
+
+```bash
+$ sudo make install
+```
+
 In order to run the test suite afterwards you may run:
 
 ```bash
 $ make check
 ```
+
 
 ### Release
 
