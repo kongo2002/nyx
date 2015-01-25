@@ -39,7 +39,7 @@ endif
 
 .PHONY: all clean rebuild check install uninstall
 
-all: nyx
+all: nyx nyx.1.gz
 
 -include $(DEPS)
 
@@ -58,14 +58,19 @@ tests/%.o: tests/%.c
 src/%.o: src/%.c
 	$(CC) -c $(CXXFLAGS) $(INCLUDES) -MMD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 
+nyx.1.gz: nyx.1
+	@gzip -c $< > $@
+
 tags: $(SRCS)
 	ctags -R --c-kinds=+lp --fields=+iaS --extra=+q --language-force=C .
 
-install: nyx
+install: all
 	install -d $(INSTALLDIR)/bin
 	install nyx $(INSTALLDIR)/bin/nyx
 	install -d $(DOCDIR)/nyx
 	install -m644 README.markdown LICENSE $(DOCDIR)/nyx
+	install -d $(MANPREFIX)/man1
+	install -m644 nyx.1.gz $(MANPREFIX)/man1/
 
 uninstall:
 	rm -rf $(INSTALLDIR)/bin/nyx
@@ -77,5 +82,6 @@ clean:
 	@rm -rf tests/*.o
 	@rm -f nyx
 	@rm -f test
+	@rm -f nyx.1.gz
 
 rebuild: clean all

@@ -2,6 +2,7 @@
 *.o
 *.pyc
 /config.yaml
+/nyx.1.gz
 nyx
 tags
 test

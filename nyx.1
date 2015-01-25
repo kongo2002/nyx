@@ -1,0 +1,103 @@
+.TH "nyx" "1" "January 25, 2015" "nyx user manual" ""
+.SH NAME
+.PP
+nyx \- the lean, docker\-optimized linux process monitor
+.SH SYNOPSIS
+.PP
+nyx \-c [\f[I]config\-file\f[]] [\f[I]options\f[]]...
+.PP
+nyx [\f[I]command\f[]] [\f[I]argument\f[]]...
+.SH DESCRIPTION
+.PP
+nyx is a linux process monitor that intents to ease the monitoring of
+your applications.
+You are able to configure multiple applications to be watched by the nyx
+server.
+The configuration is done via the \f[I]config\-file\f[] argument and is
+expected to be a valid YAML file.
+.PP
+If no \f[I]config\-file\f[] is specified the executable works as a
+command line interface to the (running) nyx server process.
+That way you are able to control your application status\[aq] like
+starting/stopping an instance of your application.
+.SH OPTIONS
+.TP
+.B \-c \f[I]config\-file\f[], \-\-config=\f[I]config\-file\f[]
+Specify the YAML configuration which results in nyx to be run in
+server\-mode.
+.RS
+.RE
+.TP
+.B \-s, \-\-syslog
+Activate logging via the syslog.
+.RS
+.RE
+.TP
+.B \-D, \-\-no\-daemon
+Do not daemonize the nyx server process but run in foreground instead.
+This is especiilay useful to inspect/debug your application\[aq]s
+runtime behavior.
+.RS
+.RE
+.TP
+.B \-q, \-\-quiet
+Log error messages only.
+.RS
+.RE
+.TP
+.B \-C, \-\-no\-color
+No terminal output coloring.
+.RS
+.RE
+.TP
+.B \-V, \-\-version
+Print the verion information.
+.RS
+.RE
+.TP
+.B \-h, \-\-help
+Display a short help.
+.RS
+.RE
+.SH COMMANDS
+.PP
+The following commands are available to control your configured
+applications using the nyx command line interface:
+.TP
+.B ping
+Ping the running nyx server.
+.RS
+.RE
+.TP
+.B version
+Request the nyx server version.
+.RS
+.RE
+.TP
+.B status \f[I]watch\f[]
+Get the current status of the specified \f[I]watch\f[].
+.RS
+.RE
+.TP
+.B start \f[I]watch\f[]
+Start the specified \f[I]watch\f[].
+.RS
+.RE
+.TP
+.B stop \f[I]watch\f[]
+Stop the specified \f[I]watch\f[].
+.RS
+.RE
+.TP
+.B terminate
+Terminate the nyx server instance.
+.RS
+.RE
+.SH SEE ALSO
+.PP
+\f[C]syslog\f[] (3).
+.PP
+The nyx source code can be found on github at
+<https://github.com/kongo2002/nyx/>.
+.SH AUTHORS
+Gregor Uhlenheuer.
