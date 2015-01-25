@@ -276,9 +276,6 @@ uatoi(const char *str)
 #define DECLARE_WATCH_STR_LIST_VALUE(name_) \
     DECLARE_WATCH_STR_FUNC(name_, split_string)
 
-#define DECLARE_WATCH_SIZE_UNIT(name_) \
-    DECLARE_WATCH_STR_FUNC(name_, parse_size_unit)
-
 DECLARE_WATCH_STR_VALUE(name)
 DECLARE_WATCH_STR_VALUE(uid)
 DECLARE_WATCH_STR_VALUE(gid)
@@ -287,12 +284,12 @@ DECLARE_WATCH_STR_VALUE(pid_file)
 DECLARE_WATCH_STR_VALUE(log_file)
 DECLARE_WATCH_STR_VALUE(error_file)
 DECLARE_WATCH_STR_LIST_VALUE(start)
-DECLARE_WATCH_SIZE_UNIT(max_memory)
+DECLARE_WATCH_STR_LIST_VALUE(stop)
+DECLARE_WATCH_STR_FUNC(max_memory, parse_size_unit)
 DECLARE_WATCH_STR_FUNC(max_cpu, uatoi)
 
 #undef DECLARE_WATCH_STR_VALUE
 #undef DECLARE_WATCH_STR_LIST_VALUE
-#undef DECLARE_WATCH_SIZE_UNIT
 #undef DECLARE_WATCH_STR_FUNC
 
 static const char *env_key = NULL;
@@ -366,41 +363,34 @@ handle_watch_string(parse_info_t *info, yaml_event_t *event, void *data)
     return info;
 }
 
-static parse_info_t *
-handle_watch_strings_end(parse_info_t *info, yaml_event_t *event, void *data)
-{
-    log_debug("handle_watch_strings_end");
+#define DECLARE_WATCH_STR_LIST(name_) \
+    static parse_info_t * \
+    handle_watch_strings_end_##name_(parse_info_t *info, yaml_event_t *event, void *data) \
+    { \
+        parse_info_t *parent = parser_up(info, event, data); \
+        list_t *list = data; \
+        watch_t *watch = parent->data; \
+        if (list == NULL || watch == NULL) \
+            return NULL; \
+        watch->name_ = strings_to_null_terminated(list); \
+        parent->handler[YAML_SCALAR_EVENT] = handle_watch_map_key; \
+        return parent; \
+    } \
+    static parse_info_t * \
+    handle_watch_strings_##name_(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data) \
+    { \
+        parse_info_t *new_info = parse_info_new_child(info); \
+        list_t *list = list_new(NULL); \
+        new_info->data = list; \
+        new_info->handler[YAML_SCALAR_EVENT] = handle_watch_string; \
+        new_info->handler[YAML_SEQUENCE_END_EVENT] = handle_watch_strings_end_##name_; \
+        return new_info; \
+    }
 
-    parse_info_t *parent = parser_up(info, event, data);
+DECLARE_WATCH_STR_LIST(start)
+DECLARE_WATCH_STR_LIST(stop)
 
-    list_t *list = data;
-    watch_t *watch = parent->data;
-
-    if (list == NULL || watch == NULL)
-        return NULL;
-
-    watch->start = strings_to_null_terminated(list);
-
-    parent->handler[YAML_SCALAR_EVENT] = handle_watch_map_key;
-
-    return parent;
-}
-
-static parse_info_t *
-handle_watch_strings(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
-{
-    log_debug("handle_watch_strings");
-
-    parse_info_t *new_info = parse_info_new_child(info);
-    list_t *list = list_new(NULL);
-
-    new_info->data = list;
-
-    new_info->handler[YAML_SCALAR_EVENT] = handle_watch_string;
-    new_info->handler[YAML_SEQUENCE_END_EVENT] = handle_watch_strings_end;
-
-    return new_info;
-}
+#undef DECLARE_WATCH_STR_LIST
 
 #define SCALAR_HANDLER(name_, func_) \
     { .key = name_, .handler = { func_, NULL, NULL } }
@@ -423,7 +413,8 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("max_memory", handle_watch_map_value_max_memory),
     SCALAR_HANDLER("max_cpu", handle_watch_map_value_max_cpu),
     MAP_HANDLER("env", handle_watch_env),
-    HANDLERS("start", handle_watch_map_value_start, handle_watch_strings, NULL),
+    HANDLERS("start", handle_watch_map_value_start, handle_watch_strings_start, NULL),
+    HANDLERS("stop", handle_watch_map_value_stop, handle_watch_strings_stop, NULL),
     { NULL }
 };
 

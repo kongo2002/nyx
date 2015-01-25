@@ -67,6 +67,7 @@ void
 watch_destroy(watch_t *watch)
 {
     strings_free((char **)watch->start);
+    strings_free((char **)watch->stop);
 
     if (watch->name)       free((void *)watch->name);
     if (watch->uid)        free((void *)watch->uid);
@@ -168,6 +169,7 @@ watch_dump(watch_t *watch)
     log_info("Watch '%s'", watch->name);
 
     dump_strings("start", watch->start);
+    dump_strings("stop", watch->stop);
 
     dump_not_empty("uid", watch->uid);
     dump_not_empty("gid", watch->gid);
