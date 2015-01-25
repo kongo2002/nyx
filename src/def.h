@@ -20,10 +20,16 @@
 
 #define NYX_VERSION_NUMBER "0.0.1"
 
-#ifndef NDEBUG
-#define NYX_VERSION NYX_VERSION_NUMBER "-debug"
+#ifndef GIT_VERSION
+#define NYX_GIT
 #else
-#define NYX_VERSION NYX_VERSION_NUMBER
+#define NYX_GIT " (" GIT_VERSION ")"
+#endif
+
+#ifndef NDEBUG
+#define NYX_VERSION NYX_VERSION_NUMBER "-debug" NYX_GIT
+#else
+#define NYX_VERSION NYX_VERSION_NUMBER NYX_GIT
 #endif
 
 #define UNUSED __attribute__((unused))

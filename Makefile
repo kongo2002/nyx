@@ -13,7 +13,12 @@ TOBJECTS := $(patsubst tests/%.c,tests/%.o, $(TSRCS))
 TLIBS    := -lcmocka
 TDEPS    := $(filter-out src/main.o, $(OBJECTS))
 
-# install directories
+# TRY TO DETERMINE GIT VERSION
+
+GITVERSION ?= $(shell ./utils/git-version.sh)
+CXXFLAGS   += $(GITVERSION)
+
+# INSTALL DIRECTORIES
 
 PREFIX     ?= /usr/local
 MANPREFIX  ?= $(PREFIX)/share/man
@@ -22,6 +27,8 @@ DOCDIR     ?= $(PREFIX)/share/doc
 INSTALLDIR := $(DESTDIR)$(PREFIX)
 MANPREFIX  := $(DESTDIR)$(MANPREFIX)
 DOCDIR     := $(DESTDIR)$(DOCDIR)
+
+# DEBUG/RELEASE BUILD
 
 DEBUG ?= 1
 ifeq ($(DEBUG), 1)
