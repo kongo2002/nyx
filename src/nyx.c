@@ -353,6 +353,14 @@ nyx_initialize(int argc, char **args)
 }
 
 static int
+handle_proc_event(proc_event_e event, proc_stat_t *proc)
+{
+    log_debug("Got process event %d of process '%s'", event, proc->name);
+
+    return 1;
+}
+
+static int
 nyx_proc_initialize(nyx_t *nyx)
 {
     int err = 0;
@@ -362,6 +370,8 @@ nyx_proc_initialize(nyx_t *nyx)
 
     if (nyx->proc != NULL)
     {
+        nyx->proc->event_handler = handle_proc_event;
+
         nyx->proc_thread = xcalloc1(sizeof(pthread_t));
 
         err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx->proc);

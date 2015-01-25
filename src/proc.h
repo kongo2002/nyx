@@ -18,6 +18,7 @@
 
 #include "list.h"
 #include "stack.h"
+#include "watch.h"
 
 #include <stdlib.h>
 
@@ -108,7 +109,7 @@ void
 nyx_proc_remove(nyx_proc_t *proc, pid_t pid);
 
 void
-nyx_proc_add(nyx_proc_t *proc, pid_t pid, const char *name);
+nyx_proc_add(nyx_proc_t *proc, pid_t pid, watch_t *watch);
 
 void
 nyx_proc_destroy(nyx_proc_t *proc);

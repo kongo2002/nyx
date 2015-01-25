@@ -192,9 +192,12 @@ nyx_proc_remove(nyx_proc_t *proc, pid_t pid)
 }
 
 void
-nyx_proc_add(nyx_proc_t *proc, pid_t pid, const char *name)
+nyx_proc_add(nyx_proc_t *proc, pid_t pid, watch_t *watch)
 {
-    proc_stat_t *stat = proc_stat_new(pid, name);
+    proc_stat_t *stat = proc_stat_new(pid, watch->name);
+
+    stat->max_cpu_usage = watch->max_cpu;
+    stat->max_mem_usage = watch->max_memory;
 
     list_add(proc->processes, stat);
 }
@@ -224,9 +227,15 @@ nyx_proc_start(void *state)
             /* calculate process' statistics */
             calculate_proc_stats(proc, sys, period);
 
-            log_debug("Process '%s' (%d): CPU %4.1f%% MEM %5.2f%%",
+#ifndef NDEBUG
+            unsigned long out_mem = 0;
+            char unit = get_size_unit(proc->mem_usage, &out_mem);
+
+            log_debug("Process '%s' (%d): CPU %4.1f%% MEM (%lu%c) %5.2f%%",
                     proc->name, proc->pid, proc->cpu_usage,
+                    out_mem, unit,
                     ((double)proc->mem_usage / sys->total_memory * 100.0));
+#endif
 
             /* no event handler registered
              * -> nothing to be done anyways */

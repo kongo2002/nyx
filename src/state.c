@@ -431,7 +431,7 @@ running(state_t *state, state_e from, state_e to)
     DEBUG_LOG_STATE_FUNC;
 
     if (state->nyx->proc && state->pid)
-        nyx_proc_add(state->nyx->proc, state->pid, state->watch->name);
+        nyx_proc_add(state->nyx->proc, state->pid, state->watch);
 
     return 1;
 }
