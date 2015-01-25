@@ -196,7 +196,6 @@ spawn_exec(state_t *state)
     pid_t sid = 0;
     uid_t uid = 0;
     gid_t gid = 0;
-    mode_t old_mode;
 
     const watch_t *watch = state->watch;
     const char **args = watch->start;
@@ -210,10 +209,8 @@ spawn_exec(state_t *state)
     if (watch->gid)
         get_group(watch->gid, &gid);
 
-    /* TODO */
-    old_mode = umask(0);
-
-    log_debug("Reset umask - old mask: %04o", old_mode);
+    /* TODO: configurable mask */
+    umask(0);
 
     /* create session */
     if ((sid = setsid()) == -1)
