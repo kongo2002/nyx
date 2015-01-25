@@ -77,7 +77,7 @@ static const struct option long_options[] =
     { .name = "quiet",     .has_arg = 0, .flag = NULL, .val = 'q'},
     { .name = "syslog",    .has_arg = 0, .flag = NULL, .val = 's'},
     { .name = "version",   .has_arg = 0, .flag = NULL, .val = 'V'},
-    { NULL }
+    { NULL, 0, NULL, 0 }
 };
 
 static void

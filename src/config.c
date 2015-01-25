@@ -415,7 +415,7 @@ static struct config_parser_map watch_value_map[] =
     MAP_HANDLER("env", handle_watch_env),
     HANDLERS("start", handle_watch_map_value_start, handle_watch_strings_start, NULL),
     HANDLERS("stop", handle_watch_map_value_stop, handle_watch_strings_stop, NULL),
-    { NULL }
+    { NULL, {0}, NULL }
 };
 
 static parse_info_t *
