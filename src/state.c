@@ -43,6 +43,23 @@ static const char *state_to_str[] =
     "STATE_SIZE"
 };
 
+static const char *state_to_human_str[] =
+{
+    "initialized",
+    "not monitored",
+    "starting",
+    "running",
+    "stopping",
+    "stopped",
+    ""
+};
+
+const char *
+state_to_human_string(state_e state)
+{
+    return state_to_human_str[state];
+}
+
 const char *
 state_to_string(state_e state)
 {

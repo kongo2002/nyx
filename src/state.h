@@ -47,6 +47,9 @@ typedef struct
 } state_t;
 
 inline const char *
+state_to_human_string(state_e state);
+
+inline const char *
 state_to_string(state_e state);
 
 state_t *

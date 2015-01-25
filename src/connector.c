@@ -150,7 +150,7 @@ handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
         return 0;
     }
 
-    cb->sender(cb, "%s: %s", name, state_to_string(state->state));
+    cb->sender(cb, "%s: %s", name, state_to_human_string(state->state));
 
     return 1;
 }
