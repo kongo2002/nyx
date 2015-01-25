@@ -605,7 +605,7 @@ static struct config_parser_map root_map[] =
 {
     MAP_HANDLER("watches", handle_watches),
     MAP_HANDLER("nyx", handle_nyx),
-    { NULL }
+    { NULL, {0}, NULL }
 };
 
 #undef SCALAR_HANDLER
