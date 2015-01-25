@@ -170,6 +170,17 @@ static command_t commands[] =
 
 #undef CMD
 
+void
+print_commands(FILE *out)
+{
+    int idx = 0;
+
+    while (idx < CMD_SIZE)
+    {
+        fprintf(out, "  %s\n", commands[idx++].name);
+    }
+}
+
 static unsigned int
 count_args(const char **args)
 {
