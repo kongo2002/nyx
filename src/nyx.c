@@ -513,16 +513,16 @@ nyx_destroy(nyx_t *nyx)
         nyx->proc = NULL;
     }
 
-    if (nyx->states)
-    {
-        list_destroy(nyx->states);
-        nyx->states = NULL;
-    }
-
     if (nyx->state_map)
     {
         hash_destroy(nyx->state_map);
         nyx->state_map = NULL;
+    }
+
+    if (nyx->states)
+    {
+        list_destroy(nyx->states);
+        nyx->states = NULL;
     }
 
     if (nyx->watches)
