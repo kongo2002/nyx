@@ -50,6 +50,7 @@ typedef struct
     nyx_options_t options;
     hash_t *watches;
     list_t *states;
+    hash_t *state_map;
 } nyx_t;
 
 void

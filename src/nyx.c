@@ -245,6 +245,7 @@ initialize_daemon(nyx_t *nyx)
 
     nyx->watches = hash_new(_watch_destroy);
     nyx->states = list_new(_state_destroy);
+    nyx->state_map = hash_new(NULL);
 
     /* initialize eventfd with an initial value of '0' */
     nyx->event = eventfd(0, 0);
@@ -416,6 +417,7 @@ nyx_watches_init(nyx_t *nyx)
         /* create new state instance */
         state = state_new(watch, nyx);
         list_add(nyx->states, state);
+        hash_add(nyx->state_map, watch->name, state);
 
         /* start a new thread for each state */
         state->thread = xcalloc(1, sizeof(pthread_t));
@@ -515,6 +517,12 @@ nyx_destroy(nyx_t *nyx)
     {
         list_destroy(nyx->states);
         nyx->states = NULL;
+    }
+
+    if (nyx->state_map)
+    {
+        hash_destroy(nyx->state_map);
+        nyx->state_map = NULL;
     }
 
     if (nyx->watches)

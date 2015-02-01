@@ -467,29 +467,6 @@ static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
 };
 
 state_t*
-find_state_by_name(list_t *states, const char *name)
-{
-    const char *wname = NULL;
-    size_t len = strlen(name);
-
-    list_node_t *node = states->head;
-
-    while (node)
-    {
-        state_t *state = node->data;
-        wname = state->watch->name;
-
-        if (state != NULL && strncmp(wname, name, len) == 0)
-            return state;
-
-        node = node->next;
-    }
-
-    return NULL;
-
-}
-
-state_t*
 find_state_by_pid(list_t *states, pid_t pid)
 {
     list_node_t *node = states->head;

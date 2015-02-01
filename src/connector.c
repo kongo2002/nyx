@@ -104,7 +104,7 @@ static int
 handle_stop(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
-    state_t *state = find_state_by_name(nyx->states, name);
+    state_t *state = hash_get(nyx->state_map, name);
 
     if (state == NULL)
     {
@@ -123,7 +123,7 @@ static int
 handle_restart(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
-    state_t *state = find_state_by_name(nyx->states, name);
+    state_t *state = hash_get(nyx->state_map, name);
 
     if (state == NULL)
     {
@@ -142,7 +142,7 @@ static int
 handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
-    state_t *state = find_state_by_name(nyx->states, name);
+    state_t *state = hash_get(nyx->state_map, name);
 
     if (state == NULL)
     {
@@ -161,7 +161,7 @@ static int
 handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
-    state_t *state = find_state_by_name(nyx->states, name);
+    state_t *state = hash_get(nyx->state_map, name);
 
     if (state == NULL)
     {

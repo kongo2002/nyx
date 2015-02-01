@@ -71,9 +71,6 @@ find_state_by_pid(list_t *states, pid_t pid);
 void
 set_state(state_t *state, state_e value);
 
-state_t*
-find_state_by_name(list_t *states, const char *name);
-
 int
 dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx);
 
