@@ -447,7 +447,7 @@ static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
     /* INIT, UNMONITORED,   STARTING, RUNNING, STOPPING, STOPPED, RESTARTING, QUIT */
 
     /* INIT to ... */
-    { NULL, to_unmonitored },
+    { NULL, to_unmonitored, NULL,     running, NULL,     stopped, NULL },
 
     /* UNMONITORED to ... */
     { NULL, NULL,           start,    running, stop,     stopped, NULL },
