@@ -74,6 +74,27 @@ send_format(sender_callback_t *cb, const char *format, ...)
 }
 
 static int
+handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, state_e new_state)
+{
+    const char *name = input[1];
+    state_t *state = hash_get(nyx->state_map, name);
+
+    if (state == NULL)
+    {
+        cb->sender(cb, "unknown watch '%s'", name);
+        return 0;
+    }
+
+    /* request state change */
+    set_state(state, new_state);
+    cb->sender(cb, "requested %s for watch '%s'",
+            state_to_human_string(new_state),
+            name);
+
+    return 1;
+}
+
+static int
 handle_ping(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
 {
     return cb->sender(cb, "pong");
@@ -103,58 +124,19 @@ handle_terminate(UNUSED sender_callback_t *cb, UNUSED const char **input, nyx_t 
 static int
 handle_stop(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
-    const char *name = input[1];
-    state_t *state = hash_get(nyx->state_map, name);
-
-    if (state == NULL)
-    {
-        cb->sender(cb, "unknown watch '%s'", name);
-        return 0;
-    }
-
-    /* request stop */
-    set_state(state, STATE_STOPPING);
-    cb->sender(cb, "requested stop for watch '%s'", name);
-
-    return 1;
+    return handle_status_change(cb, input, nyx, STATE_STOPPING);
 }
 
 static int
 handle_restart(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
-    const char *name = input[1];
-    state_t *state = hash_get(nyx->state_map, name);
-
-    if (state == NULL)
-    {
-        cb->sender(cb, "unknown watch '%s'", name);
-        return 0;
-    }
-
-    /* request restart */
-    set_state(state, STATE_RESTARTING);
-    cb->sender(cb, "requested restart for watch '%s'", name);
-
-    return 1;
+    return handle_status_change(cb, input, nyx, STATE_RESTARTING);
 }
 
 static int
 handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
-    const char *name = input[1];
-    state_t *state = hash_get(nyx->state_map, name);
-
-    if (state == NULL)
-    {
-        cb->sender(cb, "unknown watch '%s'", name);
-        return 0;
-    }
-
-    /* request start */
-    set_state(state, STATE_STARTING);
-    cb->sender(cb, "requested start for watch '%s'", name);
-
-    return 1;
+    return handle_status_change(cb, input, nyx, STATE_STARTING);
 }
 
 static int
