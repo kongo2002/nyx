@@ -111,6 +111,7 @@ Right now the following commands are implemented:
 - `status <watch>`: get the status of the specified watch
 - `start <watch>`: send a start command to the specified watch
 - `stop <watch>`: send a stop command to the specified watch
+- `restart <watch>`: send a restart command to the specified watch
 - `terminate`: terminate the nyx daemon
 
 
