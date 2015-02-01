@@ -32,6 +32,7 @@ typedef enum
     STATE_RUNNING,
     STATE_STOPPING,
     STATE_STOPPED,
+    STATE_RESTARTING,
     STATE_QUIT,
     STATE_SIZE
 } state_e;

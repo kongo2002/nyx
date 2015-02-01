@@ -120,6 +120,25 @@ handle_stop(sender_callback_t *cb, const char **input, nyx_t *nyx)
 }
 
 static int
+handle_restart(sender_callback_t *cb, const char **input, nyx_t *nyx)
+{
+    const char *name = input[1];
+    state_t *state = find_state_by_name(nyx->states, name);
+
+    if (state == NULL)
+    {
+        cb->sender(cb, "unknown watch '%s'", name);
+        return 0;
+    }
+
+    /* request restart */
+    set_state(state, STATE_RESTARTING);
+    cb->sender(cb, "requested restart for watch '%s'", name);
+
+    return 1;
+}
+
+static int
 handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
@@ -171,6 +190,8 @@ static command_t commands[] =
             "start the specified watch"),
     CMD(CMD_STOP,       "stop",       handle_stop,       1,
             "stop the specified watch"),
+    CMD(CMD_RESTART,    "restart",    handle_restart,    1,
+            "restart the specified watch"),
     CMD(CMD_STATUS,     "status",     handle_status,     1,
             "request the watch's status")
 };

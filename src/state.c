@@ -40,6 +40,8 @@ static const char *state_to_str[] =
     "STATE_RUNNING",
     "STATE_STOPPING",
     "STATE_STOPPED",
+    "STATE_RESTARTING",
+    "STATE_QUIT",
     "STATE_SIZE"
 };
 
@@ -51,6 +53,8 @@ static const char *state_to_human_str[] =
     "running",
     "stopping",
     "stopped",
+    "restarting",
+    "quit"
     ""
 };
 
@@ -440,21 +444,23 @@ running(state_t *state, state_e from, state_e to)
 
 static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
 {
-    /* INIT, UNMONITORED,   STARTING, RUNNING, STOPPING, STOPPED, QUIT */
+    /* INIT, UNMONITORED,   STARTING, RUNNING, STOPPING, STOPPED, RESTARTING, QUIT */
 
     /* INIT to ... */
     { NULL, to_unmonitored },
 
     /* UNMONITORED to ... */
-    { NULL, NULL,           start,    running, stop,     stopped, },
+    { NULL, NULL,           start,    running, stop,     stopped, NULL },
     /* STARTING to ... */
-    { NULL, to_unmonitored, NULL,     running, stop,     stopped, },
+    { NULL, to_unmonitored, NULL,     running, stop,     stopped, NULL },
     /* RUNNING to ... */
-    { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, },
+    { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, stop },
     /* STOPPING to ... */
-    { NULL, to_unmonitored, NULL,     NULL,    NULL,     stopped, },
+    { NULL, to_unmonitored, NULL,     NULL,    NULL,     stopped, NULL },
     /* STOPPED to ... */
-    { NULL, to_unmonitored, start,    NULL,    NULL,     NULL, },
+    { NULL, to_unmonitored, start,    NULL,    NULL,     NULL,    NULL },
+    /* RESTARTING to ... */
+    { NULL, to_unmonitored, NULL,     NULL,    NULL,     start,   NULL },
 
     /* QUIT to ... */
     { NULL }
