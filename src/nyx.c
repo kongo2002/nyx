@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "config.h"
 #include "connector.h"
 #include "def.h"
 #include "fs.h"
@@ -223,13 +224,25 @@ initialize_daemon(nyx_t *nyx)
         return 0;
     }
 
+    nyx->watches = hash_new(_watch_destroy);
+    nyx->states = list_new(_state_destroy);
+    nyx->state_map = hash_new(NULL);
+
+    /* parse config */
+    if (!parse_config(nyx))
+    {
+        if (hash_count(nyx->watches) < 1)
+            log_error("No watches configured - terminating now");
+
+        return 0;
+    }
+
     /* nyx should run as a daemon process */
     if (!nyx->is_init && !nyx->options.no_daemon)
     {
         if (!daemonize(nyx))
         {
             log_error("Failed to daemonize nyx");
-            free(nyx);
             return 0;
         }
     }
@@ -242,10 +255,6 @@ initialize_daemon(nyx_t *nyx)
                     nyx->pid);
         }
     }
-
-    nyx->watches = hash_new(_watch_destroy);
-    nyx->states = list_new(_state_destroy);
-    nyx->state_map = hash_new(NULL);
 
     /* initialize eventfd with an initial value of '0' */
     nyx->event = eventfd(0, 0);
@@ -332,7 +341,7 @@ nyx_initialize(int argc, char **args)
     {
         if (!initialize_daemon(nyx))
         {
-            free(nyx);
+            nyx_destroy(nyx);
             return NULL;
         }
     }

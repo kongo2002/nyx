@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include "config.h"
 #include "connector.h"
 #include "event.h"
 #include "log.h"
@@ -27,15 +26,6 @@
 static int
 daemon_mode(nyx_t *nyx)
 {
-    /* parse config */
-    if (!parse_config(nyx))
-    {
-        if (hash_count(nyx->watches) < 1)
-            log_error("No watches configured - terminating now");
-
-        return 0;
-    }
-
     if (!nyx_watches_init(nyx))
     {
         log_error("No valid watched configured - terminating now");
