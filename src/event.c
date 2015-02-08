@@ -18,6 +18,10 @@
 #include "log.h"
 #include "socket.h"
 
+/* we want to include sys/socket.h before linux/netlink.h
+ * to avoid some compilation problems with some 2.6 kernels */
+#include <sys/socket.h>
+
 #include <errno.h>
 #include <linux/cn_proc.h>
 #include <linux/connector.h>
@@ -25,7 +29,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 static volatile int need_exit = 0;
