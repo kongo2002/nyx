@@ -230,12 +230,7 @@ initialize_daemon(nyx_t *nyx)
 
     /* parse config */
     if (!parse_config(nyx))
-    {
-        if (hash_count(nyx->watches) < 1)
-            log_error("No watches configured - terminating now");
-
         return 0;
-    }
 
     /* nyx should run as a daemon process */
     if (!nyx->is_init && !nyx->options.no_daemon)

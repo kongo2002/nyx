@@ -755,6 +755,12 @@ parse_config(nyx_t *nyx)
     parse_info_destroy(info);
     fclose(cfg);
 
+    if (hash_count(nyx->watches) < 1)
+    {
+        log_error("No watches configured");
+        return 0;
+    }
+
     if (success)
     {
         log_info("Found %d watch definitions", hash_count(nyx->watches));
