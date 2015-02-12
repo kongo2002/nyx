@@ -87,7 +87,7 @@ typedef struct
     /** list of watched processes */
     list_t *processes;
     /** process event handler */
-    int (*event_handler)(proc_event_e, proc_stat_t *);
+    int (*event_handler)(proc_event_e, proc_stat_t *, void *);
 } nyx_proc_t;
 
 nyx_proc_t *

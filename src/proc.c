@@ -211,7 +211,8 @@ nyx_proc_terminate(void)
 void *
 nyx_proc_start(void *state)
 {
-    nyx_proc_t *sys = state;
+    nyx_t *nyx = state;
+    nyx_proc_t *sys = nyx->proc;
 
     log_debug("Starting proc watch");
 
@@ -249,7 +250,7 @@ nyx_proc_start(void *state)
                 log_warn("Process '%s' (%d) exceeds its CPU usage maximum of %f%%",
                         proc->name, proc->pid, proc->max_cpu_usage);
 
-                handle_events = sys->event_handler(PROC_MAX_CPU, proc);
+                handle_events = sys->event_handler(PROC_MAX_CPU, proc, nyx);
             }
 
             /* handle memory events? */
@@ -263,13 +264,14 @@ nyx_proc_start(void *state)
                 log_warn("Process '%s' (%d) exceeds its memory usage maximum of %ld%c",
                         proc->name, proc->pid, bytes, unit);
 
-                sys->event_handler(PROC_MAX_MEMORY, proc);
+                sys->event_handler(PROC_MAX_MEMORY, proc, nyx);
             }
 
             node = node->next;
         }
 
-        sleep(1);
+        if (!need_exit)
+            sleep(1);
     }
 
     log_debug("Stopped proc watch");

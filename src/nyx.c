@@ -358,11 +358,21 @@ nyx_initialize(int argc, char **args)
 }
 
 static int
-handle_proc_event(proc_event_e event, proc_stat_t *proc)
+handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
 {
+    hash_t *states = ((nyx_t *)nyx)->state_map;
+
     log_debug("Got process event %d of process '%s'", event, proc->name);
 
-    return 1;
+    state_t *state = hash_get(states, proc->name);
+
+    if (state != NULL)
+    {
+        set_state(state, STATE_RESTARTING);
+        return 1;
+    }
+
+    return 0;
 }
 
 static int
@@ -379,7 +389,7 @@ nyx_proc_initialize(nyx_t *nyx)
 
         nyx->proc_thread = xcalloc1(sizeof(pthread_t));
 
-        err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx->proc);
+        err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx);
 
         if (err)
         {
