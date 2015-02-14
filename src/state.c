@@ -550,12 +550,13 @@ state_new(watch_t *watch, nyx_t *nyx)
 {
     int init = 0;
 
-    sem_t *semaphore = xcalloc(1, sizeof(sem_t));
-    state_t *state = xcalloc(1, sizeof(state_t));
+    sem_t *semaphore = xcalloc1(sizeof(sem_t));
+    state_t *state = xcalloc1(sizeof(state_t));
 
     state->nyx = nyx;
     state->watch = watch;
     state->state = STATE_UNMONITORED;
+    state->history = timestack_new(20);
 
     /* initialize unnamed semaphore
      * - process-local semaphore
@@ -606,6 +607,12 @@ state_destroy(state_t *state)
     {
         sem_destroy(sem);
         free(sem);
+    }
+
+    if (state->history)
+    {
+        timestack_destroy(state->history);
+        state->history = NULL;
     }
 
     free(state);
@@ -668,6 +675,8 @@ state_loop(state_t *state)
          * we don't have to do anything */
         if (last_state != current_state)
         {
+            timestack_add(state->history, current_state);
+
             result = process_state(state, last_state, current_state);
 
             if (!result)
@@ -676,9 +685,15 @@ state_loop(state_t *state)
                  * so we have to restore the old state */
                 state->state = last_state;
 
+                timestack_add(state->history, last_state);
+
                 log_warn("Processing state of watch '%s' failed (PID %d)",
                         state->watch->name, state->pid);
             }
+
+#ifndef NDEBUG
+            timestack_dump(state->history);
+#endif
         }
         else
         {

@@ -14,6 +14,7 @@
  */
 
 #include "def.h"
+#include "log.h"
 #include "timestack.h"
 
 #include <stdio.h>
@@ -98,7 +99,17 @@ timestack_dump(timestack_t *timestack)
 
     while (i++ < count)
     {
-        printf("%s: %d\n", asctime(localtime(&elem->time)), elem->value);
+        struct tm *time = localtime(&elem->time);
+
+        log_info("%04d-%02d-%02dT%02d:%02d:%02d: %d",
+                time->tm_year + 1900,
+                time->tm_mon,
+                time->tm_mday,
+                time->tm_hour,
+                time->tm_min,
+                time->tm_sec,
+                elem->value);
+
         elem++;
     }
 }

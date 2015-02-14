@@ -18,6 +18,7 @@
 
 #include "event.h"
 #include "nyx.h"
+#include "timestack.h"
 #include "watch.h"
 
 #include <semaphore.h>
@@ -44,6 +45,7 @@ typedef struct
     sem_t *sem;
     pthread_t *thread;
     watch_t *watch;
+    timestack_t *history;
     nyx_t *nyx;
 } state_t;
 
