@@ -647,6 +647,50 @@ process_state(state_t *state, state_e old_state, state_e new_state)
     return result;
 }
 
+static int
+is_flapping(state_t *state, unsigned int changes, int within)
+{
+    unsigned int i = 0, stopped = 0, started = 0;
+    time_t start = 0;
+
+    timestack_t *hist = state->history;
+    timestack_elem_t *elem = hist->elements;
+
+    if (hist->count < (changes * 2))
+        return 0;
+
+    while (i++ < hist->count)
+    {
+        state_e value = elem->value;
+
+        if (value != STATE_STARTING && value != STATE_STOPPED)
+        {
+            elem++;
+            continue;
+        }
+
+        if (start == 0)
+            start = elem->time;
+
+        time_t diff = start - elem->time;
+
+        if (diff > within)
+            return 0;
+
+        if (value == STATE_STARTING)
+            started++;
+        else if (value == STATE_STOPPED)
+            stopped++;
+
+        if (started > changes && stopped > changes)
+            return 1;
+
+        elem++;
+    }
+
+    return 0;
+}
+
 void
 state_loop(state_t *state)
 {
@@ -689,6 +733,13 @@ state_loop(state_t *state)
 
                 log_warn("Processing state of watch '%s' failed (PID %d)",
                         state->watch->name, state->pid);
+            }
+
+            /* check for flapping processes
+             * meaning 5 start/stop events within 60 seconds */
+            if (is_flapping(state, 5, 60))
+            {
+                log_warn("Watch '%s' appears to be flapping", watch->name);
             }
 
 #ifndef NDEBUG
