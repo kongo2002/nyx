@@ -43,6 +43,7 @@ typedef struct
 } sys_info_t;
 
 DECLARE_STACK(long, long)
+DECLARE_STACK(double, double)
 
 typedef struct
 {
@@ -53,7 +54,7 @@ typedef struct
     /** process name */
     const char *name;
     /** process CPU usage (in percent) */
-    double cpu_usage;
+    stack_double_t *cpu_usage;
     /** process memory usage (in kb) */
     stack_long_t *mem_usage;
     /** maximum CPU usage */

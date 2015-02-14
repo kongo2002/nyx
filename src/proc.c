@@ -34,6 +34,12 @@ proc_stat_destroy(void *obj)
         stat->mem_usage = NULL;
     }
 
+    if (stat->cpu_usage)
+    {
+        stack_double_destroy(stat->cpu_usage);
+        stat->cpu_usage = NULL;
+    }
+
     free(stat);
 }
 
@@ -60,6 +66,7 @@ proc_stat_new(pid_t pid, const char *name)
 
     /* TODO: configurable stack size */
     stat->mem_usage = stack_long_new(30);
+    stat->cpu_usage = stack_double_new(30);
 
     return stat;
 }
@@ -118,10 +125,10 @@ calculate_proc_stats(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long peri
     if (period > 0)
     {
         usage = ((double)diff) / period * max;
-        stat->cpu_usage = MAX(0, MIN(max, usage));
+        stack_double_add(stat->cpu_usage, MAX(0, MIN(max, usage)));
     }
     else
-        stat->cpu_usage = 0;
+        stack_double_add(stat->cpu_usage, 0);
 }
 
 nyx_proc_t *
@@ -243,13 +250,14 @@ nyx_proc_start(void *state)
             calculate_proc_stats(proc, sys, period);
 
             long mem_usage = stack_long_newest(proc->mem_usage);
+            double cpu_usage = stack_double_newest(proc->cpu_usage);
 
 #ifndef NDEBUG
             unsigned long out_mem = 0;
             char unit = get_size_unit(mem_usage, &out_mem);
 
             log_debug("Process '%s' (%d): CPU %4.1f%% MEM (%lu%c) %5.2f%%",
-                    proc->name, proc->pid, proc->cpu_usage,
+                    proc->name, proc->pid, cpu_usage,
                     out_mem, unit,
                     ((double)mem_usage / sys->total_memory * 100.0));
 #endif
@@ -261,7 +269,7 @@ nyx_proc_start(void *state)
             /* handle CPU events? */
             if (handle_events &&
                     proc->max_cpu_usage &&
-                    proc->cpu_usage >= proc->max_cpu_usage)
+                    cpu_usage >= proc->max_cpu_usage)
             {
                 log_warn("Process '%s' (%d) exceeds its CPU usage maximum of %f%%",
                         proc->name, proc->pid, proc->max_cpu_usage);
@@ -479,5 +487,6 @@ sys_info_dump(sys_info_t *sys)
 }
 
 IMPLEMENT_STACK(long, long)
+IMPLEMENT_STACK(double, double)
 
 /* vim: set et sw=4 sts=4 tw=80: */
