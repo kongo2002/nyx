@@ -42,6 +42,8 @@ typedef struct
 
 } sys_info_t;
 
+DECLARE_STACK(long, long)
+
 typedef struct
 {
     /** process ID */
@@ -53,7 +55,7 @@ typedef struct
     /** process CPU usage (in percent) */
     double cpu_usage;
     /** process memory usage (in kb) */
-    long mem_usage;
+    stack_long_t *mem_usage;
     /** maximum CPU usage */
     double max_cpu_usage;
     /** maximum memory usage (in kb) */
@@ -71,8 +73,6 @@ typedef struct
     unsigned long long total;
     unsigned long long period;
 } sys_proc_stat_t;
-
-DECLARE_STACK(sys_proc_stat_t, sys_proc)
 
 typedef struct
 {

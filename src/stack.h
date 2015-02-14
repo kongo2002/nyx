@@ -32,8 +32,11 @@
     void \
     stack_##name_##_destroy(stack_##name_##_t *stack); \
     \
-    type_ * \
-    stack_##name_##_add(stack_##name_##_t *stack);
+    void \
+    stack_##name_##_add(stack_##name_##_t *stack, type_ value); \
+    \
+    type_ \
+    stack_##name_##_newest(stack_##name_##_t *stack);
 
 #define IMPLEMENT_STACK(type_, name_) \
     stack_##name_##_t * \
@@ -52,8 +55,8 @@
         free(stack); \
     } \
     \
-    type_ * \
-    stack_##name_##_add(stack_##name_##_t *stack) \
+    void \
+    stack_##name_##_add(stack_##name_##_t *stack, type_ value) \
     { \
         unsigned size = stack->max; \
         unsigned count = stack->count + 1; \
@@ -61,8 +64,15 @@
         type_ *start = stack->elements; \
         type_ *to = start + 1; \
         memmove(to, start, sizeof(type_) * (size - 1)); \
-        return stack->elements; \
+        *start = value; \
+    } \
+    \
+    type_ \
+    stack_##name_##_newest(stack_##name_##_t *stack) \
+    { \
+        return stack->elements[0]; \
     }
+
 
 #endif
 

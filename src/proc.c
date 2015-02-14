@@ -23,12 +23,26 @@
 
 static volatile int need_exit = 0;
 
+static void
+proc_stat_destroy(void *obj)
+{
+    proc_stat_t *stat = obj;
+
+    if (stat->mem_usage)
+    {
+        stack_long_destroy(stat->mem_usage);
+        stat->mem_usage = NULL;
+    }
+
+    free(stat);
+}
+
 nyx_proc_t *
 nyx_proc_new(void)
 {
     nyx_proc_t *proc = xcalloc1(sizeof(nyx_proc_t));
 
-    proc->processes = list_new(free);
+    proc->processes = list_new(proc_stat_destroy);
     proc->total_memory = total_memory_size();
     proc->page_size = get_page_size();
     proc->num_cpus = num_cpus();
@@ -43,6 +57,9 @@ proc_stat_new(pid_t pid, const char *name)
 
     stat->pid = pid;
     stat->name = name;
+
+    /* TODO: configurable stack size */
+    stat->mem_usage = stack_long_new(30);
 
     return stat;
 }
@@ -66,7 +83,7 @@ calculate_sys_period(sys_proc_stat_t *stat)
 }
 
 static unsigned long long
-calculate_proc_diff(proc_stat_t *proc)
+calculate_proc_diff(proc_stat_t *proc, long page_size)
 {
     unsigned long long diff = 0;
 
@@ -77,8 +94,9 @@ calculate_proc_diff(proc_stat_t *proc)
     if (!sys_info_read_proc(&current, proc->pid))
         return 0;
 
-    /* memory usage */
-    proc->mem_usage = current.resident_set_size;
+    /* correct mem_usage from 'number of pages' to 'in kilobytes' unit */
+    if (current.resident_set_size)
+        stack_long_add(proc->mem_usage, current.resident_set_size * page_size / 1024);
 
     /* calculate cpu diff/usage */
     diff = current.total_time - proc->info.total_time;
@@ -95,11 +113,7 @@ calculate_proc_stats(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long peri
     unsigned max = sys->num_cpus * 100;
     unsigned long long diff = 0;
 
-    diff = calculate_proc_diff(stat);
-
-    /* correct mem_usage from 'number of pages' to 'in kilobytes' unit */
-    if (stat->mem_usage)
-        stat->mem_usage = stat->mem_usage * sys->page_size / 1024;
+    diff = calculate_proc_diff(stat, sys->page_size);
 
     if (period > 0)
     {
@@ -228,14 +242,16 @@ nyx_proc_start(void *state)
             /* calculate process' statistics */
             calculate_proc_stats(proc, sys, period);
 
+            long mem_usage = stack_long_newest(proc->mem_usage);
+
 #ifndef NDEBUG
             unsigned long out_mem = 0;
-            char unit = get_size_unit(proc->mem_usage, &out_mem);
+            char unit = get_size_unit(mem_usage, &out_mem);
 
             log_debug("Process '%s' (%d): CPU %4.1f%% MEM (%lu%c) %5.2f%%",
                     proc->name, proc->pid, proc->cpu_usage,
                     out_mem, unit,
-                    ((double)proc->mem_usage / sys->total_memory * 100.0));
+                    ((double)mem_usage / sys->total_memory * 100.0));
 #endif
 
             /* no event handler registered
@@ -256,7 +272,7 @@ nyx_proc_start(void *state)
             /* handle memory events? */
             if (handle_events &&
                     proc->max_mem_usage &&
-                    proc->mem_usage >= proc->max_mem_usage)
+                    mem_usage >= proc->max_mem_usage)
             {
                 unsigned long bytes;
                 char unit = get_size_unit(proc->max_mem_usage, &bytes);
@@ -462,6 +478,6 @@ sys_info_dump(sys_info_t *sys)
     log_info("  Total time:        %llu", sys->total_time);
 }
 
-IMPLEMENT_STACK(sys_proc_stat_t, sys_proc)
+IMPLEMENT_STACK(long, long)
 
 /* vim: set et sw=4 sts=4 tw=80: */
