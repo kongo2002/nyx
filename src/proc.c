@@ -229,6 +229,13 @@ nyx_proc_terminate(void)
     need_exit = 1;
 }
 
+static void
+safe_sleep(unsigned int seconds)
+{
+    while (seconds-- > 0 && !need_exit)
+        sleep(1);
+}
+
 void *
 nyx_proc_start(void *state)
 {
@@ -294,8 +301,7 @@ nyx_proc_start(void *state)
             node = node->next;
         }
 
-        if (!need_exit)
-            sleep(1);
+        safe_sleep(30);
     }
 
     log_debug("Stopped proc watch");
