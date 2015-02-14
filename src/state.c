@@ -688,6 +688,13 @@ is_flapping(state_t *state, unsigned int changes, int within)
     return 0;
 }
 
+static void
+safe_sleep(state_t *state, unsigned int seconds)
+{
+    while (seconds-- > 0 && state->state != STATE_QUIT)
+        sleep(1);
+}
+
 void
 state_loop(state_t *state)
 {
@@ -736,7 +743,9 @@ state_loop(state_t *state)
              * meaning 5 start/stop events within 60 seconds */
             if (is_flapping(state, 5, 60))
             {
-                log_warn("Watch '%s' appears to be flapping", watch->name);
+                log_warn("Watch '%s' appears to be flapping - delay for 5 minutes", watch->name);
+
+                safe_sleep(state, 5 * 60);
             }
 
 #ifndef NDEBUG
