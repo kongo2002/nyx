@@ -73,7 +73,8 @@ install: all
 	install -m644 nyx.1.gz $(MANPREFIX)/man1/
 
 uninstall:
-	rm -rf $(INSTALLDIR)/bin/nyx
+	rm -f $(INSTALLDIR)/bin/nyx
+	rm -f $(MANPREFIX)/man1/nyx.1.gz
 	rm -rf $(DOCDIR)/nyx
 
 clean:
