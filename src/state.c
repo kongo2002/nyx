@@ -461,10 +461,10 @@ start_state(state_t *state)
 
     if (pid)
     {
-        log_debug("Retrieved PID %d for watch '%s'", pid, state->watch->name);
-
         state->pid = pid;
         write_pid(pid, state->watch->name, state->nyx);
+
+        log_debug("Retrieved PID %d for watch '%s'", pid, state->watch->name);
     }
 }
 
