@@ -346,10 +346,54 @@ spawn_exec(state_t *state)
     log_critical_perror("nyx: execvp %s", executable);
 }
 
+static int
+write_pipe(int fd, int value)
+{
+    FILE *stream = fdopen(fd, "w");
+
+    if (stream != NULL)
+    {
+        fprintf(stream, "%d\n", value);
+
+        fclose(stream);
+        return 1;
+    }
+
+    return 0;
+}
+
+static int
+read_pipe(int fd)
+{
+    int value = 0;
+    FILE *stream = fdopen(fd, "r");
+
+    if (stream != NULL)
+    {
+        if (fscanf(stream, "%d", &value) != 1)
+            value = 0;
+
+        fclose(stream);
+    }
+
+    return value;
+}
+
 static pid_t
 spawn(state_t *state)
 {
+    int pipes[2] = {0};
+
+    /* in case of a 'double-fork' we need some way to retrieve the
+     * resulting process' pid */
+    if (!state->nyx->is_init)
+    {
+        if (pipe(pipes) == -1)
+            log_critical_perror("nyx: pipe");
+    }
+
     pid_t pid = fork();
+    pid_t outer_pid = pid;
 
     /* fork failed */
     if (pid == -1)
@@ -378,13 +422,33 @@ spawn(state_t *state)
                 spawn_exec(state);
             }
 
-            write_pid(inner_pid, state->watch->name, state->nyx);
+            /* close the read end before */
+            close(pipes[0]);
+
+            /* now we write the child pid into the pipe */
+            if (write_pipe(pipes[1], inner_pid))
+            {
+                log_debug("Wrote PID %d into pipe", inner_pid);
+            }
+
             exit(EXIT_SUCCESS);
         }
     }
 
-    /* this pid might be the wrong one
-     * in case of a 'double-fork' */
+    /* in case of a 'double-fork' we have to read the actual
+     * process' pid from the read end of the pipe */
+    if (!state->nyx->is_init)
+    {
+        /* close the write end before */
+        close(pipes[1]);
+
+        pid = read_pipe(pipes[0]);
+
+        /* wait for the intermediate forked process
+         * to terminate */
+        waitpid(outer_pid, NULL, 0);
+    }
+
     return pid;
 }
 
@@ -394,18 +458,10 @@ start_state(state_t *state)
     /* start program */
     pid_t pid = spawn(state);
 
-    /* keep track of child pid (in init-mode) */
-    if (state->nyx->is_init)
-    {
-        state->pid = pid;
-        write_pid(pid, state->watch->name, state->nyx);
-    }
-    else
-    {
-        /* wait for the intermediate forked process
-         * to terminate */
-        waitpid(pid, NULL, 0);
-    }
+    log_debug("Retrieved PID %d for watch '%s'", pid, state->watch->name);
+
+    state->pid = pid;
+    write_pid(pid, state->watch->name, state->nyx);
 }
 
 static int
