@@ -383,10 +383,11 @@ static pid_t
 spawn(state_t *state)
 {
     int pipes[2] = {0};
+    int double_fork = !state->nyx->is_init;
 
     /* in case of a 'double-fork' we need some way to retrieve the
      * resulting process' pid */
-    if (!state->nyx->is_init)
+    if (double_fork)
     {
         if (pipe(pipes) == -1)
             log_critical_perror("nyx: pipe");
@@ -403,7 +404,7 @@ spawn(state_t *state)
     if (pid == 0)
     {
         /* in 'init mode' we have to fork only once */
-        if (state->nyx->is_init)
+        if (!double_fork)
         {
             /* this call won't return */
             spawn_exec(state);
@@ -426,9 +427,9 @@ spawn(state_t *state)
             close(pipes[0]);
 
             /* now we write the child pid into the pipe */
-            if (write_pipe(pipes[1], inner_pid))
+            if (!write_pipe(pipes[1], inner_pid))
             {
-                log_debug("Wrote PID %d into pipe", inner_pid);
+                log_warn("Failed to write double-forked PID %d into pipe", inner_pid);
             }
 
             exit(EXIT_SUCCESS);
@@ -437,7 +438,7 @@ spawn(state_t *state)
 
     /* in case of a 'double-fork' we have to read the actual
      * process' pid from the read end of the pipe */
-    if (!state->nyx->is_init)
+    if (double_fork)
     {
         /* close the write end before */
         close(pipes[1]);
@@ -458,10 +459,13 @@ start_state(state_t *state)
     /* start program */
     pid_t pid = spawn(state);
 
-    log_debug("Retrieved PID %d for watch '%s'", pid, state->watch->name);
+    if (pid)
+    {
+        log_debug("Retrieved PID %d for watch '%s'", pid, state->watch->name);
 
-    state->pid = pid;
-    write_pid(pid, state->watch->name, state->nyx);
+        state->pid = pid;
+        write_pid(pid, state->watch->name, state->nyx);
+    }
 }
 
 static int
