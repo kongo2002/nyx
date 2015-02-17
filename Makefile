@@ -34,7 +34,7 @@ DEBUG ?= 1
 ifeq ($(DEBUG), 1)
     CXXFLAGS+= -O0 -ggdb
 else
-    CXXFLAGS+= -O2 -DNDEBUG
+    CXXFLAGS+= -O2 -DNDEBUG -Wno-unused-parameter
 endif
 
 .PHONY: all clean rebuild check install uninstall
