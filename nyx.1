@@ -98,6 +98,38 @@ Restart the specified \f[I]watch\f[].
 Terminate the nyx server instance.
 .RS
 .RE
+.SH CONFIGURATION
+.PP
+The configuration is expected in form of a \f[I]YAML\f[] file.
+An example could look like the following:
+.IP
+.nf
+\f[C]
+watches:
+\ \ mongodb:
+\ \ \ \ start:\ mongod\ \-f\ /etc/mongod.conf
+\ \ \ \ uid:\ mongod
+\ \ \ \ gid:\ mongod
+\ \ \ \ dir:\ /var/lib/mongod
+\f[]
+.fi
+.PP
+You may specify the \f[I]start\f[] config value in form of a list as
+well (which is especially useful with arguments containing whitespace):
+.IP
+.nf
+\f[C]
+watches:
+\ \ mongodb:
+\ \ \ \ start:\ [
+\ \ \ \ \ \ \[aq]mongod\[aq],
+\ \ \ \ \ \ \[aq]\-f\[aq],
+\ \ \ \ \ \ \[aq]/etc/mongod.conf\[aq]
+\ \ \ \ \ \ ]
+\f[]
+.fi
+.PP
+All config values apart from the \f[I]start\f[] value are optional.
 .SH SEE ALSO
 .PP
 \f[C]syslog\f[] (3).
