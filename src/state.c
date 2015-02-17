@@ -453,7 +453,7 @@ spawn(state_t *state)
     return pid;
 }
 
-static void
+static pid_t
 start_state(state_t *state)
 {
     /* start program */
@@ -466,6 +466,8 @@ start_state(state_t *state)
 
         log_debug("Retrieved PID %d for watch '%s'", pid, state->watch->name);
     }
+
+    return pid;
 }
 
 static int
@@ -473,7 +475,8 @@ start(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
 
-    start_state(state);
+    if (start_state(state) > 0)
+        set_state(state, STATE_RUNNING);
 
     return 1;
 }
