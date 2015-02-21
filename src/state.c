@@ -120,65 +120,6 @@ to_unmonitored(state_t *state, state_e from, state_e to)
     return 1;
 }
 
-static int
-stop(state_t *state, state_e from, state_e to)
-{
-    DEBUG_LOG_STATE_FUNC;
-
-    nyx_t *nyx = state->nyx;
-    pid_t pid = state->pid;
-
-    unsigned times = nyx->options.def_stop_timeout;
-
-    if (state->watch->stop_timeout)
-        times = state->watch->stop_timeout;
-
-    /* nothing to do */
-    if (state->state == STATE_STOPPED)
-        return 1;
-
-    /* nothing to stop */
-    if (pid < 1)
-        return 1;
-
-    /* first we try SIGTERM */
-    if (kill(pid, SIGTERM) == -1)
-    {
-        /* process does not exist
-         * -> already terminated */
-        if (errno == ESRCH)
-            return 1;
-
-        log_perror("nyx: kill");
-        return 0;
-    }
-
-    while (times-- > 0)
-    {
-        if (kill(pid, 0) == -1)
-        {
-            if (errno == ESRCH)
-                return 1;
-        }
-
-        sleep(1);
-    }
-
-    /* the app failed to terminate after several attempts
-     * -> send a SIGKILL now */
-
-    if (kill(pid, SIGKILL) == -1 && errno != ESRCH)
-    {
-        log_perror("nyx: kill");
-    }
-
-    log_warn("Failed to stop watch '%s' after waiting %d seconds - "
-             "sending SIGKILL now",
-             state->watch->name, times);
-
-    return 1;
-}
-
 static void
 set_environment(const watch_t *watch)
 {
@@ -215,14 +156,14 @@ close_fds(void)
 }
 
 static void
-spawn_exec(state_t *state)
+spawn_exec(state_t *state, int start)
 {
     pid_t sid = 0;
     uid_t uid = 0;
     gid_t gid = 0;
 
     const watch_t *watch = state->watch;
-    const char **args = watch->start;
+    const char **args = start ? watch->start : watch->stop;
     const char *executable = *args;
     const char *dir = dir_exists(watch->dir) ? watch->dir : "/";
 
@@ -286,7 +227,7 @@ spawn_exec(state_t *state)
     /* stdout */
     close(STDOUT_FILENO);
 
-    if (watch->log_file)
+    if (start && watch->log_file)
     {
         if (open(watch->log_file,
                     O_RDWR | O_APPEND | O_CREAT,
@@ -309,7 +250,7 @@ spawn_exec(state_t *state)
     /* stderr */
     close(STDERR_FILENO);
 
-    if (watch->error_file)
+    if (start && watch->error_file)
     {
         if (open(watch->error_file,
                     O_RDWR | O_APPEND | O_CREAT,
@@ -337,9 +278,11 @@ spawn_exec(state_t *state)
 
     if (errno == ENOENT)
     {
-        fprintf(stderr, "Start command '%s' of watch '%s' is not "
+        fprintf(stderr, "%s command '%s' of watch '%s' is not "
                 "executable or does not exist at all",
-                executable, watch->name);
+                (start ? "Start" : "Stop"),
+                executable,
+                watch->name);
 
         /* TODO: remove watch? */
 
@@ -382,8 +325,22 @@ read_pipe(int fd)
     return value;
 }
 
+static void
+spawn_stop(state_t *state)
+{
+    pid_t pid = fork();
+
+    if (pid == -1)
+        log_critical_perror("nyx: fork");
+
+    if (pid == 0)
+    {
+        spawn_exec(state, 0);
+    }
+}
+
 static pid_t
-spawn(state_t *state)
+spawn_start(state_t *state)
 {
     int pipes[2] = {0};
     int double_fork = !state->nyx->is_init;
@@ -410,7 +367,7 @@ spawn(state_t *state)
         if (!double_fork)
         {
             /* this call won't return */
-            spawn_exec(state);
+            spawn_exec(state, 1);
         }
         /* otherwise we want to 'double fork' */
         else
@@ -423,7 +380,7 @@ spawn(state_t *state)
             if (inner_pid == 0)
             {
                 /* this call won't return */
-                spawn_exec(state);
+                spawn_exec(state, 1);
             }
 
             /* close the read end before */
@@ -456,11 +413,79 @@ spawn(state_t *state)
     return pid;
 }
 
+static int
+stop(state_t *state, state_e from, state_e to)
+{
+    DEBUG_LOG_STATE_FUNC;
+
+    nyx_t *nyx = state->nyx;
+    pid_t pid = state->pid;
+
+    unsigned times = nyx->options.def_stop_timeout;
+
+    if (state->watch->stop_timeout)
+        times = state->watch->stop_timeout;
+
+    /* nothing to do */
+    if (state->state == STATE_STOPPED)
+        return 1;
+
+    /* nothing to stop */
+    if (pid < 1)
+        return 1;
+
+    /* in case a custom stop command is specified we use that one */
+    if (state->watch->stop)
+    {
+        spawn_stop(state);
+    }
+    /* otherwise we try SIGTERM */
+    else
+    {
+        if (kill(pid, SIGTERM) == -1)
+        {
+            /* process does not exist
+             * -> already terminated */
+            if (errno == ESRCH)
+                return 1;
+
+            log_perror("nyx: kill");
+            return 0;
+        }
+    }
+
+    while (times-- > 0)
+    {
+        if (kill(pid, 0) == -1)
+        {
+            if (errno == ESRCH)
+                return 1;
+        }
+
+        sleep(1);
+    }
+
+    /* the app failed to terminate after several attempts
+     * -> send a SIGKILL now */
+
+    if (kill(pid, SIGKILL) == -1 && errno != ESRCH)
+    {
+        log_perror("nyx: kill");
+    }
+
+    log_warn("Failed to stop watch '%s' after waiting %d seconds - "
+             "sending SIGKILL now",
+             state->watch->name, times);
+
+    return 1;
+}
+
+
 static pid_t
 start_state(state_t *state)
 {
     /* start program */
-    pid_t pid = spawn(state);
+    pid_t pid = spawn_start(state);
 
     if (pid)
     {
