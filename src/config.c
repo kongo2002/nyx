@@ -287,6 +287,7 @@ DECLARE_WATCH_STR_LIST_VALUE(start)
 DECLARE_WATCH_STR_LIST_VALUE(stop)
 DECLARE_WATCH_STR_FUNC(max_memory, parse_size_unit)
 DECLARE_WATCH_STR_FUNC(max_cpu, uatoi)
+DECLARE_WATCH_STR_FUNC(stop_timeout, uatoi)
 
 #undef DECLARE_WATCH_STR_VALUE
 #undef DECLARE_WATCH_STR_LIST_VALUE
@@ -412,6 +413,7 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("error_file", handle_watch_map_value_error_file),
     SCALAR_HANDLER("max_memory", handle_watch_map_value_max_memory),
     SCALAR_HANDLER("max_cpu", handle_watch_map_value_max_cpu),
+    SCALAR_HANDLER("stop_timeout", handle_watch_map_value_stop_timeout),
     MAP_HANDLER("env", handle_watch_env),
     HANDLERS("start", handle_watch_map_value_start, handle_watch_strings_start, NULL),
     HANDLERS("stop", handle_watch_map_value_stop, handle_watch_strings_stop, NULL),

@@ -184,6 +184,9 @@ watch_dump(watch_t *watch)
     if (watch->max_cpu)
         log_info("  max_cpu: %u%%", watch->max_cpu);
 
+    if (watch->stop_timeout)
+        log_info("  stop_timeout: %u", watch->stop_timeout);
+
     if (watch->env)
     {
         log_info("  env: [");
