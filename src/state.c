@@ -325,7 +325,7 @@ read_pipe(int fd)
     return value;
 }
 
-static void
+static pid_t
 spawn_stop(state_t *state)
 {
     pid_t pid = fork();
@@ -337,6 +337,8 @@ spawn_stop(state_t *state)
     {
         spawn_exec(state, 0);
     }
+
+    return pid;
 }
 
 static pid_t
@@ -419,12 +421,14 @@ stop(state_t *state, state_e from, state_e to)
     DEBUG_LOG_STATE_FUNC;
 
     nyx_t *nyx = state->nyx;
+    watch_t *watch = state->watch;
     pid_t pid = state->pid;
+    pid_t stop_pid = 0;
 
     unsigned times = nyx->options.def_stop_timeout;
 
-    if (state->watch->stop_timeout)
-        times = state->watch->stop_timeout;
+    if (watch->stop_timeout)
+        times = watch->stop_timeout;
 
     /* nothing to do */
     if (state->state == STATE_STOPPED)
@@ -435,9 +439,9 @@ stop(state_t *state, state_e from, state_e to)
         return 1;
 
     /* in case a custom stop command is specified we use that one */
-    if (state->watch->stop)
+    if (watch->stop)
     {
-        spawn_stop(state);
+        stop_pid = spawn_stop(state);
     }
     /* otherwise we try SIGTERM */
     else
@@ -459,7 +463,7 @@ stop(state_t *state, state_e from, state_e to)
         if (kill(pid, 0) == -1)
         {
             if (errno == ESRCH)
-                return 1;
+                goto end;
         }
 
         sleep(1);
@@ -475,7 +479,12 @@ stop(state_t *state, state_e from, state_e to)
 
     log_warn("Failed to stop watch '%s' after waiting %d seconds - "
              "sending SIGKILL now",
-             state->watch->name, times);
+             watch->name,
+             (watch->stop_timeout ? watch->stop_timeout : nyx->options.def_stop_timeout));
+
+end:
+    if (stop_pid)
+        waitpid(stop_pid, NULL, WNOHANG);
 
     return 1;
 }
