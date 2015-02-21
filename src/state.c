@@ -126,8 +126,12 @@ stop(state_t *state, state_e from, state_e to)
     DEBUG_LOG_STATE_FUNC;
 
     nyx_t *nyx = state->nyx;
-    int times = nyx->options.def_grace;
     pid_t pid = state->pid;
+
+    unsigned times = nyx->options.def_stop_timeout;
+
+    if (state->watch->stop_timeout)
+        times = state->watch->stop_timeout;
 
     /* nothing to do */
     if (state->state == STATE_STOPPED)
@@ -170,8 +174,7 @@ stop(state_t *state, state_e from, state_e to)
 
     log_warn("Failed to stop watch '%s' after waiting %d seconds - "
              "sending SIGKILL now",
-             state->watch->name,
-             nyx->options.def_grace);
+             state->watch->name, times);
 
     return 1;
 }

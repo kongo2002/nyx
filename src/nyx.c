@@ -205,7 +205,7 @@ initialize_daemon(nyx_t *nyx)
 
     /* set default options */
     nyx->options.def_start_timeout = 5;
-    nyx->options.def_grace = 5;
+    nyx->options.def_stop_timeout = 5;
     nyx->options.polling_interval = 5;
 
     nyx->pid_dir = determine_pid_dir();
