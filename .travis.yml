@@ -9,15 +9,6 @@ env:
     - DEBUG=0
 
 before_script:
-    - wget https://open.cryptomilk.org/attachments/download/42/cmocka-0.4.1.tar.xz
-    - tar xvf cmocka-0.4.1.tar.xz
-    - cd cmocka-0.4.1
-    - mkdir build
-    - cd build
-    - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
-    - make
-    - sudo make install
-    - cd ../..
-    - rm -rf cmocka-0.4.1
+    - ./utils/install_cmocka.sh
 
 script: make && make check
