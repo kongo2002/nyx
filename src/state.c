@@ -849,7 +849,9 @@ state_loop(state_t *state)
                     watch->name, state->pid, state_to_string(last_state));
         }
 
-        last_state = current_state;
+        if (result)
+            last_state = current_state;
+
         log_debug("Waiting on next state update for watch '%s'", watch->name);
     }
 
