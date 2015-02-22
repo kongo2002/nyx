@@ -81,7 +81,6 @@ The program arguments of the `start` configuration value may be specified in a
 YAML list style as well (which is especially useful with arguments containing
 whitespace):
 
-
 ```yaml
 watches:
     app:
@@ -90,6 +89,22 @@ watches:
             '-f',
             '/etc/app/config.file'
         ]
+```
+
+
+##### Program termination
+
+By default processes are stopped by sending a `SIGTERM` until after a timeout of
+5 seconds a `SIGKILL` will finally terminate the process. However you may
+configure a custom `stop` command that should handle the process' termination
+and a `stop_timeout` in seconds until the `SIGKILL` will be fired:
+
+```yaml
+watches:
+    app:
+        start: /bin/app
+        stop: /bin/app -terminate
+        stop_timeout: 30
 ```
 
 
