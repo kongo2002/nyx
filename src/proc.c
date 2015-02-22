@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #define PROC_STAT_STACK_SIZE 10
+#define PROC_STAT_STACK_LIMIT 8
 
 static volatile int need_exit = 0;
 
@@ -238,6 +239,22 @@ safe_sleep(unsigned int seconds)
         sleep(1);
 }
 
+static int
+exceeds_cpu(double value, void *obj)
+{
+    proc_stat_t *proc = obj;
+
+    return proc->max_cpu_usage && value >= proc->max_cpu_usage;
+}
+
+static int
+exceeds_mem(long value, void *obj)
+{
+    proc_stat_t *proc = obj;
+
+    return proc->max_mem_usage && value >= proc->max_mem_usage;
+}
+
 void *
 nyx_proc_start(void *state)
 {
@@ -278,7 +295,7 @@ nyx_proc_start(void *state)
             /* handle CPU events? */
             if (handle_events &&
                     proc->max_cpu_usage &&
-                    cpu_usage >= proc->max_cpu_usage)
+                    stack_double_satisfy(proc->cpu_usage, exceeds_cpu, proc) >= PROC_STAT_STACK_LIMIT)
             {
                 log_warn("Process '%s' (%d) exceeds its CPU usage maximum of %f%%",
                         proc->name, proc->pid, proc->max_cpu_usage);
@@ -289,7 +306,7 @@ nyx_proc_start(void *state)
             /* handle memory events? */
             if (handle_events &&
                     proc->max_mem_usage &&
-                    mem_usage >= proc->max_mem_usage)
+                    stack_long_satisfy(proc->mem_usage, exceeds_mem, proc) >= PROC_STAT_STACK_LIMIT)
             {
                 unsigned long bytes;
                 char unit = get_size_unit(proc->max_mem_usage, &bytes);

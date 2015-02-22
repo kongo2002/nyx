@@ -36,7 +36,10 @@
     stack_##name_##_add(stack_##name_##_t *stack, type_ value); \
     \
     type_ \
-    stack_##name_##_newest(stack_##name_##_t *stack);
+    stack_##name_##_newest(stack_##name_##_t *stack); \
+    \
+    unsigned \
+    stack_##name_##_satisfy(stack_##name_##_t *stack, int (*predicate)(type_, void *), void *obj);
 
 #define IMPLEMENT_STACK(type_, name_) \
     stack_##name_##_t * \
@@ -71,6 +74,18 @@
     stack_##name_##_newest(stack_##name_##_t *stack) \
     { \
         return stack->elements[0]; \
+    } \
+    \
+    unsigned \
+    stack_##name_##_satisfy(stack_##name_##_t *stack, int (*predicate)(type_, void *), void *obj) \
+    { \
+        unsigned i = 0, count = 0; \
+        while (i < stack->count) \
+        { \
+            if (predicate(stack->elements[i++], obj)) \
+                count++; \
+        } \
+        return count; \
     }
 
 
