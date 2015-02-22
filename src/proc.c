@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#define PROC_STAT_STACK_SIZE 10
+
 static volatile int need_exit = 0;
 
 static void
@@ -65,8 +67,8 @@ proc_stat_new(pid_t pid, const char *name)
     stat->name = name;
 
     /* TODO: configurable stack size */
-    stat->mem_usage = stack_long_new(30);
-    stat->cpu_usage = stack_double_new(30);
+    stat->mem_usage = stack_long_new(PROC_STAT_STACK_SIZE);
+    stat->cpu_usage = stack_double_new(PROC_STAT_STACK_SIZE);
 
     return stat;
 }
