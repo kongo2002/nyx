@@ -326,7 +326,7 @@ nyx_initialize(int argc, char **args)
     }
 
     /* if a config file is given
-     * this has to be a deamon */
+     * this has to be a daemon */
     nyx->is_daemon = nyx->options.config_file && *nyx->options.config_file;
 
     /* initialize logging */
