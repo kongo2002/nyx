@@ -107,7 +107,7 @@ handle_version(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *n
 }
 
 static int
-handle_terminate(UNUSED sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
+handle_terminate(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 {
     need_exit = 1;
 
@@ -119,6 +119,24 @@ handle_terminate(UNUSED sender_callback_t *cb, UNUSED const char **input, nyx_t 
         nyx->terminate_handler(0);
 
     return cb->sender(cb, "ok");
+}
+
+static int
+handle_quit(sender_callback_t *cb, const char **input, nyx_t *nyx)
+{
+    list_node_t *node = nyx->states->head;
+
+    /* first we trigger the stop signal on all states */
+    while (node)
+    {
+        state_t *state = node->data;
+        set_state(state, STATE_STOPPING);
+
+        node = node->next;
+    }
+
+    /* after that we execute the termination handler */
+    return handle_terminate(cb, input, nyx);
 }
 
 static int
@@ -166,8 +184,6 @@ static command_t commands[] =
             "ping the nyx server"),
     CMD(CMD_VERSION,    "version",    handle_version,    0,
             "request the nyx server version"),
-    CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0,
-            "terminate the nyx server"),
     CMD(CMD_START,      "start",      handle_start,      1,
             "start the specified watch"),
     CMD(CMD_STOP,       "stop",       handle_stop,       1,
@@ -175,7 +191,11 @@ static command_t commands[] =
     CMD(CMD_RESTART,    "restart",    handle_restart,    1,
             "restart the specified watch"),
     CMD(CMD_STATUS,     "status",     handle_status,     1,
-            "request the watch's status")
+            "request the watch's status"),
+    CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0,
+            "terminate the nyx server"),
+    CMD(CMD_QUIT,       "quit",       handle_quit,       0,
+            "stop the nyx server and all watched processes")
 };
 
 #undef CMD
