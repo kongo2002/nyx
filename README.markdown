@@ -128,6 +128,7 @@ Right now the following commands are implemented:
 - `stop <watch>`: send a stop command to the specified watch
 - `restart <watch>`: send a restart command to the specified watch
 - `terminate`: terminate the nyx daemon
+- `quit`: stop the nyx daemon and all watched processes
 
 
 ## Building
