@@ -275,10 +275,10 @@ nyx_proc_start(void *state)
             /* calculate process' statistics */
             calculate_proc_stats(proc, sys, period);
 
+#ifndef NDEBUG
             long mem_usage = stack_long_newest(proc->mem_usage);
             double cpu_usage = stack_double_newest(proc->cpu_usage);
 
-#ifndef NDEBUG
             unsigned long out_mem = 0;
             char unit = get_size_unit(mem_usage, &out_mem);
 
