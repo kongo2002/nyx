@@ -161,8 +161,6 @@ daemonize(nyx_t *nyx)
     /* child process */
     if (pid == 0)
     {
-        umask(0);
-
         if ((err = setsid()) == -1)
         {
             log_perror("nyx: setsid");
