@@ -169,7 +169,16 @@ handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
         return 0;
     }
 
-    cb->sender(cb, "%s: %s", name, state_to_human_string(state->state));
+    /* print pid if running */
+    if (state->state == STATE_RUNNING && state->pid)
+    {
+        cb->sender(cb, "%s: %s (PID %d)",
+                name,
+                state_to_human_string(state->state),
+                state->pid);
+    }
+    else
+        cb->sender(cb, "%s: %s", name, state_to_human_string(state->state));
 
     return 1;
 }
