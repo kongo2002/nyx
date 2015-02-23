@@ -35,18 +35,30 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+/**
+ * @brief Watch destroy callback function
+ * @param watch watch to destroy
+ */
 static void
 _watch_destroy(void *watch)
 {
     watch_destroy((watch_t *)watch);
 }
 
+/**
+ * @brief State destroy callback function
+ * @param state state to destroy
+ */
 static void
 _state_destroy(void *state)
 {
     state_destroy((state_t *)state);
 }
 
+/**
+ * @brief Print the usage information
+ * @param out stream to write the usage information into
+ */
 void
 print_usage(FILE *out)
 {
@@ -58,6 +70,9 @@ print_usage(FILE *out)
     print_commands(out);
 }
 
+/**
+ * @brief Print help information to STDOUT
+ */
 void
 print_help(void)
 {
@@ -86,6 +101,10 @@ static const struct option long_options[] =
     { NULL, 0, NULL, 0 }
 };
 
+/**
+ * @brief Callback to recieve child termination signals
+ * @param signum signal number
+ */
 static void
 handle_child_stop(UNUSED int signum)
 {
@@ -103,6 +122,11 @@ handle_child_stop(UNUSED int signum)
     errno = last_errno;
 }
 
+/**
+ * @brief Setup the main program signal handlers
+ * @param nyx               nyx instance
+ * @param terminate_handler program termination handler callback
+ */
 void
 setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
 {
@@ -131,6 +155,11 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
     nyx->terminate_handler = terminate_handler;
 }
 
+/**
+ * @brief Determine whether a nyx instance is currently running
+ * @param nyx nyx instance
+ * @return pid of the running nyx instance or 0
+ */
 static pid_t
 is_nyx_running(nyx_t *nyx)
 {
@@ -146,6 +175,11 @@ is_nyx_running(nyx_t *nyx)
     return 0;
 }
 
+/**
+ * @brief Daemonize the running nyx instance
+ * @param nyx nyx instance
+ * @return 1 on success, 0 otherwise
+ */
 static int
 daemonize(nyx_t *nyx)
 {
@@ -195,6 +229,11 @@ daemonize(nyx_t *nyx)
     return 1;
 }
 
+/**
+ * @brief Daemon mode initialization
+ * @param nyx nyx instance
+ * @return 1 on success, 0 otherwise
+ */
 static int
 initialize_daemon(nyx_t *nyx)
 {
@@ -274,6 +313,12 @@ initialize_daemon(nyx_t *nyx)
     return 1;
 }
 
+/**
+ * @brief Main program initialization
+ * @param argc number of program arguments
+ * @param args command line arguments
+ * @return nyx instance
+ */
 nyx_t *
 nyx_initialize(int argc, char **args)
 {
@@ -355,6 +400,13 @@ nyx_initialize(int argc, char **args)
     return nyx;
 }
 
+/**
+ * @brief Callback to any proc system event
+ * @param event event type
+ * @param proc  proc system instance
+ * @param nyx   nyx instance
+ * @return 1 on success, 0 otherwise
+ */
 static int
 handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
 {
@@ -373,6 +425,11 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
     return 0;
 }
 
+/**
+ * @brief Proc system initialization
+ * @param nyx nyx instance
+ * @return 1 on success, 0 otherwise
+ */
 static int
 nyx_proc_initialize(nyx_t *nyx)
 {
@@ -405,6 +462,11 @@ nyx_proc_initialize(nyx_t *nyx)
     return nyx->proc != NULL;
 }
 
+/**
+ * @brief Initialize watches
+ * @param nyx nyx instance
+ * @return 1 on success, 0 otherwise
+ */
 int
 nyx_watches_init(nyx_t *nyx)
 {
@@ -462,6 +524,12 @@ nyx_watches_init(nyx_t *nyx)
     return init > 0;
 }
 
+/**
+ * @brief Fire a signal using the eventfd interface
+ * @param signal signal to send
+ * @param nyx    nyx instance
+ * @return 1 on success, 0 otherwise
+ */
 int
 signal_eventfd(uint64_t signal, nyx_t *nyx)
 {
@@ -481,6 +549,10 @@ signal_eventfd(uint64_t signal, nyx_t *nyx)
     return 1;
 }
 
+/**
+ * @brief Destroy the nyx instance and all attached resources
+ * @param nyx nyx instance to destroy
+ */
 void
 nyx_destroy(nyx_t *nyx)
 {
