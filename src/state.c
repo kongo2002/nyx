@@ -231,7 +231,7 @@ spawn_exec(state_t *state, int start)
     {
         if (open(watch->log_file,
                     O_RDWR | O_APPEND | O_CREAT,
-                    S_IRUSR | S_IWUSR | S_IRGRP) == -1)
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) == -1)
         {
             fprintf(stderr, "Failed to open log file '%s'",
                     watch->log_file);
@@ -254,7 +254,7 @@ spawn_exec(state_t *state, int start)
     {
         if (open(watch->error_file,
                     O_RDWR | O_APPEND | O_CREAT,
-                    S_IRUSR | S_IWUSR | S_IRGRP) == -1)
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) == -1)
         {
             fprintf(stdout, "Failed to open error file '%s'",
                     watch->error_file);
