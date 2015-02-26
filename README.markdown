@@ -108,6 +108,30 @@ watches:
 ```
 
 
+##### Watch process statistics
+
+Additional to your processes being monitored by its running state you may
+configure threshold values for CPU and/or memory usage. As soon as your process
+exceeds the limit for a few consecutive snapshots the process is being
+restarted.
+
+```yaml
+watches:
+    app:
+        start: /bin/app
+
+        # maximum CPU usage of 98%
+        max_cpu: 98
+
+        # maximum memory usage of 2G
+        max_memory: 2G
+```
+
+As of now a snapshot is taken every 30 seconds and the restart action is
+executed a soon as at least 8 out of 10 snapshots exceed the configured
+threshold.
+
+
 ### Command interface
 
 You can interact with a running *nyx* daemon instance using the same executable:
