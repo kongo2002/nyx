@@ -376,7 +376,7 @@ send_command(int socket, const char **commands)
 int
 connector_call(const char **commands)
 {
-    int sock = 0, err = 0, success = 0;
+    int sock = 0, err = 0, success = 0, done = 0;
     char buffer[512] = {0};
     struct sockaddr_un addr;
 
@@ -407,15 +407,25 @@ connector_call(const char **commands)
     }
     else
     {
-        if ((err = recv(sock, buffer, 512, 0)) > 0)
+        do
         {
-            printf(">>> %s\n", buffer);
-            success = 1;
-        }
-        else if (err < 0)
-        {
-            log_perror("nyx: recv");
-        }
+            memset(&buffer, 0, LEN(buffer));
+
+            if ((err = recv(sock, buffer, LEN(buffer)-1, 0)) > 0)
+            {
+                printf(">>> %s\n", buffer);
+            }
+            else if (err == 0)
+            {
+                done = 1;
+                success = 1;
+            }
+            else if (err < 0)
+            {
+                log_perror("nyx: recv");
+                done = 1;
+            }
+        } while (!done);
     }
 
     close(sock);
@@ -460,7 +470,7 @@ handle_request(struct epoll_event *event, nyx_t *nyx)
     command_t *cmd = NULL;
 
     memset(buffer, 0, 512);
-    received = recv(fd, buffer, 512, 0);
+    received = recv(fd, buffer, LEN(buffer)-1, 0);
 
     if (received < 1)
     {
