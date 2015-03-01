@@ -162,7 +162,7 @@ spawn_exec(state_t *state, int start)
     uid_t uid = 0;
     gid_t gid = 0;
 
-    const watch_t *watch = state->watch;
+    watch_t *watch = state->watch;
     const char **args = start ? watch->start : watch->stop;
     const char *executable = *args;
     const char *dir = dir_exists(watch->dir) ? watch->dir : "/";
@@ -206,7 +206,21 @@ spawn_exec(state_t *state, int start)
     if (uid)
     {
         if (setuid(uid) == -1)
+        {
             log_perror("nyx: setuid");
+        }
+        /* in case the uid was modified we adjust the $USER
+         * environment variable appropriately */
+        else
+        {
+            if (!watch->env)
+                watch->env = hash_new(free);
+
+            if (!hash_get(watch->env, "USER"))
+            {
+                hash_add(watch->env, "USER", strdup(watch->uid));
+            }
+        }
     }
 
     /* set current directory */
