@@ -43,15 +43,28 @@ send_format(sender_callback_t *cb, const char *format, ...)
 static int
 send_format_msg(sender_callback_t *cb, const char *format, va_list values)
 {
+    char newline[1] = {'\n'};
     char *msg;
 
-    int sent = 0;
+    int sent = 0, res = 0;
     int length = vasprintf(&msg, format, values);
 
     if (length > 0)
     {
-        if ((sent = send(cb->client, msg, length, 0)) < 0)
+        /* send message itself */
+        if ((res = send(cb->client, msg, length, 0)) < 0)
             log_perror("nyx: send");
+
+        if (res > 0)
+        {
+            sent += res;
+
+            /* send newline */
+            if ((res = send(cb->client, newline, 1, 0)) < 0)
+                log_perror("nyx: send");
+            else
+                sent += res;
+        }
 
         free(msg);
     }
