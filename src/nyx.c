@@ -122,6 +122,12 @@ handle_child_stop(UNUSED int signum)
     errno = last_errno;
 }
 
+static void
+handle_sigpipe(UNUSED int signal)
+{
+    log_debug("Received SIGPIPE - ignoring for now");
+}
+
 /**
  * @brief Setup the main program signal handlers
  * @param nyx               nyx instance
@@ -144,6 +150,10 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
      * SIGTERM and SIGINT */
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGINT, &action, NULL);
+
+    /* register SIGPIPE handler */
+    action.sa_handler = handle_sigpipe;
+    sigaction(SIGPIPE, &action, NULL);
 
     /* register SIGCHLD handler */
     if (nyx->is_init)
