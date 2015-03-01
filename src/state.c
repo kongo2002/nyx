@@ -20,6 +20,7 @@
 #include "state.h"
 
 #include <errno.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <grp.h>
 #include <pthread.h>
@@ -28,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -144,11 +146,37 @@ set_environment(const watch_t *watch)
 }
 
 static void
-close_fds(void)
+close_fds(int pid)
 {
     int fd, max;
+    char path[256] = {0};
 
-    /* determine maximum */
+    /* first we try to search in /proc/{pid}/fd */
+    snprintf(path, LEN(path)-1, "/proc/%d/fd", pid);
+
+    DIR *dir = opendir(path);
+    if (dir)
+    {
+        unsigned long dir_fd = dirfd(dir);
+
+        struct dirent *entry = NULL;
+        while ((entry = readdir(dir)) != NULL)
+        {
+            if (!entry->d_name)
+                continue;
+
+            unsigned long fd = atol(entry->d_name);
+
+            if (fd >= 3 && fd != dir_fd)
+                close(fd);
+        }
+
+        closedir(dir);
+        return;
+    }
+
+    /* otherwise we will close all file descriptors up
+     * to the maximum descriptor index */
     if ((max = getdtablesize()) == -1)
         max = 256;
 
@@ -294,7 +322,7 @@ spawn_exec(state_t *state, int start)
     }
 
     set_environment(watch);
-    close_fds();
+    close_fds(getpid());
 
     /* on success this call won't return */
     execvp(executable, (char * const *)args);
