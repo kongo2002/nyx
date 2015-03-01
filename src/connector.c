@@ -95,6 +95,41 @@ handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, stat
 }
 
 static int
+handle_history(sender_callback_t *cb, const char **input, nyx_t *nyx)
+{
+    const char *name = input[1];
+    state_t *state = hash_get(nyx->state_map, name);
+
+    if (state == NULL)
+    {
+        cb->sender(cb, "unknown watch '%s'", name);
+        return 0;
+    }
+
+    if (state->history->count < 1)
+        return 1;
+
+    unsigned i = state->history->count;
+
+    while (i-- > 0)
+    {
+        timestack_elem_t *elem = &state->history->elements[i];
+        struct tm *time = localtime(&elem->time);
+
+        cb->sender(cb, "%04d-%02d-%02dT%02d:%02d:%02d: %s",
+            time->tm_year + 1900,
+            time->tm_mon,
+            time->tm_mday,
+            time->tm_hour,
+            time->tm_min,
+            time->tm_sec,
+            state_to_human_string(elem->value));
+    }
+
+    return 1;
+}
+
+static int
 handle_ping(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
 {
     return cb->sender(cb, "pong");
@@ -201,6 +236,8 @@ static command_t commands[] =
             "restart the specified watch"),
     CMD(CMD_STATUS,     "status",     handle_status,     1,
             "request the watch's status"),
+    CMD(CMD_HISTORY,    "history",    handle_history,    1,
+            "request the last watch's status'"),
     CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0,
             "terminate the nyx server"),
     CMD(CMD_QUIT,       "quit",       handle_quit,       0,
