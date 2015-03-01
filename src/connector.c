@@ -250,7 +250,7 @@ static command_t commands[] =
     CMD(CMD_STATUS,     "status",     handle_status,     1,
             "request the watch's status"),
     CMD(CMD_HISTORY,    "history",    handle_history,    1,
-            "request the last watch's status'"),
+            "get the latest events of the specified watch"),
     CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0,
             "terminate the nyx server"),
     CMD(CMD_QUIT,       "quit",       handle_quit,       0,
