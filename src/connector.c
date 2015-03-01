@@ -527,12 +527,12 @@ handle_eventfd(struct epoll_event *event, nyx_t *nyx)
     need_exit = 1;
 }
 
-void *
-connector_start(void *state)
+static int
+connector_run(nyx_t *nyx)
 {
+    int restart = 0;
     static int max_conn = 16;
 
-    nyx_t *nyx = state;
     int sock = 0, error = 0, epfd = 0;
     struct epoll_event *events = NULL;
     struct epoll_event ev;
@@ -549,7 +549,7 @@ connector_start(void *state)
     if (sock == -1)
     {
         log_perror("nyx: socket");
-        return NULL;
+        return 0;
     }
 
     /* remove any existing nyx sockets */
@@ -561,11 +561,11 @@ connector_start(void *state)
     if (error)
     {
         log_perror("nyx: bind");
-        return NULL;
+        return 0;
     }
 
     if (!unblock_socket(sock))
-        return NULL;
+        return 0;
 
     /* listen on requests */
     error = listen(sock, max_conn);
@@ -600,7 +600,7 @@ connector_start(void *state)
 
     events = xcalloc(max_conn, sizeof(struct epoll_event));
 
-    while (!need_exit)
+    while (!need_exit && !restart)
     {
         int i = 0, n = 0;
         struct epoll_event *event = NULL;
@@ -615,7 +615,7 @@ connector_start(void *state)
             if (errno == EINTR)
             {
                 log_debug("Connector: caught interrupt");
-                need_exit = 1;
+                restart = 1;
                 continue;
             }
 
@@ -674,7 +674,7 @@ connector_start(void *state)
             else
             {
                 if (!handle_request(event, nyx))
-                    need_exit = 1;
+                    restart = 1;
             }
         }
     }
@@ -691,6 +691,18 @@ teardown:
         free(events);
 
     log_debug("Connector: terminated");
+
+    return restart;
+}
+
+void *
+connector_start(void *state)
+{
+    while (!need_exit)
+    {
+        if (!connector_run((nyx_t *)state))
+            break;
+    }
 
     return NULL;
 }
