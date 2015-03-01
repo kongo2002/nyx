@@ -436,7 +436,11 @@ stop(state_t *state, state_e from, state_e to)
 
     /* nothing to stop */
     if (pid < 1)
+    {
+        /* the process is obviously already stopped */
+        set_state(state, STATE_STOPPED);
         return 1;
+    }
 
     /* in case a custom stop command is specified we use that one */
     if (watch->stop)
@@ -556,7 +560,7 @@ static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
     /* RUNNING to ... */
     { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, stop },
     /* STOPPING to ... */
-    { NULL, to_unmonitored, NULL,     NULL,    NULL,     stopped, NULL },
+    { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, NULL },
     /* STOPPED to ... */
     { NULL, to_unmonitored, start,    running, NULL,     NULL,    start },
     /* RESTARTING to ... */
@@ -744,6 +748,12 @@ process_state(state_t *state, state_e old_state, state_e new_state)
 
     result = func(state, old_state, new_state);
 
+    if (!result)
+    {
+        log_warn("Processing state of watch '%s' failed (PID %d)",
+                state->watch->name, state->pid);
+    }
+
     return result;
 }
 
@@ -819,43 +829,34 @@ state_loop(state_t *state)
             break;
         }
 
-        /* in case the state did not change
-         * we don't have to do anything */
         if (last_state != current_state)
         {
             timestack_add(state->history, current_state);
-
-            result = process_state(state, last_state, current_state);
-
-            if (!result)
-            {
-                /* the state transition failed
-                 * so we have to restore the old state */
-                state->state = last_state;
-
-                timestack_add(state->history, last_state);
-
-                log_warn("Processing state of watch '%s' failed (PID %d)",
-                        state->watch->name, state->pid);
-            }
-
-            /* check for flapping processes
-             * meaning 5 start/stop events within 60 seconds */
-            if (is_flapping(state, 5, 60))
-            {
-                log_warn("Watch '%s' appears to be flapping - delay for 5 minutes", watch->name);
-
-                safe_sleep(state, 5 * 60);
-            }
 
 #ifndef NDEBUG
             timestack_dump(state->history);
 #endif
         }
-        else
+
+        result = process_state(state, last_state, current_state);
+
+        if (!result)
         {
-            log_debug("Watch '%s' (PID %d): state stayed %s",
-                    watch->name, state->pid, state_to_string(last_state));
+            /* the state transition failed
+             * so we have to restore the old state */
+            state->state = last_state;
+
+            timestack_add(state->history, last_state);
+        }
+
+        /* check for flapping processes
+         * meaning 5 start/stop events within 60 seconds */
+        if (is_flapping(state, 5, 60))
+        {
+            log_warn("Watch '%s' appears to be flapping - delay for 5 minutes",
+                    watch->name);
+
+            safe_sleep(state, 5 * 60);
         }
 
         if (result)
