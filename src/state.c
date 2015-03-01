@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <pthread.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -209,8 +210,8 @@ spawn_exec(state_t *state, int start)
         {
             log_perror("nyx: setuid");
         }
-        /* in case the uid was modified we adjust the $USER
-         * environment variable appropriately */
+        /* in case the uid was modified we adjust the $USER and $HOME
+         * environment variables appropriately */
         else
         {
             if (!watch->env)
@@ -219,6 +220,14 @@ spawn_exec(state_t *state, int start)
             if (!hash_get(watch->env, "USER"))
             {
                 hash_add(watch->env, "USER", strdup(watch->uid));
+            }
+
+            if (!hash_get(watch->env, "HOME"))
+            {
+                struct passwd *pw = getpwuid(uid);
+
+                if (pw && pw->pw_dir)
+                    hash_add(watch->env, "HOME", strdup(pw->pw_dir));
             }
         }
     }
