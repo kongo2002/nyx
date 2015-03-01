@@ -373,6 +373,28 @@ send_command(int socket, const char **commands)
     return sum;
 }
 
+static void
+print_response(char *buffer, size_t len)
+{
+    size_t idx = 0;
+    char *msg = buffer, *ptr = buffer;
+
+    while (idx++ < len)
+    {
+        if (*ptr == '\0' || *ptr == '\n')
+        {
+            *ptr = '\0';
+            printf(">>> %s\n", msg);
+
+            if (idx < len)
+                msg = ptr + 1;
+        }
+
+        if (idx < len)
+            ptr++;
+    }
+}
+
 int
 connector_call(const char **commands)
 {
@@ -413,7 +435,7 @@ connector_call(const char **commands)
 
             if ((err = recv(sock, buffer, LEN(buffer)-1, 0)) > 0)
             {
-                printf(">>> %s\n", buffer);
+                print_response(buffer, err);
             }
             else if (err == 0)
             {
