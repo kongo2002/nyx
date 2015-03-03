@@ -173,15 +173,18 @@ handle_terminate(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 static int
 handle_quit(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
-    list_node_t *node = nyx->states->head;
-
-    /* first we trigger the stop signal on all states */
-    while (node)
+    if (nyx->states)
     {
-        state_t *state = node->data;
-        set_state(state, STATE_STOPPING);
+        list_node_t *node = nyx->states->head;
 
-        node = node->next;
+        /* first we trigger the stop signal on all states */
+        while (node)
+        {
+            state_t *state = node->data;
+            set_state(state, STATE_STOPPING);
+
+            node = node->next;
+        }
     }
 
     /* after that we execute the termination handler */
@@ -209,7 +212,10 @@ handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
 static int
 handle_watches(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 {
-    list_node_t *node = nyx->states->head;;
+    if (!nyx->states)
+        return 0;
+
+    list_node_t *node = nyx->states->head;
 
     while (node)
     {
