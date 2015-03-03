@@ -53,7 +53,7 @@ typedef struct
 } command_t;
 
 int
-connector_call(const char **commands);
+connector_call(const char **commands, int quiet);
 
 command_t *
 parse_command(const char **input);

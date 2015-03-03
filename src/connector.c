@@ -351,12 +351,13 @@ parse_command(const char **input)
 }
 
 static ssize_t
-send_command(int socket, const char **commands)
+send_command(int socket, const char **commands, int quiet)
 {
     ssize_t sum = 0, sent = 0;
     const char **cmd = commands;
 
-    printf("<<< %s\n", *cmd);
+    if (!quiet)
+        printf("<<< %s\n", *cmd);
 
     while (*cmd && (sent = send(socket, *cmd, strlen(*cmd), 0)) > 0)
     {
@@ -374,7 +375,7 @@ send_command(int socket, const char **commands)
 }
 
 static void
-print_response(char *buffer, size_t len)
+print_response(char *buffer, size_t len, int quiet)
 {
     size_t idx = 0;
     char *msg = buffer, *ptr = buffer;
@@ -384,7 +385,11 @@ print_response(char *buffer, size_t len)
         if (*ptr == '\0' || *ptr == '\n')
         {
             *ptr = '\0';
-            printf(">>> %s\n", msg);
+
+            if (!quiet)
+                printf(">>> %s\n", msg);
+            else
+                printf("%s\n", msg);
 
             if (idx < len)
                 msg = ptr + 1;
@@ -396,7 +401,7 @@ print_response(char *buffer, size_t len)
 }
 
 int
-connector_call(const char **commands)
+connector_call(const char **commands, int quiet)
 {
     int sock = 0, err = 0, success = 0, done = 0;
     char buffer[512] = {0};
@@ -423,7 +428,7 @@ connector_call(const char **commands)
         return 0;
     }
 
-    if (send_command(sock, commands) == -1)
+    if (send_command(sock, commands, quiet) == -1)
     {
         log_perror("nyx: send");
     }
@@ -435,7 +440,7 @@ connector_call(const char **commands)
 
             if ((err = recv(sock, buffer, LEN(buffer)-1, 0)) > 0)
             {
-                print_response(buffer, err);
+                print_response(buffer, err, quiet);
             }
             else if (err == 0)
             {

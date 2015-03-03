@@ -63,7 +63,8 @@ command_mode(nyx_t *nyx)
 
     if ((command = parse_command(nyx->options.commands)) != NULL)
     {
-        success = connector_call(nyx->options.commands);
+        success = connector_call(nyx->options.commands,
+                nyx->options.quiet);
     }
     else
     {
