@@ -45,7 +45,6 @@ int
 poll_loop(nyx_t *nyx, poll_handler_t handler)
 {
     int interval = nyx->options.polling_interval;
-    list_t *states = nyx->states;
 
     /* reset exit state in case this is a restart */
     need_exit = 0;
@@ -56,6 +55,14 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
 
     while (!need_exit)
     {
+        list_t *states = nyx->states;
+
+        if (!states)
+        {
+            wait_interval(interval);
+            continue;
+        }
+
         list_node_t *node = states->head;
 
         while (node)
