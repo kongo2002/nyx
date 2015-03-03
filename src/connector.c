@@ -28,6 +28,7 @@
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -592,12 +593,17 @@ connector_run(nyx_t *nyx)
 
     init_nyx_addr(&addr);
 
+    /* set umask before socket creation */
+    mode_t old_mask = umask(0);
+
     /* create a UNIX domain, connection based socket */
     sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
     if (sock == -1)
     {
         log_perror("nyx: socket");
+
+        umask(old_mask);
         return 0;
     }
 
@@ -606,6 +612,9 @@ connector_run(nyx_t *nyx)
 
     /* bind to specified socket location */
     error = bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
+
+    /* restore old umask */
+    umask(old_mask);
 
     if (error)
     {
