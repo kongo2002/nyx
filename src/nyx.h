@@ -69,6 +69,9 @@ int
 nyx_watches_init(nyx_t *nyx);
 
 int
+nyx_reload(nyx_t *nyx);
+
+int
 signal_eventfd(uint64_t signal, nyx_t *nyx);
 
 void

@@ -227,6 +227,16 @@ handle_watches(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 }
 
 static int
+handle_reload(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
+{
+    nyx_reload(nyx);
+
+    cb->sender(cb, "ok");
+
+    return 1;
+}
+
+static int
 handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
@@ -274,6 +284,8 @@ static command_t commands[] =
             "request the watch's status"),
     CMD(CMD_HISTORY,    "history",    handle_history,    1,
             "get the latest events of the specified watch"),
+    CMD(CMD_RELOAD,     "reload",     handle_reload,     0,
+            "reload the nyx configuration"),
     CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0,
             "terminate the nyx server"),
     CMD(CMD_QUIT,       "quit",       handle_quit,       0,

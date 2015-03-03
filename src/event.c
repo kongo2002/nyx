@@ -335,6 +335,9 @@ event_loop(nyx_t *nyx, process_handler_t handler)
     int socket;
     int rc = 1;
 
+    /* reset exit state in case this is a restart */
+    need_exit = 0;
+
     socket = netlink_connect();
     if (socket == -1)
         return 0;

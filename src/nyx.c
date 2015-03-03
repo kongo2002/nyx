@@ -559,6 +559,79 @@ signal_eventfd(uint64_t signal, nyx_t *nyx)
     return 1;
 }
 
+static void
+shutdown_proc(nyx_t *nyx)
+{
+    /* tear down proc watch (if running) */
+    if (nyx->proc_thread)
+    {
+        nyx_proc_terminate();
+        pthread_join(*nyx->proc_thread, NULL);
+
+        free(nyx->proc_thread);
+        nyx->proc_thread = NULL;
+    }
+
+    if (nyx->proc)
+    {
+        nyx_proc_destroy(nyx->proc);
+        nyx->proc = NULL;
+    }
+}
+
+static void
+clear_watches(nyx_t *nyx)
+{
+    if (nyx->state_map)
+    {
+        hash_destroy(nyx->state_map);
+        nyx->state_map = NULL;
+    }
+
+    if (nyx->states)
+    {
+        list_destroy(nyx->states);
+        nyx->states = NULL;
+    }
+
+    if (nyx->watches)
+    {
+        hash_destroy(nyx->watches);
+        nyx->watches = NULL;
+    }
+}
+
+/**
+ * @brief Reload the current nyx instance configuration
+ * @param nyx nyx instance to reload
+ * @return 1 on success; 0 otherwise
+ */
+int
+nyx_reload(nyx_t *nyx)
+{
+    log_info("Start reloading nyx");
+
+    shutdown_proc(nyx);
+    clear_watches(nyx);
+
+    nyx->watches = hash_new(_watch_destroy);
+    nyx->states = list_new(_state_destroy);
+    nyx->state_map = hash_new(NULL);
+
+    if (parse_config(nyx))
+    {
+        if (nyx_watches_init(nyx))
+        {
+            log_info("Successfully reloaded nyx");
+            return 1;
+        }
+    }
+
+    log_info("Failed to reload nyx");
+
+    return 0;
+}
+
 /**
  * @brief Destroy the nyx instance and all attached resources
  * @param nyx nyx instance to destroy
@@ -591,39 +664,9 @@ nyx_destroy(nyx_t *nyx)
         nyx->connector_thread = NULL;
     }
 
-    /* tear down proc watch (if running) */
-    if (nyx->proc_thread)
-    {
-        nyx_proc_terminate();
-        pthread_join(*nyx->proc_thread, NULL);
+    shutdown_proc(nyx);
 
-        free(nyx->proc_thread);
-        nyx->proc_thread = NULL;
-    }
-
-    if (nyx->proc)
-    {
-        nyx_proc_destroy(nyx->proc);
-        nyx->proc = NULL;
-    }
-
-    if (nyx->state_map)
-    {
-        hash_destroy(nyx->state_map);
-        nyx->state_map = NULL;
-    }
-
-    if (nyx->states)
-    {
-        list_destroy(nyx->states);
-        nyx->states = NULL;
-    }
-
-    if (nyx->watches)
-    {
-        hash_destroy(nyx->watches);
-        nyx->watches = NULL;
-    }
+    clear_watches(nyx);
 
     if (nyx->options.commands)
     {

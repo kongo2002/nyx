@@ -47,6 +47,9 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
     int interval = nyx->options.polling_interval;
     list_t *states = nyx->states;
 
+    /* reset exit state in case this is a restart */
+    need_exit = 0;
+
     setup_signals(nyx, on_terminate);
 
     log_debug("Starting polling manager loop (interval: %d sec)", interval);
