@@ -28,6 +28,7 @@ typedef enum
     CMD_RESTART,
     CMD_STATUS,
     CMD_HISTORY,
+    CMD_WATCHES,
     CMD_QUIT,
     CMD_SIZE
 } connector_command_e;

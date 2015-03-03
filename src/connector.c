@@ -206,6 +206,26 @@ handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
 }
 
 static int
+handle_watches(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
+{
+    list_node_t *node = nyx->states->head;;
+
+    while (node)
+    {
+        state_t *state = node->data;
+
+        if (!state)
+            continue;
+
+        cb->sender(cb, "%s", state->watch->name);
+
+        node = node->next;
+    }
+
+    return 1;
+}
+
+static int
 handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
@@ -241,6 +261,8 @@ static command_t commands[] =
             "ping the nyx server"),
     CMD(CMD_VERSION,    "version",    handle_version,    0,
             "request the nyx server version"),
+    CMD(CMD_WATCHES,    "watches",    handle_watches,    0,
+            "get the list of watches"),
     CMD(CMD_START,      "start",      handle_start,      1,
             "start the specified watch"),
     CMD(CMD_STOP,       "stop",       handle_stop,       1,
