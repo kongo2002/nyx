@@ -152,6 +152,8 @@ Right now the following commands are implemented:
 - `stop <watch>`: send a stop command to the specified watch
 - `restart <watch>`: send a restart command to the specified watch
 - `history <watch>`: get the latest events of the specified watch
+- `watches`: get all currently configured watches
+- `reload`: reload the nyx configuration
 - `terminate`: terminate the nyx daemon
 - `quit`: stop the nyx daemon and all watched processes
 
