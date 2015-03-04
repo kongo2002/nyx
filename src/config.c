@@ -501,6 +501,13 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
     if (name == NULL)
         return NULL;
 
+    /* does this watch already exist? */
+    if (hash_get(info->nyx->watches, name) != NULL)
+    {
+        log_warn("Watch '%s' already exists", name);
+        return info;
+    }
+
     w_name = strdup(name);
     watch_t *watch = watch_new(w_name);
 
