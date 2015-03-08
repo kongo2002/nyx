@@ -187,6 +187,9 @@ watch_dump(watch_t *watch)
     if (watch->stop_timeout)
         log_info("  stop_timeout: %u", watch->stop_timeout);
 
+    if (watch->port_check)
+        log_info("  port_check: %u", watch->port_check);
+
     if (watch->env)
     {
         log_info("  env: [");

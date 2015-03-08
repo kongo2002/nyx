@@ -16,6 +16,7 @@
 #include "def.h"
 #include "log.h"
 #include "proc.h"
+#include "socket.h"
 #include "utils.h"
 
 #include <stdio.h>
@@ -222,6 +223,7 @@ nyx_proc_add(nyx_proc_t *proc, pid_t pid, watch_t *watch)
 
     stat->max_cpu_usage = watch->max_cpu;
     stat->max_mem_usage = watch->max_memory;
+    stat->port = watch->port_check;
 
     list_add(proc->processes, stat);
 }
@@ -262,6 +264,9 @@ nyx_proc_start(void *state)
     nyx_proc_t *sys = nyx->proc;
 
     log_debug("Starting proc watch");
+
+    /* reset need_exit in case of a restart */
+    need_exit = 0;
 
     while (!need_exit)
     {
@@ -315,6 +320,12 @@ nyx_proc_start(void *state)
                         proc->name, proc->pid, bytes, unit);
 
                 sys->event_handler(PROC_MAX_MEMORY, proc, nyx);
+            }
+
+            /* check port if specified */
+            if (proc->port && !check_port(proc->port))
+            {
+                log_warn("Port %u is not available", proc->port);
             }
 
             node = node->next;

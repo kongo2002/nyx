@@ -511,7 +511,7 @@ nyx_watches_init(nyx_t *nyx)
         if (rc != 0)
             log_critical_perror("Failed to create thread, error: %d", rc);
 
-        if (watch->max_cpu > 0 || watch->max_memory > 0)
+        if (watch->max_cpu > 0 || watch->max_memory > 0 || watch->port_check > 0)
             proc_required = 1;
 
         init++;

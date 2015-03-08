@@ -16,8 +16,13 @@
 #include "log.h"
 #include "socket.h"
 
+#include <arpa/inet.h>
 #include <fcntl.h>
+#include <netinet/in.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 int
 unblock_socket(int socket)
@@ -44,6 +49,38 @@ unblock_socket(int socket)
     }
 
     return 1;
+}
+
+int
+check_port(unsigned port)
+{
+    int success = 0;
+    struct sockaddr_in srv;
+
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sockfd == -1)
+    {
+        log_perror("nyx: socket");
+        return 0;
+    }
+
+    memset(&srv, 0, sizeof(srv));
+
+    srv.sin_family = AF_INET;
+    srv.sin_port = htons(port);
+
+    if (!inet_aton("127.0.0.1", &srv.sin_addr))
+        goto end;
+
+    if (connect(sockfd, &srv, sizeof(srv)) != 0)
+        log_perror("nyx: connect");
+    else
+        success = 1;
+
+end:
+    close(sockfd);
+    return success;
 }
 
 int

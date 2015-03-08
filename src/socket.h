@@ -19,6 +19,9 @@
 #include <sys/epoll.h>
 
 int
+check_port(unsigned port);
+
+int
 unblock_socket(int socket);
 
 int

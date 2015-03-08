@@ -61,6 +61,8 @@ typedef struct
     double max_cpu_usage;
     /** maximum memory usage (in kb) */
     long max_mem_usage;
+    /** port to check (optional) */
+    unsigned port;
 } proc_stat_t;
 
 typedef struct
