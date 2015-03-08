@@ -319,13 +319,15 @@ nyx_proc_start(void *state)
                 log_warn("Process '%s' (%d) exceeds its memory usage maximum of %ld%c",
                         proc->name, proc->pid, bytes, unit);
 
-                sys->event_handler(PROC_MAX_MEMORY, proc, nyx);
+                handle_events = sys->event_handler(PROC_MAX_MEMORY, proc, nyx);
             }
 
             /* check port if specified */
-            if (proc->port && !check_port(proc->port))
+            if (handle_events && proc->port && !check_port(proc->port))
             {
                 log_warn("Port %u is not available", proc->port);
+
+                sys->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
             }
 
             node = node->next;

@@ -415,7 +415,7 @@ nyx_initialize(int argc, char **args)
  * @param event event type
  * @param proc  proc system instance
  * @param nyx   nyx instance
- * @return 1 on success, 0 otherwise
+ * @return 0 if no further events should be handled, 1 otherwise
  */
 static int
 handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
@@ -429,10 +429,10 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
     if (state != NULL)
     {
         set_state(state, STATE_RESTARTING);
-        return 1;
+        return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 /**

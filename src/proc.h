@@ -25,7 +25,8 @@
 typedef enum
 {
     PROC_MAX_CPU,
-    PROC_MAX_MEMORY
+    PROC_MAX_MEMORY,
+    PROC_PORT_NOT_OPEN
 } proc_event_e;
 
 typedef struct
