@@ -472,6 +472,31 @@ nyx_proc_initialize(nyx_t *nyx)
     return nyx->proc != NULL;
 }
 
+static int
+proc_required(nyx_t *nyx)
+{
+    int required = 0;
+    const char *key = NULL;
+    void *data = NULL;
+    hash_iter_t *iter = hash_iter_start(nyx->watches);
+
+    while (hash_iter(iter, &key, &data))
+    {
+        watch_t *watch = data;
+
+        if (watch_validate(watch) &&
+            (watch->max_cpu > 0 || watch->max_memory > 0 || watch->port_check > 0))
+        {
+            required = 1;
+            break;
+        }
+    }
+
+    free(iter);
+
+    return required;
+}
+
 /**
  * @brief Initialize watches
  * @param nyx nyx instance
@@ -480,10 +505,23 @@ nyx_proc_initialize(nyx_t *nyx)
 int
 nyx_watches_init(nyx_t *nyx)
 {
-    int rc = 1, init = 0, proc_required = 0;
+    int rc = 1, init = 0;
     const char *key = NULL;
     void *data = NULL;
     hash_iter_t *iter = hash_iter_start(nyx->watches);
+
+    /* initialize proc system if necessary */
+    if (proc_required(nyx))
+    {
+        if (nyx_proc_initialize(nyx))
+        {
+            log_debug("Initialized proc system for at least one watch");
+        }
+    }
+    else
+    {
+        log_debug("No watch requiring proc system - skip initialization");
+    }
 
     while (hash_iter(iter, &key, &data))
     {
@@ -511,25 +549,10 @@ nyx_watches_init(nyx_t *nyx)
         if (rc != 0)
             log_critical_perror("Failed to create thread, error: %d", rc);
 
-        if (watch->max_cpu > 0 || watch->max_memory > 0 || watch->port_check > 0)
-            proc_required = 1;
-
         init++;
     }
 
     free(iter);
-
-    if (proc_required)
-    {
-        if (nyx_proc_initialize(nyx))
-        {
-            log_debug("Initialized proc system for at least one watch");
-        }
-    }
-    else
-    {
-        log_debug("No watch requiring proc system - skip initialization");
-    }
 
     return init > 0;
 }
