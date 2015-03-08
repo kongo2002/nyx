@@ -26,7 +26,8 @@ typedef enum
 {
     PROC_MAX_CPU,
     PROC_MAX_MEMORY,
-    PROC_PORT_NOT_OPEN
+    PROC_PORT_NOT_OPEN,
+    PROC_HTTP_CHECK_FAILED
 } proc_event_e;
 
 typedef struct
@@ -64,6 +65,8 @@ typedef struct
     long max_mem_usage;
     /** port to check (optional) */
     unsigned port;
+    /** HTTP call (optional) */
+    const char *http;
 } proc_stat_t;
 
 typedef struct

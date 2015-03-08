@@ -29,6 +29,7 @@ typedef struct watch_t
     const char *pid_file;
     const char *log_file;
     const char *error_file;
+    const char *http_check;
     unsigned port_check;
     unsigned stop_timeout;
     unsigned max_cpu;

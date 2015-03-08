@@ -76,6 +76,7 @@ watch_destroy(watch_t *watch)
     if (watch->pid_file)   free((void *)watch->pid_file);
     if (watch->log_file)   free((void *)watch->log_file);
     if (watch->error_file) free((void *)watch->error_file);
+    if (watch->http_check) free((void *)watch->http_check);
 
     if (watch->env)
         hash_destroy(watch->env);
@@ -177,6 +178,7 @@ watch_dump(watch_t *watch)
     dump_not_empty("pid_file", watch->pid_file);
     dump_not_empty("log_file", watch->log_file);
     dump_not_empty("error_file", watch->error_file);
+    dump_not_empty("http_check", watch->http_check);
 
     if (watch->max_memory)
         log_info("  max_memory: %lu", watch->max_memory);

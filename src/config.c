@@ -283,6 +283,7 @@ DECLARE_WATCH_STR_VALUE(dir)
 DECLARE_WATCH_STR_VALUE(pid_file)
 DECLARE_WATCH_STR_VALUE(log_file)
 DECLARE_WATCH_STR_VALUE(error_file)
+DECLARE_WATCH_STR_VALUE(http_check)
 DECLARE_WATCH_STR_LIST_VALUE(start)
 DECLARE_WATCH_STR_LIST_VALUE(stop)
 DECLARE_WATCH_STR_FUNC(max_memory, parse_size_unit)
@@ -417,6 +418,7 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("max_cpu", handle_watch_map_value_max_cpu),
     SCALAR_HANDLER("stop_timeout", handle_watch_map_value_stop_timeout),
     SCALAR_HANDLER("port_check", handle_watch_map_value_port_check),
+    SCALAR_HANDLER("http_check", handle_watch_map_value_http_check),
     MAP_HANDLER("env", handle_watch_env),
     HANDLERS("start", handle_watch_map_value_start, handle_watch_strings_start, NULL),
     HANDLERS("stop", handle_watch_map_value_stop, handle_watch_strings_stop, NULL),

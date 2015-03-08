@@ -224,6 +224,7 @@ nyx_proc_add(nyx_proc_t *proc, pid_t pid, watch_t *watch)
     stat->max_cpu_usage = watch->max_cpu;
     stat->max_mem_usage = watch->max_memory;
     stat->port = watch->port_check;
+    stat->http = watch->http_check;
 
     list_add(proc->processes, stat);
 }
@@ -325,9 +326,18 @@ nyx_proc_start(void *state)
             /* check port if specified */
             if (handle_events && proc->port && !check_port(proc->port))
             {
-                log_warn("Port %u is not available", proc->port);
+                log_warn("Process '%s': port %u is not available",
+                        proc->name, proc->port);
 
-                sys->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
+                handle_events = sys->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
+            }
+
+            /* TODO: configurable port? */
+            if (handle_events && proc->http && !check_http(proc->http, 80))
+            {
+                log_warn("Process '%s': HTTP check failed", proc->name);
+
+                sys->event_handler(PROC_HTTP_CHECK_FAILED, proc, nyx);
             }
 
             node = node->next;
