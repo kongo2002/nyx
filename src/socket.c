@@ -73,10 +73,10 @@ check_port(unsigned port)
     if (!inet_aton("127.0.0.1", &srv.sin_addr))
         goto end;
 
-    if (connect(sockfd, &srv, sizeof(srv)) != 0)
-        log_perror("nyx: connect");
-    else
+    if (connect(sockfd, &srv, sizeof(srv)) == 0)
         success = 1;
+    else
+        log_perror("nyx: connect");
 
 end:
     close(sockfd);
