@@ -13,22 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_SOCKET_H__
-#define __NYX_SOCKET_H__
+#ifndef __NYX_TESTS_SOCKET_H__
+#define __NYX_TESTS_SOCKET_H__
 
-#include <sys/epoll.h>
-
-int
-check_port(unsigned port);
-
-int
-check_http(const char *url, unsigned port);
-
-int
-unblock_socket(int socket);
-
-int
-add_epoll_socket(int socket, struct epoll_event *event, int epoll);
+void
+test_check_http(void **state);
 
 #endif
 

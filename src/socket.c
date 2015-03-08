@@ -15,6 +15,7 @@
 
 #include "log.h"
 #include "socket.h"
+#include "def.h"
 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -51,6 +52,105 @@ unblock_socket(int socket)
     return 1;
 }
 
+#define REQUEST_TEMPLATE "GET /%s HTTP/1.0\r\nHost: localhost\r\nUser-Agent: nyx\r\n\r\n"
+
+static char *
+build_request(const char *url)
+{
+    size_t url_len = url ? strlen(url) : 0;
+    size_t length = LEN(REQUEST_TEMPLATE) + url_len + 1;
+
+    char *request = xcalloc(length, sizeof(char));
+
+    snprintf(request, length, REQUEST_TEMPLATE, url ? url : "");
+
+    return request;
+}
+
+#undef REQUEST_TEMPLATE
+
+int
+check_http(const char *url, unsigned port)
+{
+    int success = 0;
+    ssize_t total = 0, res = 0;
+    char *request = NULL;
+    struct sockaddr_in srv;
+    int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    if (sockfd < 1)
+    {
+        log_perror("nyx: socket");
+        return 0;
+    }
+
+    memset(&srv, 0, sizeof(struct sockaddr_in));
+
+    srv.sin_family = AF_INET;
+    srv.sin_port = htons(port);
+
+    if (!inet_aton("127.0.0.1", &srv.sin_addr))
+        goto end;
+
+    if (connect(sockfd, &srv, sizeof(struct sockaddr_in)) != 0)
+        goto end;
+
+    /* start sending */
+    request = build_request(url);
+    ssize_t length = strlen(request);
+
+    while (total < length)
+    {
+        res = send(sockfd, request+total, length-total, 0);
+
+        if (res == 0)
+            goto end;
+
+        if (res < 0)
+        {
+            log_perror("nyx: send");
+            goto end;
+        }
+
+        total += res;
+    }
+
+    /* start receiving */
+
+    /* we want to read the first HTTP header line only:
+     * HTTP/1.x xxx (12 characters) */
+    char buffer[13] = {0};
+
+    res = recv(sockfd, buffer, 12, 0);
+
+    if (res != 12)
+    {
+        if (res < 0)
+            log_perror("nyx: recv");
+        goto end;
+    }
+
+    if (strlen(buffer) == 12)
+    {
+        char *code = buffer + 9;
+
+        if (strncmp(code, "200", 3) == 0)
+            success = 1;
+        else
+        {
+            log_warn("HTTP check to '%s' failed with return code %s",
+                    (url ? url : "/"), code);
+        }
+    }
+
+end:
+    if (request)
+        free(request);
+    close(sockfd);
+
+    return success;
+}
+
 int
 check_port(unsigned port)
 {
@@ -65,7 +165,7 @@ check_port(unsigned port)
         return 0;
     }
 
-    memset(&srv, 0, sizeof(srv));
+    memset(&srv, 0, sizeof(struct sockaddr_in));
 
     srv.sin_family = AF_INET;
     srv.sin_port = htons(port);

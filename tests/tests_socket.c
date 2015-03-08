@@ -13,23 +13,18 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_SOCKET_H__
-#define __NYX_SOCKET_H__
+#include "tests.h"
+#include "tests_socket.h"
+#include "../src/socket.h"
 
-#include <sys/epoll.h>
-
-int
-check_port(unsigned port);
-
-int
-check_http(const char *url, unsigned port);
-
-int
-unblock_socket(int socket);
-
-int
-add_epoll_socket(int socket, struct epoll_event *event, int epoll);
-
-#endif
+void
+test_check_http(UNUSED void **state)
+{
+    if (check_port(80))
+    {
+        assert_int_equal(1, check_http(NULL, 80));
+        assert_int_equal(0, check_http("foo/bar", 80));
+    }
+}
 
 /* vim: set et sw=4 sts=4 tw=80: */
