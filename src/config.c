@@ -23,6 +23,15 @@
 
 #include <string.h>
 
+#define SCALAR_HANDLER(name_, func_) \
+    { .key = name_, .handler = { func_, NULL, NULL } }
+
+#define MAP_HANDLER(name_, func_) \
+    { .key = name_, .handler = { NULL, NULL, func_ } }
+
+#define HANDLERS(name_, sfunc_, lfunc_, mfunc_) \
+    { .key = name_, .handler = { sfunc_, lfunc_, mfunc_ } }
+
 static const char * yaml_event_names[] =
 {
     "YAML_NO_EVENT",
@@ -36,6 +45,12 @@ static const char * yaml_event_names[] =
     "YAML_SEQUENCE_END_EVENT",
     "YAML_MAPPING_START_EVENT",
     "YAML_MAPPING_END_EVENT"
+};
+
+struct watch_info
+{
+    watch_t *watch;
+    struct config_parser_map *map;
 };
 
 static parse_info_t *
@@ -58,6 +73,20 @@ handle_watch_env_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 
 static parse_info_t *
 handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
+
+static parse_info_t *
+handle_watch_http_check_key(parse_info_t *info, yaml_event_t *event, void *data);
+
+static struct watch_info *
+watch_info_new(watch_t *watch, struct config_parser_map *map)
+{
+    struct watch_info *info = xcalloc1(sizeof(struct watch_info));
+
+    info->watch = watch;
+    info->map = map;
+
+    return info;
+}
 
 static int
 check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
@@ -352,6 +381,97 @@ handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
+handle_watch_http_check_key(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    const char *key = get_scalar_value(event);
+
+    log_debug("handle_watch_http_check_key: '%s'", key);
+
+    struct watch_info *winfo = data;
+
+    handler_func_t *handler = get_handler_from_map(winfo->map, key);
+
+    if (!handler)
+        return info;
+
+    info->handler[YAML_SCALAR_EVENT] = handler[CFG_SCALAR];
+
+    return info;
+}
+
+static parse_info_t *
+handle_watch_http_check_end(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    log_debug("handle_watch_http_check_end");
+
+    struct watch_info *winfo = data;
+
+    if (winfo)
+    {
+        info->data = winfo->watch;
+        free(winfo);
+    }
+
+    return handle_mapping_end(info, event, data);
+}
+
+static parse_info_t *
+handle_watch_http_check_url(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    struct watch_info *winfo = data;
+
+    const char *value = get_scalar_value(event);
+
+    if (value == NULL)
+        return NULL;
+
+    winfo->watch->http_check = strdup(value);
+
+    info->handler[YAML_SCALAR_EVENT] = handle_watch_http_check_key;
+
+    return info;
+}
+
+static parse_info_t *
+handle_watch_http_check_port(parse_info_t *info, yaml_event_t *event, void *data)
+{
+    struct watch_info *winfo = data;
+
+    const char *value = get_scalar_value(event);
+
+    if (value == NULL)
+        return NULL;
+
+    winfo->watch->http_check_port = uatoi(value);
+
+    info->handler[YAML_SCALAR_EVENT] = handle_watch_http_check_key;
+
+    return info;
+}
+
+static struct config_parser_map http_check_map[] =
+{
+    SCALAR_HANDLER("url", handle_watch_http_check_url),
+    SCALAR_HANDLER("port", handle_watch_http_check_port),
+    { NULL, {0}, NULL }
+};
+
+static parse_info_t *
+handle_watch_http_check_map(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
+{
+    log_debug("handle_watch_http_check_map");
+
+    parse_info_t *new_info = parse_info_new_child(info);
+
+    new_info->handler[YAML_SCALAR_EVENT] = handle_watch_http_check_key;
+    new_info->handler[YAML_MAPPING_END_EVENT] = handle_watch_http_check_end;
+
+    new_info->data = watch_info_new(data, http_check_map);
+
+    return new_info;
+}
+
+static parse_info_t *
 handle_watch_string(parse_info_t *info, yaml_event_t *event, void *data)
 {
     log_debug("handle_watch_string");
@@ -396,15 +516,6 @@ DECLARE_WATCH_STR_LIST(stop)
 
 #undef DECLARE_WATCH_STR_LIST
 
-#define SCALAR_HANDLER(name_, func_) \
-    { .key = name_, .handler = { func_, NULL, NULL } }
-
-#define MAP_HANDLER(name_, func_) \
-    { .key = name_, .handler = { NULL, NULL, func_ } }
-
-#define HANDLERS(name_, sfunc_, lfunc_, mfunc_) \
-    { .key = name_, .handler = { sfunc_, lfunc_, mfunc_ } }
-
 static struct config_parser_map watch_value_map[] =
 {
     SCALAR_HANDLER("name", handle_watch_map_value_name),
@@ -418,8 +529,8 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("max_cpu", handle_watch_map_value_max_cpu),
     SCALAR_HANDLER("stop_timeout", handle_watch_map_value_stop_timeout),
     SCALAR_HANDLER("port_check", handle_watch_map_value_port_check),
-    SCALAR_HANDLER("http_check", handle_watch_map_value_http_check),
     MAP_HANDLER("env", handle_watch_env),
+    HANDLERS("http_check", handle_watch_map_value_http_check, NULL, handle_watch_http_check_map),
     HANDLERS("start", handle_watch_map_value_start, handle_watch_strings_start, NULL),
     HANDLERS("stop", handle_watch_map_value_stop, handle_watch_strings_stop, NULL),
     { NULL, {0}, NULL }

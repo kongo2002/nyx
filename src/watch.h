@@ -17,6 +17,7 @@
 #define __NYX_WATCH_H__
 
 #include "hash.h"
+#include "socket.h"
 
 typedef struct watch_t
 {
@@ -30,6 +31,8 @@ typedef struct watch_t
     const char *log_file;
     const char *error_file;
     const char *http_check;
+    unsigned http_check_port;
+    http_method_e http_check_method;
     unsigned port_check;
     unsigned stop_timeout;
     unsigned max_cpu;

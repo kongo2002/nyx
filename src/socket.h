@@ -18,6 +18,17 @@
 
 #include <sys/epoll.h>
 
+typedef enum
+{
+    HTTP_GET,
+    HTTP_DELETE,
+    HTTP_HEAD,
+    HTTP_OPTIONS,
+    HTTP_POST,
+    HTTP_PUT,
+    HTTP_TRACE,
+} http_method_e;
+
 int
 check_port(unsigned port);
 

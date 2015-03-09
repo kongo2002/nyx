@@ -180,6 +180,9 @@ watch_dump(watch_t *watch)
     dump_not_empty("error_file", watch->error_file);
     dump_not_empty("http_check", watch->http_check);
 
+    if (watch->http_check && watch->http_check_port)
+        log_info("  http_check_port: %u", watch->http_check_port);
+
     if (watch->max_memory)
         log_info("  max_memory: %lu", watch->max_memory);
 
