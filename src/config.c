@@ -415,43 +415,27 @@ handle_watch_http_check_end(parse_info_t *info, yaml_event_t *event, void *data)
     return handle_mapping_end(info, event, data);
 }
 
-static parse_info_t *
-handle_watch_http_check_url(parse_info_t *info, yaml_event_t *event, void *data)
-{
-    struct watch_info *winfo = data;
+#define DECLARE_WINFO_FUNC(name_, func_) \
+    static parse_info_t * \
+    handle_watch_##name_(parse_info_t *info, yaml_event_t *event, void *data) \
+    { \
+        struct watch_info *winfo = data; \
+        const char *value = get_scalar_value(event); \
+        if (value == NULL) \
+            return NULL; \
+        winfo->watch->name_ = func_(value); \
+        info->handler[YAML_SCALAR_EVENT] = handle_watch_http_check_key; \
+        return info; \
+    }
 
-    const char *value = get_scalar_value(event);
+DECLARE_WINFO_FUNC(http_check, strdup)
+DECLARE_WINFO_FUNC(http_check_port, uatoi)
 
-    if (value == NULL)
-        return NULL;
-
-    winfo->watch->http_check = strdup(value);
-
-    info->handler[YAML_SCALAR_EVENT] = handle_watch_http_check_key;
-
-    return info;
-}
-
-static parse_info_t *
-handle_watch_http_check_port(parse_info_t *info, yaml_event_t *event, void *data)
-{
-    struct watch_info *winfo = data;
-
-    const char *value = get_scalar_value(event);
-
-    if (value == NULL)
-        return NULL;
-
-    winfo->watch->http_check_port = uatoi(value);
-
-    info->handler[YAML_SCALAR_EVENT] = handle_watch_http_check_key;
-
-    return info;
-}
+#undef DECLARE_WINFO_FUNC
 
 static struct config_parser_map http_check_map[] =
 {
-    SCALAR_HANDLER("url", handle_watch_http_check_url),
+    SCALAR_HANDLER("url", handle_watch_http_check),
     SCALAR_HANDLER("port", handle_watch_http_check_port),
     { NULL, {0}, NULL }
 };
