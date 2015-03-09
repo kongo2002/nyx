@@ -67,6 +67,8 @@ typedef struct
     unsigned port;
     /** HTTP call (optional) */
     const char *http;
+    /** HTTP call port (optional) */
+    unsigned http_port;
 } proc_stat_t;
 
 typedef struct
