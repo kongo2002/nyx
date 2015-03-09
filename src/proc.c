@@ -226,6 +226,7 @@ nyx_proc_add(nyx_proc_t *proc, pid_t pid, watch_t *watch)
     stat->port = watch->port_check;
     stat->http = watch->http_check;
     stat->http_port = watch->http_check_port ? watch->http_check_port : 80;
+    stat->http_method = watch->http_check_method;
 
     list_add(proc->processes, stat);
 }
@@ -333,7 +334,8 @@ nyx_proc_start(void *state)
                 handle_events = sys->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
             }
 
-            if (handle_events && proc->http && !check_http(proc->http, proc->http_port))
+            if (handle_events && proc->http &&
+                    !check_http(proc->http, proc->http_port, proc->http_method))
             {
                 log_warn("Process '%s': HTTP check failed", proc->name);
 

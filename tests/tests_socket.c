@@ -22,8 +22,8 @@ test_check_http(UNUSED void **state)
 {
     if (check_port(80))
     {
-        assert_int_equal(1, check_http(NULL, 80));
-        assert_int_equal(0, check_http("foo/bar", 80));
+        assert_int_equal(1, check_http(NULL, 80, HTTP_GET));
+        assert_int_equal(0, check_http("foo/bar", 80, HTTP_GET));
     }
 }
 

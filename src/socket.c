@@ -25,6 +25,52 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+http_method_e
+http_method_from_string(const char *str)
+{
+    /* default to GET */
+    if (str == NULL || *str == '\0')
+        return HTTP_GET;
+
+#define CMP(x, e) if (!strncasecmp(x, str, strlen(x))) return e
+
+    CMP("GET",     HTTP_GET);
+    CMP("PUT",     HTTP_PUT);
+    CMP("POST",    HTTP_POST);
+    CMP("OPTIONS", HTTP_OPTIONS);
+    CMP("TRACE",   HTTP_TRACE);
+    CMP("DELETE",  HTTP_DELETE);
+    CMP("HEAD",    HTTP_HEAD);
+
+#undef CMP
+
+    return HTTP_GET;
+}
+
+const char *
+http_method_to_string(http_method_e method)
+{
+    switch (method)
+    {
+        case HTTP_GET:
+            return "GET";
+        case HTTP_DELETE:
+            return "DELETE";
+        case HTTP_HEAD:
+            return "HEAD";
+        case HTTP_OPTIONS:
+            return "OPTIONS";
+        case HTTP_POST:
+            return "POST";
+        case HTTP_PUT:
+            return "PUT";
+        case HTTP_TRACE:
+            return "TRACE";
+        default:
+            return "GET";
+    }
+}
+
 int
 unblock_socket(int socket)
 {
@@ -52,17 +98,18 @@ unblock_socket(int socket)
     return 1;
 }
 
-#define REQUEST_TEMPLATE "GET /%s HTTP/1.0\r\nHost: localhost\r\nUser-Agent: nyx\r\n\r\n"
+#define REQUEST_TEMPLATE "%s /%s HTTP/1.0\r\nHost: localhost\r\nUser-Agent: nyx\r\n\r\n"
 
 static char *
-build_request(const char *url)
+build_request(const char *url, http_method_e method)
 {
+    const char *mtd = http_method_to_string(method);
     size_t url_len = url ? strlen(url) : 0;
-    size_t length = LEN(REQUEST_TEMPLATE) + url_len + 1;
+    size_t length = LEN(REQUEST_TEMPLATE) + url_len + strlen(mtd);
 
     char *request = xcalloc(length, sizeof(char));
 
-    snprintf(request, length, REQUEST_TEMPLATE, url ? url : "");
+    snprintf(request, length, REQUEST_TEMPLATE, mtd, url ? url : "");
 
     return request;
 }
@@ -70,7 +117,7 @@ build_request(const char *url)
 #undef REQUEST_TEMPLATE
 
 int
-check_http(const char *url, unsigned port)
+check_http(const char *url, unsigned port, http_method_e method)
 {
     int success = 0;
     ssize_t total = 0, res = 0;
@@ -96,7 +143,7 @@ check_http(const char *url, unsigned port)
         goto end;
 
     /* start sending */
-    request = build_request(url);
+    request = build_request(url, method);
     ssize_t length = strlen(request);
 
     while (total < length)

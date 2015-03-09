@@ -430,6 +430,7 @@ handle_watch_http_check_end(parse_info_t *info, yaml_event_t *event, void *data)
 
 DECLARE_WINFO_FUNC(http_check, strdup)
 DECLARE_WINFO_FUNC(http_check_port, uatoi)
+DECLARE_WINFO_FUNC(http_check_method, http_method_from_string)
 
 #undef DECLARE_WINFO_FUNC
 
@@ -437,6 +438,7 @@ static struct config_parser_map http_check_map[] =
 {
     SCALAR_HANDLER("url", handle_watch_http_check),
     SCALAR_HANDLER("port", handle_watch_http_check_port),
+    SCALAR_HANDLER("method", handle_watch_http_check_method),
     { NULL, {0}, NULL }
 };
 

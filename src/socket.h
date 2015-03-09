@@ -29,11 +29,17 @@ typedef enum
     HTTP_TRACE,
 } http_method_e;
 
+http_method_e
+http_method_from_string(const char *str);
+
+const char *
+http_method_to_string(http_method_e method);
+
 int
 check_port(unsigned port);
 
 int
-check_http(const char *url, unsigned port);
+check_http(const char *url, unsigned port, http_method_e method);
 
 int
 unblock_socket(int socket);

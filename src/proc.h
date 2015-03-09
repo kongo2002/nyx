@@ -69,6 +69,8 @@ typedef struct
     const char *http;
     /** HTTP call port (optional) */
     unsigned http_port;
+    /** HTTP call method (optional) */
+    http_method_e http_method;
 } proc_stat_t;
 
 typedef struct
