@@ -30,6 +30,9 @@ watch_new(const char *name)
 
     watch->name = name;
 
+    /* default to port 80 for HTTP check */
+    watch->http_check_port = 80;
+
     return watch;
 }
 

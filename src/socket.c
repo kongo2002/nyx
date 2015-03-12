@@ -134,7 +134,7 @@ check_http(const char *url, unsigned port, http_method_e method)
     memset(&srv, 0, sizeof(struct sockaddr_in));
 
     srv.sin_family = AF_INET;
-    srv.sin_port = htons(port);
+    srv.sin_port = htons(port ? port : 80);
 
     if (!inet_aton("127.0.0.1", &srv.sin_addr))
         goto end;

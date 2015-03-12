@@ -44,7 +44,7 @@ typedef struct
 
 } sys_info_t;
 
-DECLARE_STACK(long, long)
+DECLARE_STACK(unsigned long, long)
 DECLARE_STACK(double, double)
 
 typedef struct
@@ -53,24 +53,14 @@ typedef struct
     pid_t pid;
     /** process statistics */
     sys_info_t info;
-    /** process name */
-    const char *name;
     /** process CPU usage (in percent) */
     stack_double_t *cpu_usage;
     /** process memory usage (in kb) */
     stack_long_t *mem_usage;
-    /** maximum CPU usage */
-    double max_cpu_usage;
-    /** maximum memory usage (in kb) */
-    long max_mem_usage;
-    /** port to check (optional) */
-    unsigned port;
-    /** HTTP call (optional) */
-    const char *http;
-    /** HTTP call port (optional) */
-    unsigned http_port;
-    /** HTTP call method (optional) */
-    http_method_e http_method;
+    /** process name */
+    const char *name;
+    /** associated watch */
+    watch_t *watch;
 } proc_stat_t;
 
 typedef struct
@@ -114,7 +104,7 @@ void *
 nyx_proc_start(void *state);
 
 proc_stat_t *
-proc_stat_new(pid_t pid, const char *name);
+proc_stat_new(pid_t pid, const char *name, watch_t *watch);
 
 void
 nyx_proc_remove(nyx_proc_t *proc, pid_t pid);

@@ -61,12 +61,13 @@ nyx_proc_new(void)
 }
 
 proc_stat_t *
-proc_stat_new(pid_t pid, const char *name)
+proc_stat_new(pid_t pid, const char *name, watch_t *watch)
 {
     proc_stat_t *stat = xcalloc1(sizeof(proc_stat_t));
 
     stat->pid = pid;
     stat->name = name;
+    stat->watch = watch;
 
     /* TODO: configurable stack size */
     stat->mem_usage = stack_long_new(PROC_STAT_STACK_SIZE);
@@ -177,7 +178,7 @@ nyx_proc_init(pid_t pid)
     }
 
     /* add myself to watched processes */
-    proc_stat_t *me = proc_stat_new(pid, "nyx");
+    proc_stat_t *me = proc_stat_new(pid, "nyx", NULL);
     list_add(proc->processes, me);
 
     /* get current nyx process statistics */
@@ -219,14 +220,7 @@ nyx_proc_remove(nyx_proc_t *proc, pid_t pid)
 void
 nyx_proc_add(nyx_proc_t *proc, pid_t pid, watch_t *watch)
 {
-    proc_stat_t *stat = proc_stat_new(pid, watch->name);
-
-    stat->max_cpu_usage = watch->max_cpu;
-    stat->max_mem_usage = watch->max_memory;
-    stat->port = watch->port_check;
-    stat->http = watch->http_check;
-    stat->http_port = watch->http_check_port ? watch->http_check_port : 80;
-    stat->http_method = watch->http_check_method;
+    proc_stat_t *stat = proc_stat_new(pid, watch->name, watch);
 
     list_add(proc->processes, stat);
 }
@@ -249,15 +243,15 @@ exceeds_cpu(double value, void *obj)
 {
     proc_stat_t *proc = obj;
 
-    return proc->max_cpu_usage && value >= proc->max_cpu_usage;
+    return proc->watch && proc->watch->max_cpu && value >= proc->watch->max_cpu;
 }
 
 static int
-exceeds_mem(long value, void *obj)
+exceeds_mem(unsigned long value, void *obj)
 {
     proc_stat_t *proc = obj;
 
-    return proc->max_mem_usage && value >= proc->max_mem_usage;
+    return proc->watch && proc->watch->max_memory && value >= proc->watch->max_memory;
 }
 
 void *
@@ -298,26 +292,26 @@ nyx_proc_start(void *state)
 
             /* no event handler registered
              * -> nothing to be done anyways */
-            int handle_events = sys->event_handler != NULL;
+            int handle_events = sys->event_handler != NULL && proc->watch != NULL;
 
             /* handle CPU events? */
             if (handle_events &&
-                    proc->max_cpu_usage &&
+                    proc->watch->max_cpu &&
                     stack_double_satisfy(proc->cpu_usage, exceeds_cpu, proc) >= PROC_STAT_STACK_LIMIT)
             {
-                log_warn("Process '%s' (%d) exceeds its CPU usage maximum of %f%%",
-                        proc->name, proc->pid, proc->max_cpu_usage);
+                log_warn("Process '%s' (%d) exceeds its CPU usage maximum of %u%%",
+                        proc->name, proc->pid, proc->watch->max_cpu);
 
                 handle_events = sys->event_handler(PROC_MAX_CPU, proc, nyx);
             }
 
             /* handle memory events? */
             if (handle_events &&
-                    proc->max_mem_usage &&
+                    proc->watch->max_memory &&
                     stack_long_satisfy(proc->mem_usage, exceeds_mem, proc) >= PROC_STAT_STACK_LIMIT)
             {
                 unsigned long bytes;
-                char unit = get_size_unit(proc->max_mem_usage, &bytes);
+                char unit = get_size_unit(proc->watch->max_memory, &bytes);
 
                 log_warn("Process '%s' (%d) exceeds its memory usage maximum of %ld%c",
                         proc->name, proc->pid, bytes, unit);
@@ -326,16 +320,19 @@ nyx_proc_start(void *state)
             }
 
             /* check port if specified */
-            if (handle_events && proc->port && !check_port(proc->port))
+            if (handle_events &&
+                    proc->watch->port_check &&
+                    !check_port(proc->watch->port_check))
             {
                 log_warn("Process '%s': port %u is not available",
-                        proc->name, proc->port);
+                        proc->name, proc->watch->port_check);
 
                 handle_events = sys->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
             }
 
-            if (handle_events && proc->http &&
-                    !check_http(proc->http, proc->http_port, proc->http_method))
+            if (handle_events &&
+                    proc->watch->http_check &&
+                    !check_http(proc->watch->http_check, proc->watch->http_check_port, proc->watch->http_check_method))
             {
                 log_warn("Process '%s': HTTP check failed", proc->name);
 
@@ -536,7 +533,7 @@ sys_info_dump(sys_info_t *sys)
     log_info("  Total time:        %llu", sys->total_time);
 }
 
-IMPLEMENT_STACK(long, long)
+IMPLEMENT_STACK(unsigned long, long)
 IMPLEMENT_STACK(double, double)
 
 /* vim: set et sw=4 sts=4 tw=80: */
