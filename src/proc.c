@@ -121,7 +121,6 @@ calculate_proc_diff(proc_stat_t *proc, long page_size)
 static void
 calculate_proc_stats(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long period)
 {
-    double usage = 0;
     unsigned max = sys->num_cpus * 100;
     unsigned long long diff = 0;
 
@@ -129,7 +128,7 @@ calculate_proc_stats(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long peri
 
     if (period > 0)
     {
-        usage = ((double)diff) / period * max;
+        double usage = ((double)diff) / period * max;
         stack_double_add(stat->cpu_usage, MAX(0, MIN(max, usage)));
     }
     else
@@ -390,7 +389,7 @@ sys_proc_read(sys_proc_stat_t *stat)
 
     /* right now we are interested in the first line (cpu ...)
      * only which represents the overall cpu usage */
-    if (fscanf(proc, "%*s %llu %llu %llu %llu %llu",
+    if (fscanf(proc, "%*8s %llu %llu %llu %llu %llu",
                 &stat->user_time,
                 &stat->nice_time,
                 &stat->system_time,
@@ -436,7 +435,7 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid)
         return 0;
     }
 
-    if (fscanf(proc, "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
+    if (fscanf(proc, "%*d %*256s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
                "%lu %ld %ld %*d %*d %*d %*d %*u %lu %ld",
                &sys->user_time,
                &sys->system_time,

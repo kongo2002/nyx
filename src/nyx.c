@@ -330,7 +330,7 @@ initialize_daemon(nyx_t *nyx)
 nyx_t *
 nyx_initialize(int argc, char **args)
 {
-    int arg = 0, i = 0, j = 0;
+    int arg = 0;
 
     nyx_t *nyx = calloc(1, sizeof(nyx_t));
 
@@ -396,6 +396,8 @@ nyx_initialize(int argc, char **args)
         /* parse remaining arguments in non-daemon mode only */
         if (optind < argc)
         {
+            int i = 0, j = 0;
+
             nyx->options.commands = xcalloc(argc-optind+1, sizeof(char *));
 
             for (j = 0, i = optind; i < argc; i++, j++)
@@ -441,8 +443,6 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
 static int
 nyx_proc_initialize(nyx_t *nyx)
 {
-    int err = 0;
-
     /* try to initialize proc watch/thread */
     nyx->proc = nyx_proc_init(nyx->pid);
 
@@ -452,7 +452,7 @@ nyx_proc_initialize(nyx_t *nyx)
 
         nyx->proc_thread = xcalloc1(sizeof(pthread_t));
 
-        err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx);
+        int err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx);
 
         if (err)
         {

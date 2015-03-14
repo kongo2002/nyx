@@ -67,7 +67,6 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
 
         while (node)
         {
-            int running = 0;
             state_t *state = node->data;
             pid_t pid = state->pid;
 
@@ -79,7 +78,7 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
 
             if (pid > 0)
             {
-                running = check_process_running(pid);
+                int running = check_process_running(pid);
 
                 log_debug("Poll: watch '%s' process with PID %d is %srunning",
                         state->watch->name, pid,

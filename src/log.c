@@ -127,9 +127,6 @@ get_log_prefix(log_level_e level)
 static void
 log_msg(log_level_e level, const char *msg, size_t length)
 {
-    static const size_t end_length = 4;
-    static const char *end_color= "\033[0m";
-
     /* safe errno */
     int error = errno;
 
@@ -156,7 +153,10 @@ log_msg(log_level_e level, const char *msg, size_t length)
     }
 
     if (color)
-        fwrite(end_color, end_length, 1, stdout);
+    {
+        /* write end of coloring */
+        fwrite("\033[0m", 4, 1, stdout);
+    }
 
     fputc('\n', stdout);
 
