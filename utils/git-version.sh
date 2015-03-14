@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ -d .git -a -r .git ]; then
-    GIT_VERSION=$(git describe --always --tags)
+    GIT_VERSION=$(git describe --always)
 
     if [ x"$GIT_VERSION" != x ]; then
         echo "-DGIT_VERSION=\\\"$GIT_VERSION\\\""
