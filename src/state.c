@@ -774,7 +774,6 @@ state_destroy(state_t *state)
     }
 
     free(state);
-    state = NULL;
 }
 
 static int

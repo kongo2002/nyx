@@ -85,7 +85,6 @@ watch_destroy(watch_t *watch)
         hash_destroy(watch->env);
 
     free(watch);
-    watch = NULL;
 }
 
 int

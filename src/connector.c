@@ -44,20 +44,22 @@ send_format(sender_callback_t *cb, const char *format, ...)
 static int
 send_format_msg(sender_callback_t *cb, const char *format, va_list values)
 {
-    char newline[1] = {'\n'};
     char *msg;
-
-    int sent = 0, res = 0;
+    int sent = 0;
     int length = vasprintf(&msg, format, values);
 
     if (length > 0)
     {
+        int res = 0;
+
         /* send message itself */
         if ((res = send(cb->client, msg, length, 0)) < 0)
             log_perror("nyx: send");
 
         if (res > 0)
         {
+            char newline[1] = {'\n'};
+
             sent += res;
 
             /* send newline */
@@ -444,7 +446,7 @@ print_response(char *buffer, size_t len, int quiet)
 int
 connector_call(const char **commands, int quiet)
 {
-    int sock = 0, err = 0, success = 0, done = 0;
+    int sock = 0, err = 0, success = 0;
     char buffer[512] = {0};
     struct sockaddr_un addr;
 
@@ -475,6 +477,8 @@ connector_call(const char **commands, int quiet)
     }
     else
     {
+        int done = 0;
+
         do
         {
             memset(&buffer, 0, LEN(buffer));
@@ -534,8 +538,6 @@ handle_request(struct epoll_event *event, nyx_t *nyx)
     ssize_t received = 0;
     int fd = event->data.fd;
     char buffer[512] = {0};
-    const char **commands = NULL;
-    command_t *cmd = NULL;
 
     memset(buffer, 0, 512);
     received = recv(fd, buffer, LEN(buffer)-1, 0);
@@ -557,7 +559,8 @@ handle_request(struct epoll_event *event, nyx_t *nyx)
     else
     {
         /* parse input buffer */
-        commands = split_string(buffer);
+        command_t *cmd = NULL;
+        const char **commands = split_string(buffer);
 
         if ((cmd = parse_command(commands)) != NULL)
         {

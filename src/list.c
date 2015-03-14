@@ -112,7 +112,6 @@ list_destroy(list_t *list)
     }
 
     free(list);
-    list = NULL;
 }
 
 void

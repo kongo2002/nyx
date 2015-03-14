@@ -190,7 +190,6 @@ static parse_info_t *
 handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 {
     const char *key;
-    struct config_parser_map *map = NULL;
     handler_func_t *handler = NULL;
 
     key = get_scalar_value(event);
@@ -201,7 +200,7 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
     /* handler lookup */
     if (data != NULL)
     {
-        map = data;
+        struct config_parser_map *map = data;
         handler = get_handler_from_map(map, key);
     }
 
@@ -815,6 +814,7 @@ parse_config(nyx_t *nyx)
     if (!yaml_parser_initialize(&parser))
     {
         log_warn("Failed to parse config file %s", config_file);
+        fclose(cfg);
         return 0;
     }
 

@@ -108,13 +108,12 @@ static const struct option long_options[] =
 static void
 handle_child_stop(UNUSED int signum)
 {
-    pid_t pid;
     int last_errno = errno;
 
     log_debug("Received child stop signal - waiting for termination");
 
     /* wait for all child processes */
-    while ((pid = waitpid(-1, NULL, WNOHANG)) > 0)
+    while (waitpid(-1, NULL, WNOHANG) > 0)
     {
         /* do nothing */
     }
@@ -193,7 +192,6 @@ is_nyx_running(nyx_t *nyx)
 static int
 daemonize(nyx_t *nyx)
 {
-    int err = 0;
     pid_t pid = fork();
 
     if (pid == -1)
@@ -205,7 +203,7 @@ daemonize(nyx_t *nyx)
     /* child process */
     if (pid == 0)
     {
-        if ((err = setsid()) == -1)
+        if (setsid() == -1)
         {
             log_perror("nyx: setsid");
             return 0;
@@ -704,7 +702,6 @@ nyx_destroy(nyx_t *nyx)
         clear_pid("nyx", nyx);
 
     free(nyx);
-    nyx = NULL;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

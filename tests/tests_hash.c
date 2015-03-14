@@ -43,10 +43,10 @@ test_hash_add(UNUSED void **state)
 
     for (i = 0; i < size; i++)
     {
-        sprintf(buffer, "value%d", i);
+        sprintf(buffer, "value%u", i);
         value = strdup(buffer);
 
-        sprintf(buffer, "key%d", i);
+        sprintf(buffer, "key%u", i);
         hash_add(hash, buffer, value);
     }
 
@@ -54,12 +54,12 @@ test_hash_add(UNUSED void **state)
 
     for (i = 0; i < size; i++)
     {
-        sprintf(buffer, "key%d", i);
+        sprintf(buffer, "key%u", i);
         char *value = hash_get(hash, buffer);
 
         assert_non_null(value);
 
-        sprintf(buffer, "value%d", i);
+        sprintf(buffer, "value%u", i);
         assert_string_equal(buffer, value);
     }
 

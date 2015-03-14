@@ -140,7 +140,6 @@ hash_destroy(hash_t *hash)
 
     free(hash->buckets);
     free(hash);
-    hash = NULL;
 }
 
 unsigned int
@@ -402,17 +401,15 @@ hash_iter(hash_iter_t *iter, const char **key, void **data)
 void
 hash_foreach(hash_t *hash, void (*func)(void *))
 {
-    unsigned int i = 0, j = 0, pairs = 0;
+    unsigned int i = 0;
     unsigned int bucket_count = hash->bucket_count;
 
     bucket_t *bucket = hash->buckets;
-    pair_t *pair = NULL;
 
     while (i < bucket_count)
     {
-        j = 0;
-        pairs = bucket->count;
-        pair = bucket->pairs;
+        unsigned int j = 0, pairs = bucket->count;
+        pair_t *pair = bucket->pairs;
 
         while (j < pairs)
         {

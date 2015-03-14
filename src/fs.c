@@ -76,11 +76,11 @@ get_group(const char *name, gid_t *gid)
 static const char *
 prepare_dir(const char *directory)
 {
-    static char buffer[512] = {0};
-
     /* replace ~ if necessary */
     if (*directory == '~')
     {
+        static char buffer[512] = {0};
+
         /* clear buffer from previous runs */
         memset(buffer, 0, sizeof(buffer));
 
@@ -177,13 +177,12 @@ int
 dir_writable(const char *directory)
 {
     int writable = 0;
-    int error = 0;
     char *copy = strdup(prepare_dir(directory));
     const char *dir = dirname(copy);
 
     if (dir_exists(dir))
     {
-        error = access(dir, W_OK);
+        int error = access(dir, W_OK);
 
         if (error == -1)
             log_perror("nyx: access");
