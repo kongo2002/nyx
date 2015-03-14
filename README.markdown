@@ -132,6 +132,47 @@ executed a soon as at least 8 out of 10 snapshots exceed the configured
 threshold.
 
 
+##### Observe opened ports
+
+Apart from watching the process itself you may instruct *nyx* to check if a
+specified port is opened on the localhost. Use the setting `port_check` for that
+purpose:
+
+```yaml
+watches:
+    app:
+        start: /usr/bin/mongod
+
+        # i.e. watch the default mongodb port
+        port_check: 27017
+```
+
+A process restart will be triggered if the port is not opened.
+
+
+##### Check HTTP endpoint
+
+Similarly to the `port_check` setting you may advise *nyx* to test for a
+process' health using a configured HTTP endpoint. Use the `http_check`
+setting(s) to configure the endpoint that is expected to return a `200 OK`
+response:
+
+```yaml
+watches:
+    app:
+        start: /usr/bin/app
+
+        http_check:
+            url: /status
+            port: 80
+            method: GET
+
+        # in case of a GET request on port 80 you may
+        # use the shortened form as well:
+        # http_check: /status
+```
+
+
 ### Command interface
 
 You can interact with a running *nyx* daemon instance using the same executable:
