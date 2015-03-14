@@ -329,11 +329,15 @@ nyx_proc_start(void *state)
                 handle_events = sys->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
             }
 
+            /* check HTTP endpoint if specified */
             if (handle_events &&
                     proc->watch->http_check &&
                     !check_http(proc->watch->http_check, proc->watch->http_check_port, proc->watch->http_check_method))
             {
-                log_warn("Process '%s': HTTP check failed", proc->name);
+                log_warn("Process '%s': HTTP check failed - %s %s",
+                        proc->name,
+                        http_method_to_string(proc->watch->http_check_method),
+                        proc->watch->http_check);
 
                 sys->event_handler(PROC_HTTP_CHECK_FAILED, proc, nyx);
             }
