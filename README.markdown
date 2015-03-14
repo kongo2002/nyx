@@ -159,17 +159,19 @@ response:
 
 ```yaml
 watches:
-    app:
-        start: /usr/bin/app
+    app1:
+        start: /usr/bin/app1
 
         http_check:
             url: /status
             port: 80
             method: GET
 
-        # in case of a GET request on port 80 you may
-        # use the shortened form as well:
-        # http_check: /status
+    # in case of a GET request on port 80 you may
+    # use the shortened form of http_check as well:
+    app2:
+        start: /usr/bin/app2
+        http_check: /status
 ```
 
 
