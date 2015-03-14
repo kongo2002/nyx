@@ -407,7 +407,7 @@ handle_watch_http_check_end(parse_info_t *info, yaml_event_t *event, void *data)
 
     if (winfo)
     {
-        info->data = winfo->watch;
+        info->data = data = winfo->watch;
         free(winfo);
     }
 

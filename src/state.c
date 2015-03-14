@@ -861,7 +861,7 @@ safe_sleep(state_t *state, unsigned int seconds)
 void
 state_loop(state_t *state)
 {
-    int sem_fail = 0, result = 0;
+    int sem_fail = 0;
 
     watch_t *watch = state->watch;
     state_e last_state = STATE_INIT;
@@ -872,8 +872,8 @@ state_loop(state_t *state)
      * state semaphore */
     while ((sem_fail = sem_wait(state->sem)) == 0)
     {
+        int result = 0;
         state_e current_state = state->state;
-        result = 0;
 
         /* QUIT is handled immediately */
         if (current_state == STATE_QUIT)
