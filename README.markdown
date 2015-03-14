@@ -183,12 +183,12 @@ $ make check
 ```
 
 
-### Release
+### Debug
 
-The non-debug (release) build can be compiled with:
+The debug build can be compiled with:
 
 ```bash
-$ make DEBUG=0
+$ make DEBUG=1
 ```
 
 

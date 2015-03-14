@@ -30,18 +30,30 @@ DOCDIR     := $(DESTDIR)$(DOCDIR)
 
 # DEBUG/RELEASE BUILD
 
-DEBUG ?= 1
+DEBUG ?= 0
 ifeq ($(DEBUG), 1)
     CXXFLAGS+= -O0 -ggdb
+    BUILD=DEBUG
 else
     CXXFLAGS+= -O2 -DNDEBUG -Wno-unused-parameter
+    BUILD=RELEASE
 endif
 
-.PHONY: all clean rebuild check install uninstall
+.PHONY: all options clean rebuild check install uninstall
 
-all: nyx nyx.1.gz
+all: options nyx nyx.1.gz
 
 -include $(DEPS)
+
+options:
+	@echo nyx build options
+	@echo "build      : $(BUILD)"
+	@echo "CC         : $(CC)"
+	@echo "CXXFLAGS   : $(CXXFLAGS)"
+	@echo "INSTALLDIR : $(INSTALLDIR)"
+	@echo "MANPREFIX  : $(MANPREFIX)"
+	@echo "DOCDIR     : $(DOCDIR)"
+	@echo
 
 nyx: $(OBJECTS)
 	$(CC) $(OBJECTS) -o nyx $(LIBS)
