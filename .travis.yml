@@ -5,8 +5,10 @@ compiler:
     - clang
 
 env:
-    - DEBUG=1
-    - DEBUG=0
+    - DEBUG=1 PLUGINS=1
+    - DEBUG=0 PLUGINS=1
+    - DEBUG=1 PLUGINS=0
+    - DEBUG=0 PLUGINS=0
 
 before_script:
     - ./utils/install_cmocka.sh
