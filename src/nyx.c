@@ -23,6 +23,10 @@
 #include "state.h"
 #include "watch.h"
 
+#ifdef USE_PLUGINS
+#include "plugins.h"
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -317,6 +321,11 @@ initialize_daemon(nyx_t *nyx)
         free(nyx->connector_thread);
         nyx->connector_thread = NULL;
     }
+
+#ifdef USE_PLUGINS
+    /* load plugins */
+    plugin_repository_t *plugins = discover_plugins(nyx->options.plugins);
+#endif
 
     return 1;
 }
@@ -688,6 +697,9 @@ nyx_destroy(nyx_t *nyx)
     shutdown_proc(nyx);
 
     clear_watches(nyx);
+
+    if (nyx->options.plugins)
+        free((void *)nyx->options.plugins);
 
     if (nyx->options.commands)
     {

@@ -636,7 +636,7 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
     return new_info;
 }
 
-#define DECLARE_NYX_INT_VALUE(name_) \
+#define DECLARE_NYX_FUNC_VALUE(func_, name_) \
     static parse_info_t * \
     handle_nyx_value_##name_(parse_info_t *info, yaml_event_t *event, UNUSED void *data) \
     { \
@@ -644,18 +644,20 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
         const char *value = get_scalar_value(event); \
         if (value == NULL) \
             return NULL; \
-        nyx->options.name_ = uatoi(value); \
+        nyx->options.name_ = func_(value); \
         info->handler[YAML_SCALAR_EVENT] = handle_nyx_key; \
         return info; \
     }
 
-DECLARE_NYX_INT_VALUE(polling_interval)
+DECLARE_NYX_FUNC_VALUE(uatoi, polling_interval)
+DECLARE_NYX_FUNC_VALUE(strdup, plugins)
 
-#undef DECLARE_NYX_INT_VALUE
+#undef DECLARE_NYX_FUNC_VALUE
 
 static struct config_parser_map nyx_value_map[] =
 {
     SCALAR_HANDLER("polling_interval", handle_nyx_value_polling_interval),
+    SCALAR_HANDLER("plugins", handle_nyx_value_plugins)
 };
 
 static parse_info_t *

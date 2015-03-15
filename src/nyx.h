@@ -32,6 +32,7 @@ typedef struct
     unsigned def_start_timeout;
     unsigned def_stop_timeout;
     unsigned polling_interval;
+    const char *plugins;
     const char *config_file;
     const char **commands;
 } nyx_options_t;

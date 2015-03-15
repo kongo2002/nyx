@@ -92,7 +92,7 @@ init_plugin(const char *path, const char *name, plugin_manager_t *manager)
     return plugin;
 }
 
-void
+static void
 plugin_destroy(void *plugin)
 {
     plugin_t *p = plugin;
@@ -108,7 +108,7 @@ plugin_destroy(void *plugin)
     free(p);
 }
 
-plugin_repository_t *
+static plugin_repository_t *
 plugin_repository_new(void)
 {
     plugin_repository_t *repo = xcalloc1(sizeof(plugin_repository_t));
@@ -140,6 +140,8 @@ discover_plugins(const char *directory)
 
     if (directory == NULL || *directory == '\0')
         return NULL;
+
+    log_debug("Searching plugin directory '%s'", directory);
 
     DIR *dir = opendir(directory);
     if (dir)

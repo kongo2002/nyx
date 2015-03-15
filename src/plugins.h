@@ -44,6 +44,9 @@ typedef int (*plugin_init_func)(plugin_manager_t *manager);
 plugin_repository_t *
 discover_plugins(const char *directory);
 
+void
+plugin_repository_destroy(plugin_repository_t *repository);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */
