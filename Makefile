@@ -4,6 +4,19 @@ CXXFLAGS := -Wall -Wextra -std=gnu89
 INCLUDES := -I.
 LIBS     := -lyaml -lpthread
 
+# DEBUG/RELEASE BUILD
+
+DEBUG ?= 0
+ifeq ($(DEBUG), 1)
+    CXXFLAGS+= -O0 -ggdb
+    BUILD=DEBUG
+else
+    CXXFLAGS+= -O2 -DNDEBUG -Wno-unused-parameter
+    BUILD=RELEASE
+endif
+
+# FILES
+
 SRCS     := $(wildcard src/*.c)
 OBJECTS  := $(patsubst src/%.c,src/%.o, $(SRCS))
 DEPS     := $(OBJECTS:.o=.d)
@@ -12,6 +25,17 @@ TSRCS    := $(wildcard tests/*.c)
 TOBJECTS := $(patsubst tests/%.c,tests/%.o, $(TSRCS))
 TLIBS    := -lcmocka
 TDEPS    := $(filter-out src/main.o, $(OBJECTS))
+
+# PLUGINS
+
+PLUGINS ?= 0
+ifeq ($(PLUGINS), 1)
+    LIBS+= -ldl -rdynamic
+    CXXFLAGS+= -DUSE_PLUGINS
+else
+    OBJECTS := $(filter-out src/plugins.o, $(OBJECTS))
+    TDEPS   := $(filter-out src/plugins.o, $(TDEPS))
+endif
 
 # TRY TO DETERMINE GIT VERSION
 
@@ -27,17 +51,6 @@ DOCDIR     ?= $(PREFIX)/share/doc
 INSTALLDIR := $(DESTDIR)$(PREFIX)
 MANPREFIX  := $(DESTDIR)$(MANPREFIX)
 DOCDIR     := $(DESTDIR)$(DOCDIR)
-
-# DEBUG/RELEASE BUILD
-
-DEBUG ?= 0
-ifeq ($(DEBUG), 1)
-    CXXFLAGS+= -O0 -ggdb
-    BUILD=DEBUG
-else
-    CXXFLAGS+= -O2 -DNDEBUG -Wno-unused-parameter
-    BUILD=RELEASE
-endif
 
 .PHONY: all options clean rebuild check install uninstall
 

@@ -18,14 +18,31 @@
 
 #include "list.h"
 
+#define NYX_PLUGIN_INIT_FUNC "plugin_init"
+
 typedef struct
 {
     const char *name;
     void *handle;
 } plugin_t;
 
-int
-discover_plugins(const char *directory, list_t *plugins);
+typedef struct
+{
+    const char *version;
+
+    /* TODO: more to come */
+} plugin_manager_t;
+
+typedef struct
+{
+    plugin_manager_t *manager;
+    list_t *plugins;
+} plugin_repository_t;
+
+typedef int (*plugin_init_func)(plugin_manager_t *manager);
+
+plugin_repository_t *
+discover_plugins(const char *directory);
 
 #endif
 

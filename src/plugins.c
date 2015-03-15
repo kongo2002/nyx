@@ -44,13 +44,14 @@ get_plugin(const char *name)
 }
 
 static plugin_t *
-init_plugin(const char *path, const char *name)
+init_plugin(const char *path, const char *name, plugin_manager_t *manager)
 {
-    size_t length = strlen(path) + strlen(name) + 4;
-    char *fullpath = xcalloc(length+1, sizeof(char));
+    size_t length = strlen(path) + strlen(name) + 5;
+    char *fullpath = xcalloc(length, sizeof(char));
 
     snprintf(fullpath, length, "%s/%s.so", path, name);
 
+    /* try to acquire dynamic handle */
     void *handle = dlopen(fullpath, RTLD_NOW);
 
     free(fullpath);
@@ -58,6 +59,28 @@ init_plugin(const char *path, const char *name)
     if (!handle)
     {
         log_error("Failed to load plugin '%s': %s", name, dlerror());
+        return NULL;
+    }
+
+    /* we got the dynamic handle, now try to find the initialization function */
+    plugin_init_func init_func = dlsym(handle, NYX_PLUGIN_INIT_FUNC);
+
+    if (init_func == NULL)
+    {
+        log_error("Plugin '%s' does not contain mandatory init func '"
+                NYX_PLUGIN_INIT_FUNC "'", name);
+        dlclose(handle);
+        return NULL;
+    }
+
+    /* invoke the plugin's initialization function */
+    int retval = init_func(manager);
+
+    if (retval < 1)
+    {
+        log_error("Plugin '%s': initialization failed to return with success: %d",
+                name, retval);
+        dlclose(handle);
         return NULL;
     }
 
@@ -69,17 +92,60 @@ init_plugin(const char *path, const char *name)
     return plugin;
 }
 
-int
-discover_plugins(const char *directory, list_t *plugins)
+void
+plugin_destroy(void *plugin)
 {
-    int found = 0;
+    plugin_t *p = plugin;
+
+    if (p == NULL)
+        return;
+
+    free((void *)p->name);
+
+    if (p->handle)
+        dlclose(p->handle);
+
+    free(p);
+}
+
+plugin_repository_t *
+plugin_repository_new(void)
+{
+    plugin_repository_t *repo = xcalloc1(sizeof(plugin_repository_t));
+
+    repo->plugins = list_new(plugin_destroy);
+
+    repo->manager = xcalloc1(sizeof(plugin_manager_t));
+    repo->manager->version = NYX_VERSION;
+
+    return repo;
+}
+
+void
+plugin_repository_destroy(plugin_repository_t *repository)
+{
+    if (repository == NULL)
+        return;
+
+    free(repository->manager);
+    list_destroy(repository->plugins);
+
+    free(repository);
+}
+
+plugin_repository_t *
+discover_plugins(const char *directory)
+{
+    plugin_repository_t *repo = NULL;
 
     if (directory == NULL || *directory == '\0')
-        return found;
+        return NULL;
 
     DIR *dir = opendir(directory);
     if (dir)
     {
+        repo = plugin_repository_new();
+
         struct dirent *entry = NULL;
         while ((entry = readdir(dir)) != NULL)
         {
@@ -88,12 +154,34 @@ discover_plugins(const char *directory, list_t *plugins)
                 continue;
 
             log_debug("Found plugin '%s'", plugin_name);
+
+            plugin_t *plugin = init_plugin(directory, plugin_name, repo->manager);
+
+            /* plugin initialization failed */
+            if (plugin == NULL)
+            {
+                log_warn("Failed to load plugin '%s'", plugin_name);
+                free((void *)plugin_name);
+            }
+            else
+            {
+                list_add(repo->plugins, plugin);
+                log_info("Successfully loaded plugin '%s'", plugin_name);
+            }
         }
 
         closedir(dir);
+
+        /* we can immediately release the whole plugin repository
+         * in case we could not initialize at least one plugin */
+        if (list_size(repo->plugins) < 1)
+        {
+            plugin_repository_destroy(repo);
+            repo = NULL;
+        }
     }
 
-    return found;
+    return repo;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */
