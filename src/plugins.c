@@ -18,6 +18,7 @@
 #include "plugins.h"
 
 #include <dirent.h>
+#include <dlfcn.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -40,6 +41,32 @@ get_plugin(const char *name)
     strncpy(plugin_name, name, len);
 
     return plugin_name;
+}
+
+static plugin_t *
+init_plugin(const char *path, const char *name)
+{
+    size_t length = strlen(path) + strlen(name) + 4;
+    char *fullpath = xcalloc(length+1, sizeof(char));
+
+    snprintf(fullpath, length, "%s/%s.so", path, name);
+
+    void *handle = dlopen(fullpath, RTLD_NOW);
+
+    free(fullpath);
+
+    if (!handle)
+    {
+        log_error("Failed to load plugin '%s': %s", name, dlerror());
+        return NULL;
+    }
+
+    plugin_t *plugin = xcalloc1(sizeof(plugin_t));
+
+    plugin->name = name;
+    plugin->handle = handle;
+
+    return plugin;
 }
 
 int

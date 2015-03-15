@@ -18,6 +18,12 @@
 
 #include "list.h"
 
+typedef struct
+{
+    const char *name;
+    void *handle;
+} plugin_t;
+
 int
 discover_plugins(const char *directory, list_t *plugins);
 
