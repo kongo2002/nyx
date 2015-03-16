@@ -30,7 +30,7 @@ typedef struct
 {
     const char *version;
 
-    /* TODO: more to come */
+    list_t *state_callbacks;
 } plugin_manager_t;
 
 typedef struct
@@ -39,10 +39,22 @@ typedef struct
     list_t *plugins;
 } plugin_repository_t;
 
+typedef void (*plugin_state_callback)(const char *, int, pid_t);
+
+typedef struct
+{
+    const char *name;
+    plugin_state_callback callback;
+} plugin_callback_info_t;
+
 typedef int (*plugin_init_func)(plugin_manager_t *manager);
 
 plugin_repository_t *
 discover_plugins(const char *directory);
+
+void
+plugin_register_state_callback(plugin_manager_t *manager, const char *name,
+        plugin_state_callback callback);
 
 void
 plugin_repository_destroy(plugin_repository_t *repository);

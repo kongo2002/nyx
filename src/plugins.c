@@ -93,19 +93,31 @@ init_plugin(const char *path, const char *name, plugin_manager_t *manager)
 }
 
 static void
-plugin_destroy(void *plugin)
+plugin_destroy(void *obj)
 {
-    plugin_t *p = plugin;
+    plugin_t *plugin = obj;
 
-    if (p == NULL)
+    if (plugin == NULL)
         return;
 
-    free((void *)p->name);
+    free((void *)plugin->name);
 
-    if (p->handle)
-        dlclose(p->handle);
+    if (plugin->handle)
+        dlclose(plugin->handle);
 
-    free(p);
+    free(plugin);
+}
+
+static void
+plugin_manager_destroy(plugin_manager_t *manager)
+{
+    if (manager == NULL)
+        return;
+
+    if (manager->state_callbacks)
+        list_destroy(manager->state_callbacks);
+
+    free(manager);
 }
 
 static plugin_repository_t *
@@ -117,6 +129,7 @@ plugin_repository_new(void)
 
     repo->manager = xcalloc1(sizeof(plugin_manager_t));
     repo->manager->version = NYX_VERSION;
+    repo->manager->state_callbacks = list_new(free);
 
     return repo;
 }
@@ -127,10 +140,27 @@ plugin_repository_destroy(plugin_repository_t *repository)
     if (repository == NULL)
         return;
 
-    free(repository->manager);
+    plugin_manager_destroy(repository->manager);
     list_destroy(repository->plugins);
 
     free(repository);
+}
+
+void
+plugin_register_state_callback(plugin_manager_t *manager, const char *name, plugin_state_callback callback)
+{
+    if (manager == NULL || name == NULL || callback == NULL)
+        return;
+
+    if (manager->state_callbacks == NULL)
+        return;
+
+    plugin_callback_info_t *info = xcalloc1(sizeof(plugin_callback_info_t));
+
+    info->name = name;
+    info->callback = callback;
+
+    list_add(manager->state_callbacks, info);
 }
 
 plugin_repository_t *
