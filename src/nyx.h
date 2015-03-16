@@ -20,6 +20,10 @@
 #include "list.h"
 #include "proc.h"
 
+#ifdef USE_PLUGINS
+#include "plugins.h"
+#endif
+
 #include <stdint.h>
 #include <sys/types.h>
 
@@ -52,6 +56,9 @@ typedef struct
     hash_t *watches;
     list_t *states;
     hash_t *state_map;
+#ifdef USE_PLUGINS
+    plugin_repository_t *plugins;
+#endif
 } nyx_t;
 
 void

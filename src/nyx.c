@@ -323,8 +323,8 @@ initialize_daemon(nyx_t *nyx)
     }
 
 #ifdef USE_PLUGINS
-    /* load plugins */
-    plugin_repository_t *plugins = discover_plugins(nyx->options.plugins);
+    /* load plugins if enabled */
+    nyx->plugins = discover_plugins(nyx->options.plugins);
 #endif
 
     return 1;
@@ -673,6 +673,11 @@ nyx_destroy(nyx_t *nyx)
 
     if (nyx == NULL)
         return;
+
+#ifdef USE_PLUGINS
+    if (nyx->plugins)
+        plugin_repository_destroy(nyx->plugins);
+#endif
 
     /* signal termination via eventfd (if existing) */
     if (nyx->event > 0)
