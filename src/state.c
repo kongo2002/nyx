@@ -806,6 +806,26 @@ process_state(state_t *state, state_e old_state, state_e new_state)
         log_warn("Processing state of watch '%s' failed (PID %d)",
                 state->watch->name, state->pid);
     }
+#ifdef USE_PLUGINS
+    else
+    {
+        plugin_repository_t *repo = state->nyx->plugins;
+
+        if (repo && repo->manager && repo->manager->state_callbacks)
+        {
+            list_node_t *node = repo->manager->state_callbacks->head;
+
+            while (node)
+            {
+                plugin_state_callback cb = node->data;
+
+                cb(state->watch->name, new_state, state->pid);
+
+                node = node->next;
+            }
+        }
+    }
+#endif
 
     return result;
 }
