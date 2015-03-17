@@ -817,9 +817,9 @@ process_state(state_t *state, state_e old_state, state_e new_state)
 
             while (node)
             {
-                plugin_state_callback cb = node->data;
+                plugin_callback_info_t *info = node->data;
 
-                cb(state->watch->name, new_state, state->pid);
+                info->callback(state->watch->name, new_state, state->pid);
 
                 node = node->next;
             }
