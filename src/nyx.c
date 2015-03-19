@@ -219,13 +219,27 @@ daemonize(nyx_t *nyx)
         if (open("/dev/null", O_RDONLY) == -1)
             log_critical_perror("nyx: open");
 
+        /* try to use /var/log/nyx.log otherwise /dev/null */
         close(STDOUT_FILENO);
-        if (open("/dev/null", O_WRONLY) == -1)
-            log_critical_perror("nyx: open");
+        if (nyx->options.syslog ||
+                open("/var/log/nyx.log",
+                    O_WRONLY | O_APPEND | O_CREAT,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) == -1)
+        {
+            if (open("/dev/null", O_WRONLY) == -1)
+                log_critical_perror("nyx: open");
+        }
 
+        /* try to use /var/log/nyx.err otherwise /dev/null */
         close(STDERR_FILENO);
-        if (open("/dev/null", O_RDWR) == -1)
-            log_critical_perror("nyx: open");
+        if (nyx->options.syslog ||
+                open("/var/log/nyx.err",
+                    O_RDWR | O_APPEND | O_CREAT,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) == -1)
+        {
+            if (open("/dev/null", O_RDWR) == -1)
+                log_critical_perror("nyx: open");
+        }
     }
     else
     {
