@@ -131,6 +131,25 @@ check_http(const char *url, unsigned port, http_method_e method)
         return 0;
     }
 
+    /* set timeouts */
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 500 * 1000; /* micro seconds */
+
+    /* set receive timeout */
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval)))
+    {
+        log_perror("nyx: setsockopt");
+        return 0;
+    }
+
+    /* set send timeout */
+    if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(struct timeval)))
+    {
+        log_perror("nyx: setsockopt");
+        return 0;
+    }
+
     memset(&srv, 0, sizeof(struct sockaddr_in));
 
     srv.sin_family = AF_INET;
