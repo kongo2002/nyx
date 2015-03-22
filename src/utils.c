@@ -113,15 +113,15 @@ parse_size_unit(const char *input)
 const char **
 strings_to_null_terminated(list_t *list)
 {
-    unsigned long i = 0, size = list_size(list);
+    unsigned long size = list_size(list);
     const char **output = NULL;
-    list_node_t *node = NULL;
 
     if (size > 0)
     {
+        unsigned long i = 0;
         output = xcalloc(size + 1, sizeof(char *));
 
-        node = list->head;
+        list_node_t *node = list->head;
         while (node)
         {
             output[i++] = node->data;
