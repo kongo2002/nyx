@@ -37,6 +37,7 @@
 #include <sys/eventfd.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 /**
@@ -451,6 +452,28 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
 
     if (state != NULL)
     {
+        /* port and HTTP check should only be taken into account
+         * if the state is running at least for some time */
+        if (event == PROC_HTTP_CHECK_FAILED || event == PROC_PORT_NOT_OPEN)
+        {
+            if (state->history == NULL || state->history->count < 1)
+                return 1;
+
+            time_t now = time(NULL);
+            timestack_elem_t *newest = &state->history->elements[0];
+            int last_state_ago = difftime(now, newest->time);
+
+            /* TODO: configurable */
+            if (last_state_ago < 30)
+            {
+                log_debug("Ignoring process event %d of process '%s' "
+                    "because the latest state change was just %ds ago",
+                    event, proc->name, last_state_ago);
+
+                return 1;
+            }
+        }
+
         set_state(state, STATE_RESTARTING);
         return 0;
     }

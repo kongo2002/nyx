@@ -253,6 +253,46 @@ exceeds_mem(unsigned long value, void *obj)
     return proc->watch && proc->watch->max_memory && value >= proc->watch->max_memory;
 }
 
+static int
+proc_port_check(proc_stat_t *proc, nyx_t *nyx)
+{
+    watch_t *watch = proc->watch;
+
+    if (!watch->port_check)
+        return 1;
+
+    if (!check_port(watch->port_check))
+    {
+        log_warn("Process '%s': port %u is not available",
+                proc->name, watch->port_check);
+
+        return nyx->proc->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
+    }
+
+    return 1;
+}
+
+static int
+proc_http_check(proc_stat_t *proc, nyx_t *nyx)
+{
+    watch_t *watch = proc->watch;
+
+    if (watch->http_check == NULL)
+        return 1;
+
+    if (!check_http(watch->http_check, watch->http_check_port, watch->http_check_method))
+    {
+        log_warn("Process '%s': HTTP check failed - %s %s",
+                proc->name,
+                http_method_to_string(watch->http_check_method),
+                watch->http_check);
+
+        return nyx->proc->event_handler(PROC_HTTP_CHECK_FAILED, proc, nyx);
+    }
+
+    return 1;
+}
+
 void *
 nyx_proc_start(void *state)
 {
@@ -319,28 +359,12 @@ nyx_proc_start(void *state)
             }
 
             /* check port if specified */
-            if (handle_events &&
-                    proc->watch->port_check &&
-                    !check_port(proc->watch->port_check))
-            {
-                log_warn("Process '%s': port %u is not available",
-                        proc->name, proc->watch->port_check);
-
-                handle_events = sys->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
-            }
+            if (handle_events)
+                handle_events = proc_port_check(proc, nyx);
 
             /* check HTTP endpoint if specified */
-            if (handle_events &&
-                    proc->watch->http_check &&
-                    !check_http(proc->watch->http_check, proc->watch->http_check_port, proc->watch->http_check_method))
-            {
-                log_warn("Process '%s': HTTP check failed - %s %s",
-                        proc->name,
-                        http_method_to_string(proc->watch->http_check_method),
-                        proc->watch->http_check);
-
-                sys->event_handler(PROC_HTTP_CHECK_FAILED, proc, nyx);
-            }
+            if (handle_events)
+                proc_http_check(proc, nyx);
 
             node = node->next;
         }
