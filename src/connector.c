@@ -396,18 +396,24 @@ parse_command(const char **input)
 static ssize_t
 send_command(int socket, const char **commands, int quiet)
 {
-    ssize_t sum = 0, sent = 0;
+    ssize_t sum = 0, sent = 0, i = 0;
+    unsigned int num_args = count_args(commands);
     const char **cmd = commands;
 
     if (!quiet)
         printf("<<< %s\n", *cmd);
 
-    while (*cmd && (sent = send(socket, *cmd, strlen(*cmd), 0)) > 0)
+    while (*cmd && (sent = send(socket, *cmd, strlen(*cmd), MSG_NOSIGNAL)) > 0)
     {
-        if (send(socket, " ", 1, 0) < 1)
+        sum += sent;
+
+        if (++i >= num_args)
+            break;
+
+        if (send(socket, " ", 1, MSG_NOSIGNAL) < 1)
             return -1;
 
-        sum += sent + 1;
+        sum += 1;
         cmd++;
     }
 
