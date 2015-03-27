@@ -393,34 +393,68 @@ parse_command(const char **input)
     return NULL;
 }
 
-static ssize_t
-send_command(int socket, const char **commands, int quiet)
+static size_t
+get_message_length(const char **strings, int count)
 {
-    ssize_t sum = 0, sent = 0, i = 0;
-    unsigned int num_args = count_args(commands);
-    const char **cmd = commands;
+    int i = count;
+    size_t length = 0;
+    const char **string = strings;
 
-    if (!quiet)
-        printf("<<< %s\n", *cmd);
-
-    while (*cmd && (sent = send(socket, *cmd, strlen(*cmd), MSG_NOSIGNAL)) > 0)
+    while (i-- > 0)
     {
-        sum += sent;
+        if (*string)
+            length += strlen(*string);
 
-        if (++i >= num_args)
-            break;
+        string++;
+    }
 
-        if (send(socket, " ", 1, MSG_NOSIGNAL) < 1)
-            return -1;
+    return length + count - 1;
+}
 
-        sum += 1;
+static const char *
+get_message(const char **commands, int count)
+{
+    size_t length = get_message_length(commands, count);
+    const char *message = xcalloc(length + 1, sizeof(char));
+    const char **cmd = commands;
+    char *start = (char *)message;
+
+    while (count-- > 0)
+    {
+        int len = sprintf(start, "%s", *cmd);
+
+        if (count > 0)
+        {
+            start += len;
+            *start = ' ';
+            start++;
+        }
+
         cmd++;
     }
 
-    if (sent < 0)
-        return -1;
+    return message;
+}
 
-    return sum;
+static ssize_t
+send_command(int socket, const char **commands, int quiet)
+{
+    ssize_t sent = 0;
+    unsigned int num_args = count_args(commands);
+    const char *message = get_message(commands, num_args);
+
+    if (!quiet)
+        printf("<<< %s\n", *commands);
+
+    /* send the terminating NULL as well */
+    sent = send(socket, message, strlen(message)+1, MSG_NOSIGNAL);
+
+    if (sent == -1)
+        log_perror("nyx: send");
+
+    free((void *)message);
+
+    return sent;
 }
 
 static void
