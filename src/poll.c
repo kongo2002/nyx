@@ -88,7 +88,6 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
             }
             else
             {
-                /* TODO: try to determine pid */
                 log_debug("Poll: watch '%s' has no PID (yet)",
                         state->watch->name);
             }
