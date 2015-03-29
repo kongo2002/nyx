@@ -44,7 +44,7 @@ wait_interval(int timeout)
 int
 poll_loop(nyx_t *nyx, poll_handler_t handler)
 {
-    int interval = nyx->options.polling_interval;
+    int interval = MAX(nyx->options.polling_interval, 1);
 
     /* reset exit state in case this is a restart */
     need_exit = 0;

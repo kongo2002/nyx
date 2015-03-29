@@ -650,6 +650,7 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
     }
 
 DECLARE_NYX_FUNC_VALUE(uatoi, polling_interval)
+DECLARE_NYX_FUNC_VALUE(uatoi, history_size)
 DECLARE_NYX_FUNC_VALUE(strdup, plugins)
 
 #undef DECLARE_NYX_FUNC_VALUE
@@ -657,6 +658,7 @@ DECLARE_NYX_FUNC_VALUE(strdup, plugins)
 static struct config_parser_map nyx_value_map[] =
 {
     SCALAR_HANDLER("polling_interval", handle_nyx_value_polling_interval),
+    SCALAR_HANDLER("history_size", handle_nyx_value_history_size),
     SCALAR_HANDLER("plugins", handle_nyx_value_plugins)
 };
 

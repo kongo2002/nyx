@@ -714,7 +714,7 @@ state_new(watch_t *watch, nyx_t *nyx)
     state->nyx = nyx;
     state->watch = watch;
     state->state = STATE_UNMONITORED;
-    state->history = timestack_new(20);
+    state->history = timestack_new(MAX(nyx->options.history_size, 20));
 
     /* initialize unnamed semaphore
      * - process-local semaphore
