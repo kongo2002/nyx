@@ -46,6 +46,7 @@ The daemon can be configured via a [YAML][yaml] file. An examplary configuration
 file might look like this:
 
 ```yaml
+# list of applications that will be watched by nyx
 watches:
     # the name of the application
     app_name:
@@ -72,6 +73,17 @@ watches:
         env:
             SOME: value
             FOO: bar
+
+# general nyx settings
+nyx:
+    # interval between consecutive application checks (in sec)
+    # this setting is used only in case the event interface
+    # using the kernel userspace connector cannot be used
+    polling_interval: 5
+
+    # size of the history of per-application states
+    # (which can be observed via the 'watches' command)
+    history_size: 20
 ```
 
 
