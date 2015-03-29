@@ -82,7 +82,7 @@ nyx:
     polling_interval: 5
 
     # size of the history of per-application states
-    # (which can be observed via the 'watches' command)
+    # (which can be observed via the 'history' command)
     history_size: 20
 ```
 
