@@ -35,6 +35,8 @@
 
 #define NYX_SOCKET_ADDR "/tmp/nyx.sock"
 
+#define NYX_MAX_MSG_LEN 128
+
 static volatile int need_exit = 0;
 
 static int
@@ -415,10 +417,16 @@ static const char *
 get_message(const char **commands, int count)
 {
     size_t length = get_message_length(commands, count);
-    const char *message = xcalloc(length + 1, sizeof(char));
-    const char **cmd = commands;
-    char *start = (char *)message;
 
+    /* buffer size: header (2 chars) + message length + NULL */
+    char *message = xcalloc(length + 3, sizeof(char));
+    const char **cmd = commands;
+    char *start = message + 2;
+
+    /* write header = message length */
+    sprintf(message, "%2lu", length);
+
+    /* write commands itself */
     while (count-- > 0)
     {
         int len = sprintf(start, "%s", *cmd);
@@ -444,10 +452,12 @@ send_command(int socket, const char **commands, int quiet)
     const char *message = get_message(commands, num_args);
 
     if (!quiet)
-        printf("<<< %s\n", *commands);
+    {
+        /* skip header */
+        printf("<<< %s\n", message + 2);
+    }
 
-    /* send the terminating NULL as well */
-    sent = send(socket, message, strlen(message)+1, MSG_NOSIGNAL);
+    sent = send(socket, message, strlen(message), MSG_NOSIGNAL);
 
     if (sent == -1)
         log_perror("nyx: send");
@@ -551,7 +561,7 @@ handle_command(command_t *cmd, int client, const char **input, nyx_t *nyx)
         return 0;
 
     int retval = 0;
-    sender_callback_t *callback = xcalloc(1, sizeof(sender_callback_t));
+    sender_callback_t *callback = xcalloc1(sizeof(sender_callback_t));
 
     callback->command = cmd->type;
     callback->client = client;
@@ -574,50 +584,91 @@ init_nyx_addr(struct sockaddr_un *addr)
 static int
 handle_request(struct epoll_event *event, nyx_t *nyx)
 {
-    int success = 1;
+    int success = 0;
     ssize_t received = 0;
-    int fd = event->data.fd;
-    char buffer[512] = {0};
 
-    memset(buffer, 0, 512);
-    received = recv(fd, buffer, LEN(buffer)-1, 0);
+    epoll_extra_data_t *extra = event->data.ptr;
+    int fd = extra->fd;
+
+    /* start of new request? */
+    if (extra->length == 0)
+    {
+        /* initialize message buffer */
+        extra->buffer = xcalloc(NYX_MAX_MSG_LEN + 1, sizeof(char));
+
+        /* read message length header */
+        received = recv(fd, extra->buffer, 2, 0);
+
+        if (received != 2)
+        {
+            if (received == -1)
+                log_perror("nyx: recv");
+
+            goto close;
+        }
+
+        int parsed = sscanf(extra->buffer, "%2u", &extra->length);
+
+        if (parsed != 1 || extra->length < 1)
+            goto close;
+
+        extra->length = MIN(NYX_MAX_MSG_LEN, extra->length);
+    }
+
+    received = recv(fd, extra->buffer + extra->pos, extra->length - extra->pos, 0);
 
     if (received < 1)
     {
         if (received < 0)
         {
-            if (errno == EINTR)
+            if (errno == EAGAIN)
+                return 1;
+            else
             {
-                log_debug("Connector: caught interrupt");
-                success = 0;
-            }
-
-            if (errno != EAGAIN)
                 log_perror("nyx: recv");
+                goto close;
+            }
         }
     }
-    else
+
+    extra->pos += received;
+
+    if (extra->pos < extra->length)
+        return 1;
+
+    /* parse input buffer */
+    command_t *cmd = NULL;
+    const char **commands = split_string(extra->buffer);
+
+    if ((cmd = parse_command(commands)) != NULL)
     {
-        /* parse input buffer */
-        command_t *cmd = NULL;
-        const char **commands = split_string(buffer);
+        log_debug("Handling command '%s' (%d)",
+                cmd->name, cmd->type);
 
-        if ((cmd = parse_command(commands)) != NULL)
+        if (!handle_command(cmd, fd, commands, nyx))
         {
-            log_debug("Handling command '%s' (%d)",
+            log_warn("Failed to process command '%s' (%d)",
                     cmd->name, cmd->type);
-
-            if (!handle_command(cmd, fd, commands, nyx))
-            {
-                log_warn("Failed to process command '%s' (%d)",
-                        cmd->name, cmd->type);
-            }
         }
+    }
 
-        strings_free((char **)commands);
+    strings_free((char **)commands);
+    success = 1;
+
+close:
+    extra->pos = 0;
+    extra->length = 0;
+
+    if (extra->buffer)
+    {
+        free(extra->buffer);
+        extra->buffer = NULL;
     }
 
     close(fd);
+
+    free(extra);
+    event->data.ptr = NULL;
 
     return success;
 }
@@ -627,10 +678,12 @@ handle_eventfd(struct epoll_event *event, nyx_t *nyx)
 {
     int err = 0;
     uint64_t value = 0;
+    epoll_extra_data_t *extra = event->data.ptr;
+    int fd = extra->fd;
 
     log_debug("Received epoll event on eventfd interface (%d)", nyx->event);
 
-    err = read(event->data.fd, &value, sizeof(value));
+    err = read(fd, &value, sizeof(value));
 
     if (err == -1)
         log_perror("nyx: read");
@@ -645,8 +698,9 @@ connector_run(nyx_t *nyx)
     static int max_conn = 16;
 
     int sock = 0, error = 0, epfd = 0;
+
+    struct epoll_event base_ev, fd_ev, ev;
     struct epoll_event *events = NULL;
-    struct epoll_event ev;
 
     log_debug("Starting connector");
 
@@ -704,7 +758,7 @@ connector_run(nyx_t *nyx)
     }
 
     /* add new listening socket to epoll instance */
-    if (!add_epoll_socket(sock, &ev, epfd))
+    if (!add_epoll_socket(sock, &base_ev, epfd))
         goto teardown;
 
     /* add eventfd socket to epoll as well */
@@ -713,7 +767,7 @@ connector_run(nyx_t *nyx)
         if (!unblock_socket(nyx->event))
             goto teardown;
 
-        if (!add_epoll_socket(nyx->event, &ev, epfd))
+        if (!add_epoll_socket(nyx->event, &fd_ev, epfd))
             goto teardown;
     }
 
@@ -745,20 +799,26 @@ connector_run(nyx_t *nyx)
         /* process all received events */
         for (i = 0, event = events; i < n; event++, i++)
         {
+            epoll_extra_data_t *extra = event->data.ptr;
+
             /* error on the socket */
             if ((event->events & EPOLLERR) ||
                 (event->events & EPOLLHUP) ||
+                (event->events & EPOLLRDHUP) ||
                 !(event->events & EPOLLIN))
             {
-                log_warn("epoll error on socket");
-                close(event->data.fd);
+                close(extra->fd);
 
+                if (extra->buffer)
+                    free(extra->buffer);
+
+                free(extra);
                 continue;
             }
 
             /* check for events on listening socket
              * -> accept a new connection */
-            if (event->data.fd == sock)
+            if (extra->fd == sock)
             {
                 int client = 0;
                 struct sockaddr_un caddr;
@@ -781,11 +841,13 @@ connector_run(nyx_t *nyx)
 
                 if (!add_epoll_socket(client, &ev, epfd))
                 {
+                    /* TODO: free extra data? */
+
                     close(client);
                     continue;
                 }
             }
-            else if (event->data.fd == nyx->event)
+            else if (extra->fd == nyx->event)
             {
                 handle_eventfd(event, nyx);
             }
@@ -807,7 +869,22 @@ teardown:
     unlink(NYX_SOCKET_ADDR);
 
     if (events)
+    {
         free(events);
+        events = NULL;
+    }
+
+    if (base_ev.data.ptr)
+    {
+        free(base_ev.data.ptr);
+        base_ev.data.ptr = NULL;
+    }
+
+    if (nyx->event > 0 && fd_ev.data.ptr)
+    {
+        free(fd_ev.data.ptr);
+        fd_ev.data.ptr = NULL;
+    }
 
     log_debug("Connector: terminated");
 

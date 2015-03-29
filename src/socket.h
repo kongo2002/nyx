@@ -29,6 +29,14 @@ typedef enum
     HTTP_TRACE,
 } http_method_e;
 
+typedef struct
+{
+    int fd;
+    char *buffer;
+    unsigned int pos;
+    unsigned int length;
+} epoll_extra_data_t;
+
 http_method_e
 http_method_from_string(const char *str);
 
@@ -46,6 +54,9 @@ unblock_socket(int socket);
 
 int
 add_epoll_socket(int socket, struct epoll_event *event, int epoll);
+
+epoll_extra_data_t *
+epoll_extra_data_new(int fd);
 
 #endif
 

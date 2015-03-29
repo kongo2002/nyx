@@ -256,8 +256,10 @@ add_epoll_socket(int socket, struct epoll_event *event, int epoll)
 
     memset(event, 0, sizeof(struct epoll_event));
 
-    event->events = EPOLLIN;
-    event->data.fd = socket;
+    epoll_extra_data_t *data = epoll_extra_data_new(socket);
+
+    event->data.ptr = data;
+    event->events = EPOLLIN | EPOLLRDHUP;
 
     error = epoll_ctl(epoll, EPOLL_CTL_ADD, socket, event);
 
@@ -265,6 +267,16 @@ add_epoll_socket(int socket, struct epoll_event *event, int epoll)
         log_perror("nyx: epoll_ctl");
 
     return !error;
+}
+
+epoll_extra_data_t *
+epoll_extra_data_new(int fd)
+{
+    epoll_extra_data_t *extra = xcalloc1(sizeof(epoll_extra_data_t));
+
+    extra->fd = fd;
+
+    return extra;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

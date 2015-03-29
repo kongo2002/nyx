@@ -190,10 +190,11 @@ static void handle_eventfd(struct epoll_event *event, nyx_t *nyx)
 {
     int err = 0;
     uint64_t value = 0;
+    epoll_extra_data_t *extra = event->data.ptr;
 
     log_debug("Received epoll event on eventfd interface (%d)", nyx->event);
 
-    err = read(event->data.fd, &value, sizeof(value));
+    err = read(extra->fd, &value, sizeof(value));
 
     if (err == -1)
         log_perror("nyx: read");
@@ -209,7 +210,8 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 {
     static int max_conn = 16;
     int pid = 0, rc = 0, epfd = 0;
-    struct epoll_event ev;
+
+    struct epoll_event base_ev, fd_ev;
     struct epoll_event *events = NULL;
 
     process_event_data_t *event_data = new_event_data();
@@ -237,7 +239,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
     if (!unblock_socket(nl_sock))
         goto teardown;
 
-    if (!add_epoll_socket(nl_sock, &ev, epfd))
+    if (!add_epoll_socket(nl_sock, &base_ev, epfd))
         goto teardown;
 
     /* add eventfd socket to epoll as well */
@@ -246,7 +248,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
         if (!unblock_socket(nyx->event))
             goto teardown;
 
-        if (!add_epoll_socket(nyx->event, &ev, epfd))
+        if (!add_epoll_socket(nyx->event, &fd_ev, epfd))
             goto teardown;
     }
 
@@ -261,7 +263,8 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 
         for (i = 0, event = events; i < n; event++, i++)
         {
-            int fd = event->data.fd;
+            epoll_extra_data_t *extra = event->data.ptr;
+            int fd = extra->fd;
 
             /* handle eventfd */
             if (fd == nyx->event)
@@ -311,6 +314,18 @@ teardown:
     {
         free(events);
         events = NULL;
+    }
+
+    if (base_ev.data.ptr)
+    {
+        free(base_ev.data.ptr);
+        base_ev.data.ptr = NULL;
+    }
+
+    if (nyx->event > 0 && fd_ev.data.ptr)
+    {
+        free(fd_ev.data.ptr);
+        fd_ev.data.ptr = NULL;
     }
 
     if (epfd > 0)
