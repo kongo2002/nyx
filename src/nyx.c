@@ -744,8 +744,10 @@ nyx_destroy(nyx_t *nyx)
 
     clear_watches(nyx);
 
+#ifdef USE_PLUGINS
     if (nyx->options.plugins)
         free((void *)nyx->options.plugins);
+#endif
 
     if (nyx->options.commands)
     {
