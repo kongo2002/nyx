@@ -19,6 +19,8 @@ sane default configuration values.
 - observe processes' CPU/memory utilization
 - check for opened ports if configured
 - validate configurable HTTP endpoints
+- minimal dependencies
+- small memory footprint
 
 The project is inspired by [god][god] - the great ruby process monitor.
 
