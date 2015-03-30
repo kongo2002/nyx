@@ -5,6 +5,21 @@
 
 [![build status](https://api.travis-ci.org/kongo2002/nyx.svg)][travis]
 
+You can easily configure numerous processes that should be monitored and watched
+to be in a running and healthy state and restarted if necessary. You should be
+up and running with almost zero configuration at all as *nyx* tries to ship with
+sane default configuration values.
+
+
+### Features
+
+- control applications via command interface (unix domain socket)
+- [docker][docker] compatible `init` replacement
+- [YAML][yaml] configuration
+- observe processes' CPU/memory utilization
+- check for opened ports if configured
+- validate configurable HTTP endpoints
+
 The project is inspired by [god][god] - the great ruby process monitor.
 
 
