@@ -90,7 +90,20 @@ print_help(void)
          "   -q  --quiet     (output error messages only)\n"
          "   -C  --no-color  (no terminal coloring)\n"
          "   -V  --version   (version information)\n"
-         "   -h  --help      (print this help)");
+         "   -h  --help      (print this help)\n"
+         "\n"
+         "Configuration:\n"
+#ifdef USE_PLUGINS
+         "   plugin support: yes\n"
+#else
+         "   plugin support: no\n"
+#endif
+#ifdef USE_SSL
+         "   SSL support:    yes"
+#else
+         "   SSL support:    no"
+#endif
+         );
     exit(EXIT_SUCCESS);
 }
 
