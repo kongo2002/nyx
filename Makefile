@@ -37,6 +37,17 @@ else
     TDEPS   := $(filter-out src/plugins.o, $(TDEPS))
 endif
 
+# SSL
+
+SSL ?= 0
+ifeq ($(SSL), 1)
+    LIBS+= -lssl -lcrypto
+    CXXFLAGS+= -DUSE_SSL
+else
+    OBJECTS := $(filter-out src/ssl.o, $(OBJECTS))
+    TDEPS   := $(filter-out src/ssl.o, $(TDEPS))
+endif
+
 # TRY TO DETERMINE GIT VERSION
 
 GITVERSION ?= $(shell ./utils/git-version.sh)
