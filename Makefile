@@ -32,9 +32,11 @@ PLUGINS ?= 0
 ifeq ($(PLUGINS), 1)
     LIBS+= -ldl -rdynamic
     CXXFLAGS+= -DUSE_PLUGINS
+    HAS_PLUGINS := yes
 else
     OBJECTS := $(filter-out src/plugins.o, $(OBJECTS))
     TDEPS   := $(filter-out src/plugins.o, $(TDEPS))
+    HAS_PLUGINS := no
 endif
 
 # SSL
@@ -43,9 +45,11 @@ SSL ?= 0
 ifeq ($(SSL), 1)
     LIBS+= -lssl -lcrypto
     CXXFLAGS+= -DUSE_SSL
+    HAS_SSL := yes
 else
     OBJECTS := $(filter-out src/ssl.o, $(OBJECTS))
     TDEPS   := $(filter-out src/ssl.o, $(TDEPS))
+    HAS_SSL := no
 endif
 
 # TRY TO DETERMINE GIT VERSION
@@ -73,6 +77,8 @@ options:
 	@echo nyx build options
 	@echo "build      : $(BUILD)"
 	@echo "CC         : $(CC)"
+	@echo "PLUGINS    : $(HAS_PLUGINS)"
+	@echo "SSL        : $(HAS_SSL)"
 	@echo "CXXFLAGS   : $(CXXFLAGS)"
 	@echo "INSTALLDIR : $(INSTALLDIR)"
 	@echo "MANPREFIX  : $(MANPREFIX)"
