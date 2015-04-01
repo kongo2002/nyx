@@ -28,6 +28,7 @@ typedef enum
     CMD_RESTART,
     CMD_STATUS,
     CMD_HISTORY,
+    CMD_CONFIG,
     CMD_WATCHES,
     CMD_RELOAD,
     CMD_QUIT,

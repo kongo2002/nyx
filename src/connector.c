@@ -55,7 +55,7 @@ send_format_msg(sender_callback_t *cb, const char *format, va_list values)
         int res = 0;
 
         /* send message itself */
-        if ((res = send(cb->client, msg, length, 0)) < 0)
+        if ((res = send(cb->client, msg, length, MSG_NOSIGNAL)) < 0)
             log_perror("nyx: send");
 
         if (res > 0)
@@ -65,7 +65,7 @@ send_format_msg(sender_callback_t *cb, const char *format, va_list values)
             sent += res;
 
             /* send newline */
-            if ((res = send(cb->client, newline, 1, 0)) < 0)
+            if ((res = send(cb->client, newline, 1, MSG_NOSIGNAL)) < 0)
                 log_perror("nyx: send");
             else
                 sent += res;
@@ -108,6 +108,44 @@ handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, stat
     cb->sender(cb, "requested %s for watch '%s'",
             state_to_human_string(new_state),
             name);
+
+    return 1;
+}
+
+static void
+send_strings(sender_callback_t *cb, const char *key, const char **strings)
+{
+    const char **string = strings;
+
+    if (*string == NULL)
+        return;
+
+    cb->sender(cb, "%s:", key);
+
+    while (*string)
+    {
+        cb->sender(cb, "  '%s'", *string);
+        string++;
+    }
+}
+
+static int
+handle_config(sender_callback_t *cb, const char **input, nyx_t *nyx)
+{
+    const char *name = input[1];
+    state_t *state = hash_get(nyx->state_map, name);
+
+    if (state == NULL)
+    {
+        cb->sender(cb, "unknown watch '%s'", name);
+        return 0;
+    }
+
+    /* TODO: abstract this watch config print somewhere */
+
+    cb->sender(cb, "name: %s", name);
+
+    send_strings(cb, "start", state->watch->start);
 
     return 1;
 }
@@ -294,6 +332,8 @@ static command_t commands[] =
             "request the watch's status"),
     CMD(CMD_HISTORY,    "history",    handle_history,    1,
             "get the latest events of the specified watch"),
+    CMD(CMD_CONFIG,     "config",     handle_config,     1,
+            "get the configuration of the specified watch"),
     CMD(CMD_RELOAD,     "reload",     handle_reload,     0,
             "reload the nyx configuration"),
     CMD(CMD_TERMINATE,  "terminate",  handle_terminate,  0,
@@ -650,6 +690,11 @@ handle_request(struct epoll_event *event, nyx_t *nyx)
             log_warn("Failed to process command '%s' (%d)",
                     cmd->name, cmd->type);
         }
+    }
+    else
+    {
+        const char error[] = "unknown command\n";
+        send(fd, error, LEN(error), MSG_NOSIGNAL);
     }
 
     strings_free((char **)commands);

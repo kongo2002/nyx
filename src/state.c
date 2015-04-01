@@ -923,7 +923,8 @@ state_loop(state_t *state)
         }
 
         /* check for flapping processes
-         * meaning 5 start/stop events within 60 seconds */
+         * meaning 5 start/stop events within 60 seconds
+         * TODO: configurable */
         if (is_flapping(state, 5, 60))
         {
             log_warn("Watch '%s' appears to be flapping - delay for 5 minutes",
