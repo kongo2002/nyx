@@ -113,20 +113,42 @@ handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, stat
 }
 
 static void
-send_strings(sender_callback_t *cb, const char *key, const char **strings)
+send_strings(sender_callback_t *cb, const char *name, const char **strings)
 {
     const char **string = strings;
 
-    if (*string == NULL)
+    if (string == NULL || *string == NULL)
         return;
 
-    cb->sender(cb, "%s:", key);
+    cb->sender(cb, "%s:", name);
 
     while (*string)
     {
         cb->sender(cb, "  '%s'", *string);
         string++;
     }
+}
+
+static void
+send_keys(sender_callback_t *cb, const char *name, hash_t *keys)
+{
+    if (keys == NULL || hash_count(keys) < 1)
+        return;
+
+    cb->sender(cb, "%s:", name);
+
+    const char *key = NULL;
+    void *data = NULL;
+    hash_iter_t *iter = hash_iter_start(keys);
+
+    while (hash_iter(iter, &key, &data))
+    {
+        const char *value = data;
+
+        cb->sender(cb, "  %s: %s", key, value);
+    }
+
+    free(iter);
 }
 
 static int
@@ -141,11 +163,44 @@ handle_config(sender_callback_t *cb, const char **input, nyx_t *nyx)
         return 0;
     }
 
-    /* TODO: abstract this watch config print somewhere */
+    watch_t *watch = state->watch;
 
     cb->sender(cb, "name: %s", name);
 
-    send_strings(cb, "start", state->watch->start);
+    send_strings(cb, "start", watch->start);
+    send_strings(cb, "stop", watch->stop);
+
+    if (watch->stop_timeout)
+        cb->sender(cb, "stop_timeout: %u", watch->stop_timeout);
+
+    if (watch->dir)
+        cb->sender(cb, "dir: %s", watch->dir);
+
+    if (watch->uid)
+        cb->sender(cb, "uid: %s", watch->uid);
+
+    if (watch->gid)
+        cb->sender(cb, "gid: %s", watch->gid);
+
+    if (watch->max_memory)
+        cb->sender(cb, "max_memory: %lu", watch->max_memory);
+
+    if (watch->max_cpu)
+        cb->sender(cb, "max_memory: %u", watch->max_cpu);
+
+    if (watch->port_check)
+        cb->sender(cb, "port_check: %u", watch->port_check);
+
+    if (watch->http_check)
+    {
+        cb->sender(cb, "http_check: %s", watch->http_check);
+        cb->sender(cb, "http_check_method: %s",
+                http_method_to_string(watch->http_check_method));
+        cb->sender(cb, "http_check_port: %u",
+                watch->http_check_port ? watch->http_check_port : 80);
+    }
+
+    send_keys(cb, "env", watch->env);
 
     return 1;
 }
