@@ -363,7 +363,7 @@ handle_watch_env_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 }
 
 static parse_info_t *
-handle_watch_env_end(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
+handle_watch_env_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
     parse_info_t *end_info = handle_mapping_end(info, event, data);
 
