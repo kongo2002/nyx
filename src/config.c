@@ -363,6 +363,16 @@ handle_watch_env_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 }
 
 static parse_info_t *
+handle_watch_env_end(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
+{
+    parse_info_t *end_info = handle_mapping_end(info, event, data);
+
+    end_info->handler[YAML_SCALAR_EVENT] = handle_watch_map_key;
+
+    return end_info;
+}
+
+static parse_info_t *
 handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
 {
     log_debug("handle_watch_env");
@@ -374,7 +384,7 @@ handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
         watch->env = hash_new(free);
 
     new_info->handler[YAML_SCALAR_EVENT] = handle_watch_env_key;
-    new_info->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
+    new_info->handler[YAML_MAPPING_END_EVENT] = handle_watch_env_end;
 
     return new_info;
 }
@@ -411,7 +421,11 @@ handle_watch_http_check_end(parse_info_t *info, yaml_event_t *event, void *data)
         free(winfo);
     }
 
-    return handle_mapping_end(info, event, data);
+    parse_info_t *end_info = handle_mapping_end(info, event, data);
+
+    end_info->handler[YAML_SCALAR_EVENT] = handle_watch_map_key;
+
+    return end_info;
 }
 
 #define DECLARE_WINFO_FUNC(name_, func_) \
