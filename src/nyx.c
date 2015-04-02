@@ -254,6 +254,9 @@ daemonize(nyx_t *nyx)
             if (open("/dev/null", O_RDWR) == -1)
                 log_critical_perror("nyx: open");
         }
+
+        /* refresh to new daemon pid */
+        nyx->pid = getpid();
     }
     else
     {
