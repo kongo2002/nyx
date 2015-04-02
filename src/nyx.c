@@ -263,8 +263,6 @@ daemonize(nyx_t *nyx)
         if (!write_pid(pid, "nyx", nyx))
             log_warn("Failed to persist PID (%d) of running nyx instance", pid);
 
-        nyx->pid = pid;
-
         log_info("Daemonized nyx on PID %d", pid);
         exit(EXIT_SUCCESS);
     }
