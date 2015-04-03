@@ -109,7 +109,13 @@ build_request(const char *url, http_method_e method)
 
     char *request = xcalloc(length, sizeof(char));
 
-    snprintf(request, length, REQUEST_TEMPLATE, mtd, url ? url : "");
+    const char *path = url ? url : "";
+
+    /* remove leading slash if necessary */
+    if (*path == '/')
+        path = path + 1;
+
+    snprintf(request, length, REQUEST_TEMPLATE, mtd, path);
 
     return request;
 }
