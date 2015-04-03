@@ -146,14 +146,14 @@ check_http(const char *url, unsigned port, http_method_e method)
     if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval)))
     {
         log_perror("nyx: setsockopt");
-        return 0;
+        goto end;
     }
 
     /* set send timeout */
     if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(struct timeval)))
     {
         log_perror("nyx: setsockopt");
-        return 0;
+        goto end;
     }
 
     memset(&srv, 0, sizeof(struct sockaddr_in));
