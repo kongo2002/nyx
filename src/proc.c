@@ -230,20 +230,6 @@ nyx_proc_terminate(void)
     need_exit = 1;
 }
 
-static void
-wait_interval(unsigned int seconds)
-{
-    if (need_exit)
-        return;
-
-    struct timeval tv;
-
-    tv.tv_usec = 0;
-    tv.tv_sec = seconds;
-
-    select(1, NULL, NULL, NULL, &tv);
-}
-
 static int
 exceeds_cpu(double value, void *obj)
 {

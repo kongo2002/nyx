@@ -110,6 +110,32 @@ parse_size_unit(const char *input)
     return 0;
 }
 
+void
+wait_interval(unsigned int seconds)
+{
+    struct timeval tv;
+
+    tv.tv_usec = 0;
+    tv.tv_sec = seconds;
+
+    select(1, NULL, NULL, NULL, &tv);
+}
+
+void
+wait_interval_fd(int fd, unsigned int seconds)
+{
+    struct timeval tv;
+
+    tv.tv_usec = 0;
+    tv.tv_sec = seconds;
+
+    fd_set set;
+    FD_ZERO(&set);
+    FD_SET(fd, &set);
+
+    select(fd+1, &set, NULL, NULL, &tv);
+}
+
 const char **
 strings_to_null_terminated(list_t *list)
 {

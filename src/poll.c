@@ -18,6 +18,7 @@
 #include "poll.h"
 #include "process.h"
 #include "state.h"
+#include "utils.h"
 
 #include <unistd.h>
 
@@ -28,19 +29,6 @@ on_terminate(UNUSED int signum)
 {
     log_debug("Caught termination signal - exiting polling manager loop");
     need_exit = 1;
-}
-
-static void
-wait_interval(int timeout)
-{
-    if (need_exit)
-        return;
-
-    struct timeval tv;
-    tv.tv_usec = 0;
-    tv.tv_sec = timeout;
-
-    select(1, NULL, NULL, NULL, &tv);
 }
 
 int
@@ -61,7 +49,7 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
 
         if (!states)
         {
-            wait_interval(interval);
+            wait_interval_fd(nyx->event, interval);
             continue;
         }
 
@@ -97,7 +85,7 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
             node = node->next;
         }
 
-        wait_interval(interval);
+        wait_interval_fd(nyx->event, interval);
     }
 
     return 1;

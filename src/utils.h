@@ -33,6 +33,12 @@ split_string(const char *string);
 void
 strings_free(char **strings);
 
+void
+wait_interval(unsigned int seconds);
+
+void
+wait_interval_fd(int fd, unsigned int seconds);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

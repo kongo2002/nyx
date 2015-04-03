@@ -651,7 +651,7 @@ shutdown_proc(nyx_t *nyx)
     if (nyx->proc_thread)
     {
         nyx_proc_terminate();
-        pthread_kill(*nyx->proc_thread, SIGINT);
+        pthread_kill(*nyx->proc_thread, SIGTERM);
         pthread_join(*nyx->proc_thread, NULL);
 
         free(nyx->proc_thread);
