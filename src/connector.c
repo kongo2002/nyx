@@ -591,8 +591,9 @@ print_response(char *buffer, size_t len, int quiet)
 int
 connector_call(const char **commands, int quiet)
 {
-    int sock = 0, err = 0, success = 0;
-    char buffer[512] = {0};
+    int sock = 0, res = 0, success = 0;
+    char buffer[1024] = {0};
+    size_t total = 0, size = LEN(buffer);
     struct sockaddr_un addr;
 
     /* create a UNIX domain, connection based socket */
@@ -608,9 +609,9 @@ connector_call(const char **commands, int quiet)
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, NYX_SOCKET_ADDR, sizeof(addr.sun_path)-1);
 
-    err = connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
+    res = connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
 
-    if (err == -1)
+    if (res == -1)
     {
         log_perror("nyx: connect");
         return 0;
@@ -626,26 +627,29 @@ connector_call(const char **commands, int quiet)
 
         do
         {
-            memset(&buffer, 0, LEN(buffer));
-
-            if ((err = recv(sock, buffer, LEN(buffer)-1, 0)) > 0)
+            if ((res = recv(sock, buffer+total, size-total-1, 0)) > 0)
             {
-                print_response(buffer, err, quiet);
+                total += res;
             }
-            else if (err == 0)
+            else if (res == 0)
             {
                 done = 1;
                 success = 1;
             }
-            else if (err < 0)
+            else
             {
                 log_perror("nyx: recv");
                 done = 1;
             }
-        } while (!done);
+        } while (!done && total + 1 < size);
+
     }
 
     close(sock);
+
+    if (success)
+        print_response(buffer, total, quiet);
+
     return success;
 }
 
