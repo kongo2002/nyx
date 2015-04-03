@@ -231,10 +231,17 @@ nyx_proc_terminate(void)
 }
 
 static void
-safe_sleep(unsigned int seconds)
+wait_interval(unsigned int seconds)
 {
-    while (seconds-- > 0 && !need_exit)
-        sleep(1);
+    if (need_exit)
+        return;
+
+    struct timeval tv;
+
+    tv.tv_usec = 0;
+    tv.tv_sec = seconds;
+
+    select(1, NULL, NULL, NULL, &tv);
 }
 
 static int
@@ -369,7 +376,7 @@ nyx_proc_start(void *state)
             node = node->next;
         }
 
-        safe_sleep(30);
+        wait_interval(30);
     }
 
     log_debug("Stopped proc watch");

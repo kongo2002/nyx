@@ -33,12 +33,14 @@ on_terminate(UNUSED int signum)
 static void
 wait_interval(int timeout)
 {
-    /* in case we were interrupted by a signal
-     * we don't want to be stuck in here sleeping */
-    while (!need_exit && timeout-- > 0)
-    {
-        sleep(1);
-    }
+    if (need_exit)
+        return;
+
+    struct timeval tv;
+    tv.tv_usec = 0;
+    tv.tv_sec = timeout;
+
+    select(1, NULL, NULL, NULL, &tv);
 }
 
 int
