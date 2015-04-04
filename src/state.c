@@ -76,6 +76,10 @@ state_to_string(state_e state)
 void
 set_state(state_t *state, state_e value)
 {
+    /* do not override QUIT signal */
+    if (state->state == STATE_QUIT)
+        return;
+
     state->state = value;
     sem_post(state->sem);
 }
@@ -930,6 +934,7 @@ state_loop(state_t *state)
             log_warn("Watch '%s' appears to be flapping - delay for 5 minutes",
                     watch->name);
 
+            /* TODO: use select instead */
             safe_sleep(state, 5 * 60);
         }
 
