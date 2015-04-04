@@ -292,7 +292,9 @@ nyx_proc_start(void *state)
     nyx_t *nyx = state;
     nyx_proc_t *sys = nyx->proc;
 
-    log_debug("Starting proc watch");
+    unsigned interval = nyx->options.check_interval;
+
+    log_debug("Starting proc watch - check interval %us", interval);
 
     /* reset need_exit in case of a restart */
     need_exit = 0;
@@ -362,7 +364,7 @@ nyx_proc_start(void *state)
             node = node->next;
         }
 
-        wait_interval(30);
+        wait_interval(interval);
     }
 
     log_debug("Stopped proc watch");
