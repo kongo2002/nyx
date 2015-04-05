@@ -196,7 +196,7 @@ plugin_register_destroy_callback(plugin_manager_t *manager,
     plugin_destroy_callback_info_t *info = xcalloc1(sizeof(plugin_destroy_callback_info_t));
 
     info->destroy_callback = callback;
-    info->destroy_callback = userdata;
+    info->destroy_data = userdata;
 
     list_add(manager->destroy_callbacks, info);
 }
