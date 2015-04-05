@@ -1,4 +1,4 @@
-INCLUDES := -I. -I.. -I../src
+INCLUDES := -I. -I../../src
 FLAGS    := -shared -fpic
 
 all: test.so
