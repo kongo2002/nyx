@@ -115,7 +115,10 @@ plugin_manager_destroy(plugin_manager_t *manager)
         return;
 
     if (manager->state_callbacks)
+    {
         list_destroy(manager->state_callbacks);
+        manager->state_callbacks = NULL;
+    }
 
     if (manager->destroy_callbacks)
     {
@@ -131,6 +134,7 @@ plugin_manager_destroy(plugin_manager_t *manager)
         }
 
         list_destroy(manager->destroy_callbacks);
+        manager->destroy_callbacks = NULL;
     }
 
     free(manager);

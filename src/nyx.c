@@ -731,11 +731,6 @@ nyx_destroy(nyx_t *nyx)
     if (nyx == NULL)
         return;
 
-#ifdef USE_PLUGINS
-    if (nyx->plugins)
-        plugin_repository_destroy(nyx->plugins);
-#endif
-
     /* signal termination via eventfd (if existing) */
     if (nyx->event > 0)
         signal_sent = signal_eventfd(4, nyx);
@@ -761,6 +756,9 @@ nyx_destroy(nyx_t *nyx)
     clear_watches(nyx);
 
 #ifdef USE_PLUGINS
+    if (nyx->plugins)
+        plugin_repository_destroy(nyx->plugins);
+
     if (nyx->options.plugins)
         free((void *)nyx->options.plugins);
 #endif
