@@ -31,6 +31,7 @@ typedef struct
     const char *version;
 
     list_t *state_callbacks;
+    list_t *destroy_callbacks;
 } plugin_manager_t;
 
 typedef struct
@@ -39,13 +40,21 @@ typedef struct
     list_t *plugins;
 } plugin_repository_t;
 
-typedef void (*plugin_state_callback)(const char *, int, pid_t);
+typedef void (*plugin_state_callback)(const char *, int, pid_t, void *);
+
+typedef void (*plugin_destroy_callback)(void *);
 
 typedef struct
 {
-    const char *name;
-    plugin_state_callback callback;
-} plugin_callback_info_t;
+    void * state_data;
+    plugin_state_callback state_callback;
+} plugin_state_callback_info_t;
+
+typedef struct
+{
+    void * destroy_data;
+    plugin_destroy_callback destroy_callback;
+} plugin_destroy_callback_info_t;
 
 typedef int (*plugin_init_func)(plugin_manager_t *manager);
 
@@ -53,8 +62,14 @@ plugin_repository_t *
 discover_plugins(const char *directory);
 
 void
-plugin_register_state_callback(plugin_manager_t *manager, const char *name,
-        plugin_state_callback callback);
+plugin_register_state_callback(plugin_manager_t *manager,
+        plugin_state_callback callback,
+        void *userdata);
+
+void
+plugin_register_destroy_callback(plugin_manager_t *manager,
+        plugin_destroy_callback callback,
+        void *userdata);
 
 void
 plugin_repository_destroy(plugin_repository_t *repository);

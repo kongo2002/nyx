@@ -20,7 +20,7 @@
 
 
 static void
-handle_callback(const char *name, int state, pid_t pid)
+handle_callback(const char *name, int state, pid_t pid, void *userdata)
 {
     printf("test plugin: got event %d of watch '%s' [%d]\n", state, name, pid);
 }
@@ -28,7 +28,7 @@ handle_callback(const char *name, int state, pid_t pid)
 int
 plugin_init(plugin_manager_t *manager)
 {
-    plugin_register_state_callback(manager, "test", handle_callback);
+    plugin_register_state_callback(manager, handle_callback, NULL);
 
     return 1;
 }

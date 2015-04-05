@@ -117,6 +117,22 @@ plugin_manager_destroy(plugin_manager_t *manager)
     if (manager->state_callbacks)
         list_destroy(manager->state_callbacks);
 
+    if (manager->destroy_callbacks)
+    {
+        list_node_t *node = manager->destroy_callbacks->head;
+
+        while (node)
+        {
+            plugin_destroy_callback_info_t *info = node->data;
+
+            info->destroy_callback(info->destroy_data);
+
+            node = node->next;
+        }
+
+        list_destroy(manager->destroy_callbacks);
+    }
+
     free(manager);
 }
 
@@ -130,6 +146,7 @@ plugin_repository_new(void)
     repo->manager = xcalloc1(sizeof(plugin_manager_t));
     repo->manager->version = NYX_VERSION;
     repo->manager->state_callbacks = list_new(free);
+    repo->manager->destroy_callbacks = list_new(free);
 
     return repo;
 }
@@ -147,20 +164,41 @@ plugin_repository_destroy(plugin_repository_t *repository)
 }
 
 void
-plugin_register_state_callback(plugin_manager_t *manager, const char *name, plugin_state_callback callback)
+plugin_register_state_callback(plugin_manager_t *manager,
+        plugin_state_callback callback,
+        void *userdata)
 {
-    if (manager == NULL || name == NULL || callback == NULL)
+    if (manager == NULL || callback == NULL)
         return;
 
     if (manager->state_callbacks == NULL)
         return;
 
-    plugin_callback_info_t *info = xcalloc1(sizeof(plugin_callback_info_t));
+    plugin_state_callback_info_t *info = xcalloc1(sizeof(plugin_state_callback_info_t));
 
-    info->name = name;
-    info->callback = callback;
+    info->state_callback = callback;
+    info->state_data = userdata;
 
     list_add(manager->state_callbacks, info);
+}
+
+void
+plugin_register_destroy_callback(plugin_manager_t *manager,
+        plugin_destroy_callback callback,
+        void *userdata)
+{
+    if (manager == NULL || callback == NULL)
+        return;
+
+    if (manager->destroy_callbacks == NULL)
+        return;
+
+    plugin_destroy_callback_info_t *info = xcalloc1(sizeof(plugin_destroy_callback_info_t));
+
+    info->destroy_callback = callback;
+    info->destroy_callback = userdata;
+
+    list_add(manager->destroy_callbacks, info);
 }
 
 plugin_repository_t *
