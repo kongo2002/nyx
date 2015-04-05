@@ -278,7 +278,9 @@ handle_quit(sender_callback_t *cb, const char **input, nyx_t *nyx)
         while (node)
         {
             state_t *state = node->data;
-            set_state(state, STATE_STOPPING);
+
+            if (state->state != STATE_STOPPED)
+                set_state(state, STATE_STOPPING);
 
             node = node->next;
         }

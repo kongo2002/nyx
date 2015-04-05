@@ -582,7 +582,7 @@ stopped(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
 
-    if (from != STATE_STOPPING)
+    if (from != STATE_STOPPING && from != STATE_STOPPED)
         set_state(state, STATE_STARTING);
 
     return 1;
@@ -617,7 +617,7 @@ static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
     /* STOPPING to ... */
     { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, NULL },
     /* STOPPED to ... */
-    { NULL, to_unmonitored, start,    running, NULL,     NULL,    start },
+    { NULL, to_unmonitored, start,    running, NULL,     stopped, start },
     /* RESTARTING to ... */
     { NULL, to_unmonitored, NULL,     running, NULL,     start,   NULL },
 
