@@ -29,6 +29,8 @@ int
 plugin_init(plugin_manager_t *manager)
 {
     plugin_register_state_callback(manager, "test", handle_callback);
+
+    return 1;
 }
 
 

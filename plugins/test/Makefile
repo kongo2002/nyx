@@ -7,4 +7,4 @@ all: test.so
 	$(CC) $(FLAGS) -o $@ $<
 
 %.o: %.c
-	$(CC) $(INCLUDES) -fpic -c -o $@ $<
+	$(CC) $(INCLUDES) -Wall -Wextra -fpic -c -o $@ $<
