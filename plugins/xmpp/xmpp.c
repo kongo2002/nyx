@@ -14,6 +14,8 @@
  */
 
 #include "def.h"
+#include "hash.h"
+#include "log.h"
 #include "plugins.h"
 #include "state.h"
 
@@ -25,6 +27,9 @@
 typedef struct
 {
     int connected;
+    const char *jid;
+    const char *pass;
+    const char *recipient;
     xmpp_ctx_t *ctx;
     xmpp_conn_t *conn;
     pthread_t *xmpp_thread;
@@ -56,9 +61,8 @@ handle_state_change(const char *name, int state, pid_t pid, void *userdata)
     xmpp_stanza_set_type(mess, "chat");
     xmpp_stanza_set_attribute(mess, "lang", "en");
 
-    /* TODO: configurable */
-    xmpp_stanza_set_attribute(mess, "from", "nyx@localhost");
-    xmpp_stanza_set_attribute(mess, "to", "test@localhost");
+    xmpp_stanza_set_attribute(mess, "from", info->jid);
+    xmpp_stanza_set_attribute(mess, "to", info->recipient);
 
     xmpp_stanza_t *body = get_stanza("body", info->ctx);
 
@@ -146,8 +150,26 @@ start_thread(void *obj)
 int
 plugin_init(plugin_manager_t *manager)
 {
+    const char *jid = NULL, *pass = NULL, *recipient = NULL;
     xmpp_log_t *logger = NULL;
+
+    /* look for mandatory config values */
+    jid = hash_get(manager->config, "xmpp_jid");
+    pass = hash_get(manager->config, "xmpp_password");
+    recipient = hash_get(manager->config, "xmpp_recipient");
+
+    if (jid == NULL || pass == NULL || recipient == NULL)
+    {
+        log_warn("xmpp plugin: mandatory config values 'xmpp_jid', 'xmpp_password'"
+                " and/or 'xmpp_recipient' missing");
+        return 0;
+    }
+
     xmpp_info_t *info = xcalloc1(sizeof(xmpp_info_t));
+
+    info->jid = jid;
+    info->pass = pass;
+    info->recipient = recipient;
 
     /* initialize library */
     xmpp_initialize();
@@ -156,9 +178,8 @@ plugin_init(plugin_manager_t *manager)
     info->ctx = xmpp_ctx_new(NULL, logger);
     info->conn = xmpp_conn_new(info->ctx);
 
-    /* TODO: configurable */
-    xmpp_conn_set_jid(info->conn, "nyx@localhost/nyx");
-    xmpp_conn_set_pass(info->conn, "nyx");
+    xmpp_conn_set_jid(info->conn, info->jid);
+    xmpp_conn_set_pass(info->conn, info->pass);
 
     info->xmpp_thread = xcalloc1(sizeof(pthread_t));
 
