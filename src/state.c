@@ -813,21 +813,8 @@ process_state(state_t *state, state_e old_state, state_e new_state)
 #ifdef USE_PLUGINS
     else
     {
-        plugin_repository_t *repo = state->nyx->plugins;
-
-        if (repo && repo->manager && repo->manager->state_callbacks)
-        {
-            list_node_t *node = repo->manager->state_callbacks->head;
-
-            while (node)
-            {
-                plugin_state_callback_info_t *info = node->data;
-
-                info->state_callback(state->watch->name, new_state, state->pid, info->state_data);
-
-                node = node->next;
-            }
-        }
+        notify_state_change(state->nyx->plugins,
+                state->watch->name, state->pid, new_state);
     }
 #endif
 

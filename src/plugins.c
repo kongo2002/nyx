@@ -206,6 +206,24 @@ plugin_register_destroy_callback(plugin_manager_t *manager,
     list_add(manager->destroy_callbacks, info);
 }
 
+void
+notify_state_change(plugin_repository_t *repo, const char *name, pid_t pid, int new_state)
+{
+    if (!repo || !repo->manager || !repo->manager->state_callbacks)
+        return;
+
+    list_node_t *node = repo->manager->state_callbacks->head;
+
+    while (node)
+    {
+        plugin_state_callback_info_t *info = node->data;
+
+        info->state_callback(name, new_state, pid, info->state_data);
+
+        node = node->next;
+    }
+}
+
 plugin_repository_t *
 discover_plugins(const char *directory, hash_t *config)
 {

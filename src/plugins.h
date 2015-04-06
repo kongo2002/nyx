@@ -76,6 +76,9 @@ plugin_register_destroy_callback(plugin_manager_t *manager,
 void
 plugin_repository_destroy(plugin_repository_t *repository);
 
+void
+notify_state_change(plugin_repository_t *repo, const char *name, pid_t pid, int new_state);
+
 #endif
 
 /* vim: set et sw=4 sts=4 tw=80: */
