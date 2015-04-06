@@ -18,3 +18,5 @@ before_script:
     - ./utils/install_cmocka.sh
 
 script: make && make check
+
+sudo: required
