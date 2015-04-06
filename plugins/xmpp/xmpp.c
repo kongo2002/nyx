@@ -24,9 +24,16 @@
 #include <strophe.h>
 #include <sys/types.h>
 
+typedef enum
+{
+    NYX_XMPP_STARTUP,
+    NYX_XMPP_CONNECTED,
+    NYX_XMPP_DISCONNECTED
+} xmpp_state_e;
+
 typedef struct
 {
-    int connected;
+    xmpp_state_e state;
     const char *jid;
     const char *pass;
     const char *recipient;
@@ -51,7 +58,7 @@ handle_state_change(const char *name, int state, pid_t pid, void *userdata)
     char buffer[512] = {0};
     xmpp_info_t *info = userdata;
 
-    if (info == NULL || !info->connected)
+    if (info == NULL || info->state != NYX_XMPP_CONNECTED)
         return;
 
     snprintf(buffer, LEN(buffer), "Watch '%s' changed state to %s [%d]",
@@ -84,8 +91,6 @@ handle_destroy_callback(void *userdata)
 
     xmpp_info_t *info = userdata;
 
-    info->connected = 0;
-
     if (info->conn)
     {
         xmpp_disconnect(info->conn);
@@ -94,6 +99,8 @@ handle_destroy_callback(void *userdata)
 
         xmpp_conn_release(info->conn);
     }
+
+    info->state = NYX_XMPP_DISCONNECTED;
 
     if (info->ctx)
         xmpp_ctx_free(info->ctx);
@@ -120,16 +127,13 @@ connection_handler(xmpp_conn_t * const conn,
 
         xmpp_send(conn, pres);
 
-        info->connected = 1;
+        info->state = NYX_XMPP_CONNECTED;
 
         xmpp_stanza_release(pres);
     }
     else
     {
-        info->connected = 0;
-
-        /* stop event loop */
-        xmpp_stop(info->ctx);
+        info->state = NYX_XMPP_DISCONNECTED;
     }
 }
 
@@ -141,7 +145,11 @@ start_thread(void *obj)
     xmpp_connect_client(info->conn, NULL, 0, connection_handler, info);
 
     /* start event loop */
-    xmpp_run(info->ctx);
+    while (info->state == NYX_XMPP_STARTUP || info->state == NYX_XMPP_CONNECTED)
+    {
+        /* 100 milliseconds should be sufficient */
+        xmpp_run_once(info->ctx, 100);
+    }
 
     return NULL;
 }
