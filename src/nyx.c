@@ -355,7 +355,8 @@ initialize_daemon(nyx_t *nyx)
 
 #ifdef USE_PLUGINS
     /* load plugins if enabled */
-    nyx->plugins = discover_plugins(nyx->options.plugins);
+    nyx->plugins = discover_plugins(nyx->options.plugins,
+            nyx->options.plugin_config);
 #endif
 
     return 1;
@@ -761,6 +762,9 @@ nyx_destroy(nyx_t *nyx)
 
     if (nyx->options.plugins)
         free((void *)nyx->options.plugins);
+
+    if (nyx->options.plugin_config)
+        hash_destroy(nyx->options.plugin_config);
 #endif
 
     if (nyx->options.commands)

@@ -141,7 +141,7 @@ plugin_manager_destroy(plugin_manager_t *manager)
 }
 
 static plugin_repository_t *
-plugin_repository_new(void)
+plugin_repository_new(hash_t *config)
 {
     plugin_repository_t *repo = xcalloc1(sizeof(plugin_repository_t));
 
@@ -149,6 +149,7 @@ plugin_repository_new(void)
 
     repo->manager = xcalloc1(sizeof(plugin_manager_t));
     repo->manager->version = NYX_VERSION;
+    repo->manager->config = config;
     repo->manager->state_callbacks = list_new(free);
     repo->manager->destroy_callbacks = list_new(free);
 
@@ -206,7 +207,7 @@ plugin_register_destroy_callback(plugin_manager_t *manager,
 }
 
 plugin_repository_t *
-discover_plugins(const char *directory)
+discover_plugins(const char *directory, hash_t *config)
 {
     plugin_repository_t *repo = NULL;
 
@@ -218,7 +219,7 @@ discover_plugins(const char *directory)
     DIR *dir = opendir(directory);
     if (dir)
     {
-        repo = plugin_repository_new();
+        repo = plugin_repository_new(config);
 
         struct dirent *entry = NULL;
         while ((entry = readdir(dir)) != NULL)

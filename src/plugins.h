@@ -16,6 +16,7 @@
 #ifndef __NYX_PLUGINS_H__
 #define __NYX_PLUGINS_H__
 
+#include "hash.h"
 #include "list.h"
 
 #define NYX_PLUGIN_INIT_FUNC "plugin_init"
@@ -29,6 +30,7 @@ typedef struct
 typedef struct
 {
     const char *version;
+    hash_t *config;
 
     list_t *state_callbacks;
     list_t *destroy_callbacks;
@@ -59,7 +61,7 @@ typedef struct
 typedef int (*plugin_init_func)(plugin_manager_t *manager);
 
 plugin_repository_t *
-discover_plugins(const char *directory);
+discover_plugins(const char *directory, hash_t *config);
 
 void
 plugin_register_state_callback(plugin_manager_t *manager,

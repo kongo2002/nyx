@@ -42,6 +42,7 @@ typedef struct
     const char **commands;
 #ifdef USE_PLUGINS
     const char *plugins;
+    hash_t *plugin_config;
 #endif
 } nyx_options_t;
 

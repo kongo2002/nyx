@@ -679,7 +679,7 @@ static struct config_parser_map nyx_value_map[] =
     SCALAR_HANDLER("check_interval", handle_nyx_value_check_interval),
     SCALAR_HANDLER("history_size", handle_nyx_value_history_size),
 #ifdef USE_PLUGINS
-    SCALAR_HANDLER("plugins", handle_nyx_value_plugins),
+    SCALAR_HANDLER("plugin_dir", handle_nyx_value_plugins),
 #endif
 };
 
@@ -736,10 +736,81 @@ handle_nyx(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
     return new_info;
 }
 
+#ifdef USE_PLUGINS
+
+static const char *plugin_key = NULL;
+
+static parse_info_t *
+handle_plugins_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
+
+static parse_info_t *
+handle_plugins_value(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
+{
+    const char *value = NULL;
+
+    log_debug("handle_plugins_value");
+
+    value = get_scalar_value(event);
+
+    if (value && plugin_key)
+    {
+        hash_add(info->nyx->options.plugin_config,
+                plugin_key, strdup(value));
+
+        /* dispose key */
+        free((void *)plugin_key);
+        plugin_key = NULL;
+    }
+
+    info->handler[YAML_SCALAR_EVENT] = handle_plugins_key;
+
+    return info;
+}
+
+static parse_info_t *
+handle_plugins_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
+{
+    const char *key;
+
+    log_debug("handle_plugins_key");
+
+    key = get_scalar_value(event);
+
+    if (key == NULL)
+        return NULL;
+
+    plugin_key = strdup(key);
+
+    info->handler[YAML_SCALAR_EVENT] = handle_plugins_value;
+
+    return info;
+}
+
+static parse_info_t *
+handle_plugins(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    log_debug("handle_plugins");
+
+    if (info->nyx->options.plugin_config == NULL)
+        info->nyx->options.plugin_config = hash_new(free);
+
+    parse_info_t *new_info = parse_info_new_child(info);
+
+    new_info->handler[YAML_SCALAR_EVENT] = handle_plugins_key;
+    new_info->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
+
+    return new_info;
+}
+
+#endif /* USE_PLUGINS */
+
 static struct config_parser_map root_map[] =
 {
     MAP_HANDLER("watches", handle_watches),
     MAP_HANDLER("nyx", handle_nyx),
+#ifdef USE_PLUGINS
+    MAP_HANDLER("plugins", handle_plugins),
+#endif
     { NULL, {0}, NULL }
 };
 
@@ -887,6 +958,14 @@ parse_config(nyx_t *nyx)
         free((void *)env_key);
         env_key = NULL;
     }
+
+#ifdef USE_PLUGINS
+    if (plugin_key)
+    {
+        free((void *)plugin_key);
+        plugin_key = NULL;
+    }
+#endif
 
     parse_info_destroy(info);
     fclose(cfg);
