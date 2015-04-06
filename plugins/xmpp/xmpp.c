@@ -111,22 +111,25 @@ connection_handler(xmpp_conn_t * const conn,
         UNUSED xmpp_stream_error_t * const stream_error,
         void * const udata)
 {
-    xmpp_ctx_t *ctx = udata;
+    xmpp_info_t *info = udata;
 
     if (status == XMPP_CONN_CONNECT)
     {
         /* send initial presence stanza */
-        xmpp_stanza_t *pres = xmpp_stanza_new(ctx);
+        xmpp_stanza_t *pres = get_stanza("presence", info->ctx);
 
-        xmpp_stanza_set_name(pres, "presence");
         xmpp_send(conn, pres);
+
+        info->connected = 1;
 
         xmpp_stanza_release(pres);
     }
     else
     {
+        info->connected = 0;
+
         /* stop event loop */
-        xmpp_stop(ctx);
+        xmpp_stop(info->ctx);
     }
 }
 
@@ -135,14 +138,10 @@ start_thread(void *obj)
 {
     xmpp_info_t *info = obj;
 
-    xmpp_connect_client(info->conn, NULL, 0, connection_handler, info->ctx);
-
-    info->connected = 1;
+    xmpp_connect_client(info->conn, NULL, 0, connection_handler, info);
 
     /* start event loop */
     xmpp_run(info->ctx);
-
-    info->connected = 0;
 
     return NULL;
 }
