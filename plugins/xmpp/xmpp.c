@@ -37,6 +37,7 @@ typedef struct
     const char *jid;
     const char *pass;
     const char *recipient;
+    const char *host;
     xmpp_ctx_t *ctx;
     xmpp_conn_t *conn;
     pthread_t *xmpp_thread;
@@ -95,12 +96,12 @@ handle_destroy_callback(void *userdata)
     {
         xmpp_disconnect(info->conn);
 
+        info->state = NYX_XMPP_DISCONNECTED;
+
         pthread_join(*info->xmpp_thread, NULL);
 
         xmpp_conn_release(info->conn);
     }
-
-    info->state = NYX_XMPP_DISCONNECTED;
 
     if (info->ctx)
         xmpp_ctx_free(info->ctx);
@@ -134,6 +135,8 @@ connection_handler(xmpp_conn_t * const conn,
     else
     {
         info->state = NYX_XMPP_DISCONNECTED;
+
+        log_info("xmpp connection closed");
     }
 }
 
@@ -142,7 +145,13 @@ start_thread(void *obj)
 {
     xmpp_info_t *info = obj;
 
-    xmpp_connect_client(info->conn, NULL, 0, connection_handler, info);
+    int res = xmpp_connect_client(info->conn, info->host, 0, connection_handler, info);
+
+    if (res == -1)
+    {
+        log_warn("XMPP connect failed");
+        return NULL;
+    }
 
     /* start event loop */
     while (info->state == NYX_XMPP_STARTUP || info->state == NYX_XMPP_CONNECTED)
@@ -154,16 +163,41 @@ start_thread(void *obj)
     return NULL;
 }
 
+static log_level_e
+to_level(xmpp_log_level_t level)
+{
+    switch (level)
+    {
+        case XMPP_LEVEL_INFO:
+            return NYX_LOG_INFO;
+        case XMPP_LEVEL_WARN:
+            return NYX_LOG_WARN;
+        case XMPP_LEVEL_ERROR:
+            return NYX_LOG_ERROR;
+        case XMPP_LEVEL_DEBUG:
+            return NYX_LOG_DEBUG;
+        default:
+            return NYX_LOG_INFO;
+    }
+}
+
+static void
+log_xmpp(UNUSED void *const userdata, const xmpp_log_level_t level, const char *const area, const char *const msg)
+{
+    log_message(to_level(level), "xmpp [%s]: %s ", area, msg);
+}
+
 int
 plugin_init(plugin_manager_t *manager)
 {
-    const char *jid = NULL, *pass = NULL, *recipient = NULL;
+    const char *jid = NULL, *pass = NULL, *recipient = NULL, *host = NULL;
     xmpp_log_t *logger = NULL;
 
     /* look for mandatory config values */
     jid = hash_get(manager->config, "xmpp_jid");
     pass = hash_get(manager->config, "xmpp_password");
     recipient = hash_get(manager->config, "xmpp_recipient");
+    host = hash_get(manager->config, "xmpp_host");
 
     if (jid == NULL || pass == NULL || recipient == NULL)
     {
@@ -177,11 +211,15 @@ plugin_init(plugin_manager_t *manager)
     info->jid = jid;
     info->pass = pass;
     info->recipient = recipient;
+    info->host = host;
 
     /* initialize library */
     xmpp_initialize();
 
-    logger = xmpp_get_default_logger(XMPP_LEVEL_DEBUG);
+    /* build logger interface */
+    logger = xcalloc1(sizeof(xmpp_log_t));
+    logger->handler = log_xmpp;
+
     info->ctx = xmpp_ctx_new(NULL, logger);
     info->conn = xmpp_conn_new(info->ctx);
 
@@ -196,6 +234,7 @@ plugin_init(plugin_manager_t *manager)
     {
         free(info->xmpp_thread);
         free(info);
+        free(logger);
 
         return 0;
     }
