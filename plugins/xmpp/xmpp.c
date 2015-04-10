@@ -18,8 +18,10 @@
 #include "log.h"
 #include "plugins.h"
 #include "state.h"
+#include "utils.h"
 
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <strophe.h>
 #include <sys/types.h>
@@ -28,7 +30,8 @@ typedef enum
 {
     NYX_XMPP_STARTUP,
     NYX_XMPP_CONNECTED,
-    NYX_XMPP_DISCONNECTED
+    NYX_XMPP_DISCONNECTED,
+    NYX_XMPP_SHUTDOWN
 } xmpp_state_e;
 
 typedef struct
@@ -38,6 +41,8 @@ typedef struct
     const char *pass;
     const char *recipient;
     const char *host;
+    int reconnect_timeout;
+    int debug;
     xmpp_ctx_t *ctx;
     xmpp_conn_t *conn;
     pthread_t *xmpp_thread;
@@ -96,7 +101,11 @@ handle_destroy_callback(void *userdata)
     {
         xmpp_disconnect(info->conn);
 
-        info->state = NYX_XMPP_DISCONNECTED;
+        /* send SIGTERM to interrupt the select() */
+        if (info->state == NYX_XMPP_DISCONNECTED)
+            pthread_kill(*info->xmpp_thread, SIGTERM);
+
+        info->state = NYX_XMPP_SHUTDOWN;
 
         pthread_join(*info->xmpp_thread, NULL);
 
@@ -130,27 +139,46 @@ connection_handler(xmpp_conn_t * const conn,
 
         info->state = NYX_XMPP_CONNECTED;
 
+        log_info("xmpp: successfully connected");
+
         xmpp_stanza_release(pres);
     }
     else
     {
         info->state = NYX_XMPP_DISCONNECTED;
 
-        log_info("xmpp connection closed");
+        if (info->debug)
+            log_info("xmpp: connection closed");
     }
 }
 
-static void *
-start_thread(void *obj)
+static int
+reconnect_loop(xmpp_info_t *info)
 {
-    xmpp_info_t *info = obj;
+    info->state = NYX_XMPP_STARTUP;
+
+    if (info->debug)
+        log_info("xmpp: trying to connect...");
+
+    /* for some reason we have to dispose the connection instance
+     * before trying a reconnect */
+    if (info->conn)
+    {
+        xmpp_conn_release(info->conn);
+        info->conn = NULL;
+    }
+
+    info->conn = xmpp_conn_new(info->ctx);
+
+    xmpp_conn_set_jid(info->conn, info->jid);
+    xmpp_conn_set_pass(info->conn, info->pass);
 
     int res = xmpp_connect_client(info->conn, info->host, 0, connection_handler, info);
 
     if (res == -1)
     {
-        log_warn("XMPP connect failed");
-        return NULL;
+        log_warn("xmpp: connect failed");
+        return 0;
     }
 
     /* start event loop */
@@ -160,44 +188,37 @@ start_thread(void *obj)
         xmpp_run_once(info->ctx, 100);
     }
 
-    return NULL;
+    return info->state != NYX_XMPP_SHUTDOWN;
 }
 
-static log_level_e
-to_level(xmpp_log_level_t level)
+static void *
+start_thread(void *obj)
 {
-    switch (level)
+    xmpp_info_t *info = obj;
+
+    while (info->state != NYX_XMPP_SHUTDOWN && reconnect_loop(info))
     {
-        case XMPP_LEVEL_INFO:
-            return NYX_LOG_INFO;
-        case XMPP_LEVEL_WARN:
-            return NYX_LOG_WARN;
-        case XMPP_LEVEL_ERROR:
-            return NYX_LOG_ERROR;
-        case XMPP_LEVEL_DEBUG:
-            return NYX_LOG_DEBUG;
-        default:
-            return NYX_LOG_INFO;
-    }
-}
+        if (info->debug)
+            log_info("xmpp: waiting for %ds to reconnect", info->reconnect_timeout);
 
-static void
-log_xmpp(UNUSED void *const userdata, const xmpp_log_level_t level, const char *const area, const char *const msg)
-{
-    log_message(to_level(level), "xmpp [%s]: %s ", area, msg);
+        wait_interval(info->reconnect_timeout);
+    }
+
+    log_info("xmpp: terminating");
+
+    return NULL;
 }
 
 int
 plugin_init(plugin_manager_t *manager)
 {
     const char *jid = NULL, *pass = NULL, *recipient = NULL, *host = NULL;
-    xmpp_log_t *logger = NULL;
+    const char *reconnect = NULL, *debug = NULL;
 
     /* look for mandatory config values */
     jid = hash_get(manager->config, "xmpp_jid");
     pass = hash_get(manager->config, "xmpp_password");
     recipient = hash_get(manager->config, "xmpp_recipient");
-    host = hash_get(manager->config, "xmpp_host");
 
     if (jid == NULL || pass == NULL || recipient == NULL)
     {
@@ -206,6 +227,10 @@ plugin_init(plugin_manager_t *manager)
         return 0;
     }
 
+    host = hash_get(manager->config, "xmpp_host");
+    reconnect = hash_get(manager->config, "xmpp_reconnect_timeout");
+    debug = hash_get(manager->config, "xmpp_debug");
+
     xmpp_info_t *info = xcalloc1(sizeof(xmpp_info_t));
 
     info->jid = jid;
@@ -213,28 +238,37 @@ plugin_init(plugin_manager_t *manager)
     info->recipient = recipient;
     info->host = host;
 
+    /* default reconnect timeout of 60 seconds */
+    info->reconnect_timeout = 60;
+
+    if (reconnect && *reconnect != '\0')
+        info->reconnect_timeout = atoi(reconnect);
+
+    /* minimum of 5 seconds reconnect timeout */
+    info->reconnect_timeout = MAX(5, info->reconnect_timeout);
+
+    info->debug = debug && *debug != '\0';
+
     /* initialize library */
     xmpp_initialize();
 
-    /* build logger interface */
-    logger = xcalloc1(sizeof(xmpp_log_t));
-    logger->handler = log_xmpp;
+    xmpp_log_t *logger = info->debug
+        ? xmpp_get_default_logger(XMPP_LEVEL_DEBUG)
+        : NULL;
 
     info->ctx = xmpp_ctx_new(NULL, logger);
-    info->conn = xmpp_conn_new(info->ctx);
-
-    xmpp_conn_set_jid(info->conn, info->jid);
-    xmpp_conn_set_pass(info->conn, info->pass);
-
     info->xmpp_thread = xcalloc1(sizeof(pthread_t));
 
     int err = pthread_create(info->xmpp_thread, NULL, start_thread, info);
 
     if (err)
     {
+        xmpp_ctx_free(info->ctx);
+
         free(info->xmpp_thread);
         free(info);
-        free(logger);
+
+        xmpp_shutdown();
 
         return 0;
     }
