@@ -41,6 +41,7 @@ typedef struct
     const char *pass;
     const char *recipient;
     const char *host;
+    const char *groupchat;
     int reconnect_timeout;
     int debug;
     xmpp_ctx_t *ctx;
@@ -59,6 +60,50 @@ get_stanza(const char *name, xmpp_ctx_t *ctx)
 }
 
 static void
+send_groupchat(xmpp_info_t *info, const char *message)
+{
+    xmpp_stanza_t *mess = get_stanza("message", info->ctx);
+    xmpp_stanza_set_type(mess, "groupchat");
+    xmpp_stanza_set_attribute(mess, "lang", "en");
+
+    xmpp_stanza_set_attribute(mess, "from", info->jid);
+    xmpp_stanza_set_attribute(mess, "to", info->groupchat);
+
+    xmpp_stanza_t *body = get_stanza("body", info->ctx);
+
+    xmpp_stanza_t *text = xmpp_stanza_new(info->ctx);
+    xmpp_stanza_set_text(text, message);
+
+    xmpp_stanza_add_child(body, text);
+    xmpp_stanza_add_child(mess, body);
+
+    xmpp_send(info->conn, mess);
+    xmpp_stanza_release(mess);
+}
+
+static void
+send_chat(xmpp_info_t *info, const char *message)
+{
+    xmpp_stanza_t *mess = get_stanza("message", info->ctx);
+    xmpp_stanza_set_type(mess, "chat");
+    xmpp_stanza_set_attribute(mess, "lang", "en");
+
+    xmpp_stanza_set_attribute(mess, "from", info->jid);
+    xmpp_stanza_set_attribute(mess, "to", info->recipient);
+
+    xmpp_stanza_t *body = get_stanza("body", info->ctx);
+
+    xmpp_stanza_t *text = xmpp_stanza_new(info->ctx);
+    xmpp_stanza_set_text(text, message);
+
+    xmpp_stanza_add_child(body, text);
+    xmpp_stanza_add_child(mess, body);
+
+    xmpp_send(info->conn, mess);
+    xmpp_stanza_release(mess);
+}
+
+static void
 handle_state_change(const char *name, int state, pid_t pid, void *userdata)
 {
     char buffer[512] = {0};
@@ -70,23 +115,11 @@ handle_state_change(const char *name, int state, pid_t pid, void *userdata)
     snprintf(buffer, LEN(buffer), "Watch '%s' changed state to %s [%d]",
             name, state_to_human_string(state), pid);
 
-    xmpp_stanza_t *mess = get_stanza("message", info->ctx);
-    xmpp_stanza_set_type(mess, "chat");
-    xmpp_stanza_set_attribute(mess, "lang", "en");
+    if (info->recipient)
+        send_chat(info, buffer);
 
-    xmpp_stanza_set_attribute(mess, "from", info->jid);
-    xmpp_stanza_set_attribute(mess, "to", info->recipient);
-
-    xmpp_stanza_t *body = get_stanza("body", info->ctx);
-
-    xmpp_stanza_t *text = xmpp_stanza_new(info->ctx);
-    xmpp_stanza_set_text(text, buffer);
-
-    xmpp_stanza_add_child(body, text);
-    xmpp_stanza_add_child(mess, body);
-
-    xmpp_send(info->conn, mess);
-    xmpp_stanza_release(mess);
+    if (info->groupchat)
+        send_groupchat(info, buffer);
 }
 
 static void
@@ -134,14 +167,32 @@ connection_handler(xmpp_conn_t * const conn,
     {
         /* send initial presence stanza */
         xmpp_stanza_t *pres = get_stanza("presence", info->ctx);
-
         xmpp_send(conn, pres);
+        xmpp_stanza_release(pres);
+
+        /* join groupchat (if configured) */
+        if (info->groupchat)
+        {
+            char buffer[512] = {0};
+
+            snprintf(buffer, LEN(buffer), "%s/nyx", info->groupchat);
+
+            xmpp_stanza_t *grp = get_stanza("presence", info->ctx);
+            xmpp_stanza_set_attribute(grp, "from", info->jid);
+            xmpp_stanza_set_attribute(grp, "to", buffer);
+
+            xmpp_stanza_t *x = get_stanza("x", info->ctx);
+            xmpp_stanza_set_ns(x, "http://jabber.org/protocol/muc");
+
+            xmpp_stanza_add_child(grp, x);
+
+            xmpp_send(conn, grp);
+            xmpp_stanza_release(grp);
+        }
 
         info->state = NYX_XMPP_CONNECTED;
 
         log_info("xmpp: successfully connected");
-
-        xmpp_stanza_release(pres);
     }
     else
     {
@@ -212,22 +263,23 @@ start_thread(void *obj)
 int
 plugin_init(plugin_manager_t *manager)
 {
-    const char *jid = NULL, *pass = NULL, *recipient = NULL, *host = NULL;
+    const char *jid = NULL, *pass = NULL, *recipient = NULL, *groupchat = NULL;
     const char *reconnect = NULL, *debug = NULL;
 
     /* look for mandatory config values */
     jid = hash_get(manager->config, "xmpp_jid");
     pass = hash_get(manager->config, "xmpp_password");
     recipient = hash_get(manager->config, "xmpp_recipient");
+    groupchat = hash_get(manager->config, "xmpp_groupchat");
 
-    if (jid == NULL || pass == NULL || recipient == NULL)
+    if (jid == NULL || pass == NULL ||
+            (recipient == NULL && groupchat == NULL))
     {
-        log_warn("xmpp plugin: mandatory config values 'xmpp_jid', 'xmpp_password'"
-                " and/or 'xmpp_recipient' missing");
+        log_warn("xmpp plugin: mandatory config values 'xmpp_jid', 'xmpp_password',"
+                " 'xmpp_recipient' or 'xmpp_groupchat' missing");
         return 0;
     }
 
-    host = hash_get(manager->config, "xmpp_host");
     reconnect = hash_get(manager->config, "xmpp_reconnect_timeout");
     debug = hash_get(manager->config, "xmpp_debug");
 
@@ -236,7 +288,8 @@ plugin_init(plugin_manager_t *manager)
     info->jid = jid;
     info->pass = pass;
     info->recipient = recipient;
-    info->host = host;
+    info->groupchat = groupchat;
+    info->host = hash_get(manager->config, "xmpp_host");
 
     /* default reconnect timeout of 60 seconds */
     info->reconnect_timeout = 60;
