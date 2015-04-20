@@ -229,7 +229,7 @@ handle_history(sender_callback_t *cb, const char **input, nyx_t *nyx)
 
         cb->sender(cb, "%04d-%02d-%02dT%02d:%02d:%02d: %s",
             time->tm_year + 1900,
-            time->tm_mon,
+            time->tm_mon + 1,
             time->tm_mday,
             time->tm_hour,
             time->tm_min,

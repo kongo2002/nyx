@@ -103,7 +103,7 @@ timestack_dump(timestack_t *timestack)
 
         log_info("%04d-%02d-%02dT%02d:%02d:%02d: %d",
                 time->tm_year + 1900,
-                time->tm_mon,
+                time->tm_mon + 1,
                 time->tm_mday,
                 time->tm_hour,
                 time->tm_min,
