@@ -710,6 +710,12 @@ nyx_reload(nyx_t *nyx)
     {
         if (nyx_watches_init(nyx))
         {
+#ifdef USE_PLUGINS
+            /* load plugins if enabled */
+            nyx->plugins = discover_plugins(nyx->options.plugins,
+                    nyx->options.plugin_config);
+#endif
+
             log_info("Successfully reloaded nyx");
             return 1;
         }
@@ -718,6 +724,32 @@ nyx_reload(nyx_t *nyx)
     log_info("Failed to reload nyx");
 
     return 0;
+}
+
+static void
+destroy_plugins(nyx_t *nyx)
+{
+#ifdef USE_PLUGINS
+    if (nyx->plugins)
+    {
+        log_debug("Shutdown plugins");
+
+        plugin_repository_destroy(nyx->plugins);
+        nyx->plugins = NULL;
+    }
+
+    if (nyx->options.plugins)
+    {
+        free((void *)nyx->options.plugins);
+        nyx->options.plugins = NULL;
+    }
+
+    if (nyx->options.plugin_config)
+    {
+        hash_destroy(nyx->options.plugin_config);
+        nyx->options.plugin_config = NULL;
+    }
+#endif
 }
 
 /**
@@ -756,16 +788,7 @@ nyx_destroy(nyx_t *nyx)
 
     clear_watches(nyx);
 
-#ifdef USE_PLUGINS
-    if (nyx->plugins)
-        plugin_repository_destroy(nyx->plugins);
-
-    if (nyx->options.plugins)
-        free((void *)nyx->options.plugins);
-
-    if (nyx->options.plugin_config)
-        hash_destroy(nyx->options.plugin_config);
-#endif
+    destroy_plugins(nyx);
 
     if (nyx->options.commands)
     {
