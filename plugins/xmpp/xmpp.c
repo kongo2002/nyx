@@ -134,9 +134,9 @@ handle_destroy_callback(void *userdata)
     {
         xmpp_disconnect(info->conn);
 
-        /* send SIGTERM to interrupt the select() */
+        /* send SIGUSR1 to interrupt the select() */
         if (info->state == NYX_XMPP_DISCONNECTED)
-            pthread_kill(*info->xmpp_thread, SIGTERM);
+            pthread_kill(*info->xmpp_thread, SIGUSR1);
 
         info->state = NYX_XMPP_SHUTDOWN;
 
