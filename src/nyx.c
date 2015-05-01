@@ -424,6 +424,9 @@ nyx_initialize(int argc, char **args)
     /* initialize logging */
     log_init(nyx);
 
+    /* globally ignore SIGUSR1 */
+    signal(SIGUSR1, SIG_IGN);
+
     if (nyx->is_daemon)
     {
         if (!initialize_daemon(nyx))
@@ -653,7 +656,7 @@ shutdown_proc(nyx_t *nyx)
     if (nyx->proc_thread)
     {
         nyx_proc_terminate();
-        pthread_kill(*nyx->proc_thread, SIGTERM);
+        pthread_kill(*nyx->proc_thread, SIGUSR1);
         pthread_join(*nyx->proc_thread, NULL);
 
         free(nyx->proc_thread);
@@ -689,6 +692,32 @@ clear_watches(nyx_t *nyx)
     }
 }
 
+static void
+destroy_plugins(nyx_t *nyx)
+{
+#ifdef USE_PLUGINS
+    if (nyx->plugins)
+    {
+        log_debug("Shutdown plugins");
+
+        plugin_repository_destroy(nyx->plugins);
+        nyx->plugins = NULL;
+    }
+
+    if (nyx->options.plugins)
+    {
+        free((void *)nyx->options.plugins);
+        nyx->options.plugins = NULL;
+    }
+
+    if (nyx->options.plugin_config)
+    {
+        hash_destroy(nyx->options.plugin_config);
+        nyx->options.plugin_config = NULL;
+    }
+#endif
+}
+
 /**
  * @brief Reload the current nyx instance configuration
  * @param nyx nyx instance to reload
@@ -699,6 +728,7 @@ nyx_reload(nyx_t *nyx)
 {
     log_info("Start reloading nyx");
 
+    destroy_plugins(nyx);
     shutdown_proc(nyx);
     clear_watches(nyx);
 
@@ -724,32 +754,6 @@ nyx_reload(nyx_t *nyx)
     log_info("Failed to reload nyx");
 
     return 0;
-}
-
-static void
-destroy_plugins(nyx_t *nyx)
-{
-#ifdef USE_PLUGINS
-    if (nyx->plugins)
-    {
-        log_debug("Shutdown plugins");
-
-        plugin_repository_destroy(nyx->plugins);
-        nyx->plugins = NULL;
-    }
-
-    if (nyx->options.plugins)
-    {
-        free((void *)nyx->options.plugins);
-        nyx->options.plugins = NULL;
-    }
-
-    if (nyx->options.plugin_config)
-    {
-        hash_destroy(nyx->options.plugin_config);
-        nyx->options.plugin_config = NULL;
-    }
-#endif
 }
 
 /**

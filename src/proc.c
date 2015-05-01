@@ -19,6 +19,7 @@
 #include "socket.h"
 #include "utils.h"
 
+#include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -286,11 +287,35 @@ proc_http_check(proc_stat_t *proc, nyx_t *nyx)
     return 1;
 }
 
+static void
+handle_sigusr1(UNUSED int signum)
+{
+    log_debug("proc: caught SIGUSR1");
+
+    nyx_proc_terminate();
+}
+
+static void
+setup_proc_signals(void)
+{
+    struct sigaction action =
+    {
+        .sa_flags = SA_NOCLDSTOP | SA_RESTART,
+        .sa_handler = handle_sigusr1
+    };
+
+    sigemptyset(&action.sa_mask);
+
+    sigaction(SIGUSR1, &action, NULL);
+}
+
 void *
 nyx_proc_start(void *state)
 {
     nyx_t *nyx = state;
     nyx_proc_t *sys = nyx->proc;
+
+    setup_proc_signals();
 
     unsigned interval = nyx->options.check_interval;
 
