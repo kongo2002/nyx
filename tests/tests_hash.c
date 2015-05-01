@@ -47,7 +47,7 @@ test_hash_add(UNUSED void **state)
         value = strdup(buffer);
 
         sprintf(buffer, "key%u", i);
-        hash_add(hash, buffer, value);
+        assert_int_equal(1, hash_add(hash, buffer, value));
     }
 
     assert_int_equal(size, hash_count(hash));
@@ -62,6 +62,9 @@ test_hash_add(UNUSED void **state)
         sprintf(buffer, "value%u", i);
         assert_string_equal(buffer, value);
     }
+
+    /* test for duplicate entries */
+    assert_int_equal(0, hash_add(hash, "key0", "value0"));
 
     hash_destroy(hash);
 }
