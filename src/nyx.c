@@ -282,6 +282,7 @@ initialize_daemon(nyx_t *nyx)
     pid_t pid = 0;
 
     /* set default options */
+    nyx->options.http_port = 8080;
     nyx->options.def_start_timeout = 5;
     nyx->options.def_stop_timeout = 5;
     nyx->options.polling_interval = 5;

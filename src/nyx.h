@@ -33,6 +33,7 @@ typedef struct
     int no_color;
     int no_daemon;
     int syslog;
+    unsigned http_port;
     unsigned def_start_timeout;
     unsigned def_stop_timeout;
     unsigned polling_interval;
