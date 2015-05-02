@@ -256,13 +256,13 @@ end:
 }
 
 int
-add_epoll_socket(int socket, struct epoll_event *event, int epoll)
+add_epoll_socket(int socket, struct epoll_event *event, int epoll, int remote)
 {
     int error = 0;
 
     memset(event, 0, sizeof(struct epoll_event));
 
-    epoll_extra_data_t *data = epoll_extra_data_new(socket);
+    epoll_extra_data_t *data = epoll_extra_data_new(socket, remote);
 
     event->data.ptr = data;
     event->events = EPOLLIN | EPOLLRDHUP;
@@ -276,11 +276,12 @@ add_epoll_socket(int socket, struct epoll_event *event, int epoll)
 }
 
 epoll_extra_data_t *
-epoll_extra_data_new(int fd)
+epoll_extra_data_new(int fd, int remote)
 {
     epoll_extra_data_t *extra = xcalloc1(sizeof(epoll_extra_data_t));
 
     extra->fd = fd;
+    extra->remote_socket = remote;
 
     return extra;
 }

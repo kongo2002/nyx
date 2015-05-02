@@ -17,6 +17,7 @@
 
 #include "connector.h"
 #include "def.h"
+#include "http.h"
 #include "log.h"
 #include "nyx.h"
 #include "socket.h"
@@ -683,10 +684,72 @@ init_nyx_addr(struct sockaddr_un *addr)
 }
 
 static int
+handle_http_request(struct epoll_event *event, nyx_t *nyx)
+{
+    int success = 0;
+    ssize_t received = 0;
+
+    log_debug("Incoming HTTP request");
+
+    epoll_extra_data_t *extra = event->data.ptr;
+
+    /* start of new request? */
+    if (extra->length == 0)
+    {
+        /* initialize message buffer */
+        extra->buffer = xcalloc(NYX_MAX_MSG_LEN + 1, sizeof(char));
+        extra->length = NYX_MAX_MSG_LEN;
+    }
+
+    received = recv(extra->fd, extra->buffer + extra->pos, extra->length - extra->pos, 0);
+
+    if (received < 1)
+    {
+        if (received < 0)
+        {
+            if (errno == EAGAIN)
+                return 1;
+            else
+            {
+                log_perror("nyx: recv");
+                goto close;
+            }
+        }
+    }
+
+    const char bad_request[] = "HTTP/1.0 200 OK\r\n"
+        "Server: nyx\r\n"
+        "Content-Type: text/plain\r\n\r\n"
+        "not implemented yet\r\n";
+    send(extra->fd, bad_request, LEN(bad_request), MSG_NOSIGNAL);
+
+    success = 1;
+
+close:
+    extra->pos = 0;
+    extra->length = 0;
+
+    if (extra->buffer)
+    {
+        free(extra->buffer);
+        extra->buffer = NULL;
+    }
+
+    close(extra->fd);
+
+    free(extra);
+    event->data.ptr = NULL;
+
+    return success;
+}
+
+static int
 handle_request(struct epoll_event *event, nyx_t *nyx)
 {
     int success = 0;
     ssize_t received = 0;
+
+    log_debug("Incoming unix socket request");
 
     epoll_extra_data_t *extra = event->data.ptr;
     int fd = extra->fd;
@@ -803,7 +866,7 @@ connector_run(nyx_t *nyx)
     int restart = 0;
     static int max_conn = 16;
 
-    int sock = 0, error = 0, epfd = 0;
+    int sock = 0, error = 0, epfd = 0, http_sock = 0;
 
     struct epoll_event base_ev, fd_ev, ev;
     struct epoll_event *events = NULL;
@@ -864,7 +927,7 @@ connector_run(nyx_t *nyx)
     }
 
     /* add new listening socket to epoll instance */
-    if (!add_epoll_socket(sock, &base_ev, epfd))
+    if (!add_epoll_socket(sock, &base_ev, epfd, sock))
         goto teardown;
 
     /* add eventfd socket to epoll as well */
@@ -873,8 +936,26 @@ connector_run(nyx_t *nyx)
         if (!unblock_socket(nyx->event))
             goto teardown;
 
-        if (!add_epoll_socket(nyx->event, &fd_ev, epfd))
+        if (!add_epoll_socket(nyx->event, &fd_ev, epfd, sock))
             goto teardown;
+    }
+
+    /* add http socket to epoll as well (if configured) */
+    if (nyx->options.http_port)
+    {
+        http_sock = http_init(nyx->options.http_port);
+
+        if (http_sock)
+        {
+            log_debug("Initialized HTTP connector interface at port %u",
+                    nyx->options.http_port);
+
+            if (!unblock_socket(http_sock))
+                goto teardown;
+
+            if (!add_epoll_socket(http_sock, &ev, epfd, http_sock))
+                goto teardown;
+        }
     }
 
     events = xcalloc(max_conn, sizeof(struct epoll_event));
@@ -924,13 +1005,13 @@ connector_run(nyx_t *nyx)
 
             /* check for events on listening socket
              * -> accept a new connection */
-            if (extra->fd == sock)
+            if (extra->fd == sock || (http_sock && http_sock == extra->fd))
             {
                 int client = 0;
                 struct sockaddr_un caddr;
                 socklen_t client_len = sizeof(struct sockaddr_un);
 
-                client = accept(sock, (struct sockaddr *)&caddr, &client_len);
+                client = accept(extra->fd, (struct sockaddr *)&caddr, &client_len);
 
                 if (client == -1)
                 {
@@ -945,12 +1026,19 @@ connector_run(nyx_t *nyx)
                     continue;
                 }
 
-                if (!add_epoll_socket(client, &ev, epfd))
+                if (!add_epoll_socket(client, &ev, epfd, extra->fd))
                 {
                     /* TODO: free extra data? */
 
                     close(client);
                     continue;
+                }
+
+                /* determine which socket endpoint was triggered
+                 * unix socket or http */
+                if (extra->fd == http_sock)
+                {
+                    log_debug("this one is a http call");
                 }
             }
             else if (extra->fd == nyx->event)
@@ -960,8 +1048,16 @@ connector_run(nyx_t *nyx)
             /* incoming data from one of the client sockets */
             else
             {
-                if (!handle_request(event, nyx))
-                    restart = 1;
+                if (http_sock && extra->remote_socket == http_sock)
+                {
+                    if (!handle_http_request(event, nyx))
+                        restart = 1;
+                }
+                else
+                {
+                    if (!handle_request(event, nyx))
+                        restart = 1;
+                }
             }
         }
     }
@@ -991,6 +1087,9 @@ teardown:
         free(fd_ev.data.ptr);
         fd_ev.data.ptr = NULL;
     }
+
+    if (http_sock)
+        close(http_sock);
 
     log_debug("Connector: terminated");
 

@@ -32,6 +32,7 @@ typedef enum
 typedef struct
 {
     int fd;
+    int remote_socket;
     char *buffer;
     unsigned int pos;
     unsigned int length;
@@ -53,10 +54,10 @@ int
 unblock_socket(int socket);
 
 int
-add_epoll_socket(int socket, struct epoll_event *event, int epoll);
+add_epoll_socket(int socket, struct epoll_event *event, int epoll, int remote);
 
 epoll_extra_data_t *
-epoll_extra_data_new(int fd);
+epoll_extra_data_new(int fd, int remote);
 
 #endif
 

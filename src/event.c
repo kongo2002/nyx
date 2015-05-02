@@ -239,7 +239,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
     if (!unblock_socket(nl_sock))
         goto teardown;
 
-    if (!add_epoll_socket(nl_sock, &base_ev, epfd))
+    if (!add_epoll_socket(nl_sock, &base_ev, epfd, 0))
         goto teardown;
 
     /* add eventfd socket to epoll as well */
@@ -248,7 +248,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
         if (!unblock_socket(nyx->event))
             goto teardown;
 
-        if (!add_epoll_socket(nyx->event, &fd_ev, epfd))
+        if (!add_epoll_socket(nyx->event, &fd_ev, epfd, 0))
             goto teardown;
     }
 

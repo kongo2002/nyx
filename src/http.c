@@ -22,12 +22,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static volatile int need_exit = 0;
-
-static int
-http_init(const char *port)
+int
+http_init(unsigned port)
 {
     int sock_fd = 0, err = 0;
+    char port_buffer[8] = {0};
+
+    sprintf(port_buffer, "%u", port);
 
     /* get host address */
     struct addrinfo hints, *res = NULL, *addr = NULL;
@@ -39,7 +40,7 @@ http_init(const char *port)
 
     /* AI_PASSIVE and NULL as 'node' will result in the
      * wildcard interface */
-    err = getaddrinfo(NULL, port, &hints, &res);
+    err = getaddrinfo(NULL, port_buffer, &hints, &res);
 
     if (err != 0)
     {
@@ -77,40 +78,6 @@ http_init(const char *port)
     }
 
     return sock_fd;
-}
-
-static void
-handle_requests(int sock_fd)
-{
-}
-
-void *
-http_start(void *obj)
-{
-    nyx_t *nyx = obj;
-    int sock_fd = 0;
-    char port[8] = {0};
-
-    sprintf(port, "%u", nyx->options.http_port);
-
-    while (!need_exit)
-    {
-        if (sock_fd)
-            close(sock_fd);
-
-        if ((sock_fd = http_init(port)) != 0)
-        {
-            log_debug("Start listening on port %u", nyx->options.http_port);
-
-            handle_requests(sock_fd);
-            break;
-        }
-    }
-
-    if (sock_fd)
-        close(sock_fd);
-
-    return NULL;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

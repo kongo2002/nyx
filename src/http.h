@@ -15,8 +15,8 @@
 
 #include "def.h"
 
-void *
-http_start(void *obj);
+int
+http_init(unsigned port);
 
 /* vim: set et sw=4 sts=4 tw=80: */
 
