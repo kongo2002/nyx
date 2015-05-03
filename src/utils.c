@@ -160,9 +160,8 @@ strings_to_null_terminated(list_t *list)
 }
 
 const char **
-split_string(const char *str)
+split_string(const char *str, const char *chars)
 {
-    static const char *whitespace = " \t";
     char *string, *token, *to_free;
     const char **output;
     list_t *tokens;
@@ -174,7 +173,7 @@ split_string(const char *str)
     to_free = string;
     tokens = list_new(NULL);
 
-    while ((token = strsep(&string, whitespace)) != NULL)
+    while ((token = strsep(&string, chars)) != NULL)
     {
         if (!empty_or_whitespace(token))
             list_add(tokens, strdup(token));
@@ -184,6 +183,12 @@ split_string(const char *str)
     free(to_free);
 
     return output;
+}
+
+const char **
+split_string_whitespace(const char *str)
+{
+    return split_string(str, " \t");
 }
 
 void

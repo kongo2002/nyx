@@ -742,7 +742,7 @@ handle_request(struct epoll_event *event, nyx_t *nyx)
 
     /* parse input buffer */
     command_t *cmd = NULL;
-    const char **commands = split_string(extra->buffer);
+    const char **commands = split_string_whitespace(extra->buffer);
 
     if ((cmd = parse_command(commands)) != NULL)
     {

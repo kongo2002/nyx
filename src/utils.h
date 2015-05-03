@@ -28,7 +28,10 @@ unsigned long
 parse_size_unit(const char *input);
 
 const char **
-split_string(const char *string);
+split_string(const char *str, const char *chars);
+
+const char **
+split_string_whitespace(const char *str);
 
 void
 strings_free(char **strings);
