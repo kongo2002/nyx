@@ -25,26 +25,80 @@
 
 #define NYX_MAX_REQUEST_LEN 1024
 
-static void
+static int
 not_found(int fd)
 {
     const char response[] = "HTTP/1.0 404 Not Found\r\n"
         "Server: nyx\r\n"
+        "Content-Length: 10\r\n"
         "Content-Type: text/plain\r\n\r\n"
-        "not found\r\n";
+        "not found";
 
-    send(fd, response, LEN(response), MSG_NOSIGNAL);
+    return send(fd, response, LEN(response), MSG_NOSIGNAL) > 0;
 }
 
-static void
+static int
 bad_request(int fd)
 {
     const char response[] = "HTTP/1.0 400 Bad Request\r\n"
         "Server: nyx\r\n"
+        "Content-Length: 12\r\n"
         "Content-Type: text/plain\r\n\r\n"
-        "bad request\r\n";
+        "bad request";
 
-    send(fd, response, LEN(response), MSG_NOSIGNAL);
+    return send(fd, response, LEN(response), MSG_NOSIGNAL) > 0;
+}
+
+static int
+parse_header(epoll_extra_data_t *extra)
+{
+    char *buffer = extra->buffer;
+    char *hd_http, *hd_method, *hd_uri, *save_ptr;
+
+    /* minimum header length */
+    if (extra->pos < 4)
+        return 0;
+
+    /* parse method */
+    hd_method = strtok_r(buffer, " ", &save_ptr);
+    if (hd_method == NULL)
+        return 0;
+
+    /* currently GET is supported only */
+    if (strncmp(hd_method, "GET", 3) != 0)
+        return 0;
+
+    /* parse uri */
+    hd_uri = strtok_r(NULL, " ", &save_ptr);
+    if (hd_uri == NULL || *hd_uri != '/')
+        return 0;
+
+    /* parse http version */
+    hd_http = strtok_r(NULL, " ", &save_ptr);
+    if (hd_http == NULL)
+        return 0;
+
+    if (strncmp(hd_http, "HTTP/1.", 7) != 0)
+        return 0;
+
+    /* return length of the method part */
+    return hd_uri - buffer;
+}
+
+static int
+parse_request(epoll_extra_data_t *extra)
+{
+    unsigned method_len = parse_header(extra);
+
+    if (!method_len)
+        return 0;
+
+    /* skip method portion of request line */
+    const char *uri = extra->buffer + method_len;
+
+    log_debug("Received HTTP request to '%s'", uri);
+
+    return 1;
 }
 
 int
@@ -53,13 +107,13 @@ http_handle_request(struct epoll_event *event, nyx_t *nyx)
     int success = 0;
     ssize_t received = 0;
 
-    log_debug("Incoming HTTP request");
-
     epoll_extra_data_t *extra = event->data.ptr;
 
     /* start of new request? */
     if (extra->length == 0)
     {
+        log_debug("Incoming HTTP request");
+
         /* initialize message buffer */
         extra->buffer = xcalloc(NYX_MAX_REQUEST_LEN + 1, sizeof(char));
         extra->length = NYX_MAX_REQUEST_LEN;
@@ -81,7 +135,12 @@ http_handle_request(struct epoll_event *event, nyx_t *nyx)
         }
     }
 
-    not_found(extra->fd);
+    extra->pos += received;
+
+    if (!parse_request(extra))
+        bad_request(extra->fd);
+    else
+        not_found(extra->fd);
 
     success = 1;
 

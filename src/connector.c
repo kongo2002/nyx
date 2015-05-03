@@ -973,13 +973,6 @@ connector_run(nyx_t *nyx)
                     close(client);
                     continue;
                 }
-
-                /* determine which socket endpoint was triggered
-                 * unix socket or http */
-                if (extra->fd == http_sock)
-                {
-                    log_debug("this one is a http call");
-                }
             }
             else if (extra->fd == nyx->event)
             {
