@@ -18,9 +18,91 @@
 #include "log.h"
 #include "socket.h"
 
+#include <errno.h>
 #include <netdb.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#define NYX_MAX_REQUEST_LEN 1024
+
+static void
+not_found(int fd)
+{
+    const char response[] = "HTTP/1.0 404 Not Found\r\n"
+        "Server: nyx\r\n"
+        "Content-Type: text/plain\r\n\r\n"
+        "not found\r\n";
+
+    send(fd, response, LEN(response), MSG_NOSIGNAL);
+}
+
+static void
+bad_request(int fd)
+{
+    const char response[] = "HTTP/1.0 400 Bad Request\r\n"
+        "Server: nyx\r\n"
+        "Content-Type: text/plain\r\n\r\n"
+        "bad request\r\n";
+
+    send(fd, response, LEN(response), MSG_NOSIGNAL);
+}
+
+int
+http_handle_request(struct epoll_event *event, nyx_t *nyx)
+{
+    int success = 0;
+    ssize_t received = 0;
+
+    log_debug("Incoming HTTP request");
+
+    epoll_extra_data_t *extra = event->data.ptr;
+
+    /* start of new request? */
+    if (extra->length == 0)
+    {
+        /* initialize message buffer */
+        extra->buffer = xcalloc(NYX_MAX_REQUEST_LEN + 1, sizeof(char));
+        extra->length = NYX_MAX_REQUEST_LEN;
+    }
+
+    received = recv(extra->fd, extra->buffer + extra->pos, extra->length - extra->pos, 0);
+
+    if (received < 1)
+    {
+        if (received < 0)
+        {
+            if (errno == EAGAIN)
+                return 1;
+            else
+            {
+                log_perror("nyx: recv");
+                goto close;
+            }
+        }
+    }
+
+    not_found(extra->fd);
+
+    success = 1;
+
+close:
+    extra->pos = 0;
+    extra->length = 0;
+
+    if (extra->buffer)
+    {
+        free(extra->buffer);
+        extra->buffer = NULL;
+    }
+
+    close(extra->fd);
+
+    free(extra);
+    event->data.ptr = NULL;
+
+    return success;
+}
+
 
 int
 http_init(unsigned port)

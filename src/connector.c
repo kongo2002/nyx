@@ -684,66 +684,6 @@ init_nyx_addr(struct sockaddr_un *addr)
 }
 
 static int
-handle_http_request(struct epoll_event *event, nyx_t *nyx)
-{
-    int success = 0;
-    ssize_t received = 0;
-
-    log_debug("Incoming HTTP request");
-
-    epoll_extra_data_t *extra = event->data.ptr;
-
-    /* start of new request? */
-    if (extra->length == 0)
-    {
-        /* initialize message buffer */
-        extra->buffer = xcalloc(NYX_MAX_MSG_LEN + 1, sizeof(char));
-        extra->length = NYX_MAX_MSG_LEN;
-    }
-
-    received = recv(extra->fd, extra->buffer + extra->pos, extra->length - extra->pos, 0);
-
-    if (received < 1)
-    {
-        if (received < 0)
-        {
-            if (errno == EAGAIN)
-                return 1;
-            else
-            {
-                log_perror("nyx: recv");
-                goto close;
-            }
-        }
-    }
-
-    const char bad_request[] = "HTTP/1.0 200 OK\r\n"
-        "Server: nyx\r\n"
-        "Content-Type: text/plain\r\n\r\n"
-        "not implemented yet\r\n";
-    send(extra->fd, bad_request, LEN(bad_request), MSG_NOSIGNAL);
-
-    success = 1;
-
-close:
-    extra->pos = 0;
-    extra->length = 0;
-
-    if (extra->buffer)
-    {
-        free(extra->buffer);
-        extra->buffer = NULL;
-    }
-
-    close(extra->fd);
-
-    free(extra);
-    event->data.ptr = NULL;
-
-    return success;
-}
-
-static int
 handle_request(struct epoll_event *event, nyx_t *nyx)
 {
     int success = 0;
@@ -1050,7 +990,7 @@ connector_run(nyx_t *nyx)
             {
                 if (http_sock && extra->remote_socket == http_sock)
                 {
-                    if (!handle_http_request(event, nyx))
+                    if (!http_handle_request(event, nyx))
                         restart = 1;
                 }
                 else
