@@ -14,16 +14,27 @@
  */
 
 #include "http.h"
+#include "command.h"
 #include "nyx.h"
 #include "log.h"
 #include "socket.h"
+#include "strbuf.h"
+#include "utils.h"
 
 #include <errno.h>
 #include <netdb.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #define NYX_MAX_REQUEST_LEN 1024
+
+#define CRLF "\r\n"
+
+#define NYX_RESPONSE_HEADER \
+    "HTTP/1.0 200 OK" CRLF \
+    "Server: nyx" CRLF \
+    "Content-Type: text/plain" CRLF
 
 static int
 not_found(int fd)
@@ -85,7 +96,7 @@ parse_header(epoll_extra_data_t *extra)
     return hd_uri - buffer;
 }
 
-static int
+static const char *
 parse_request(epoll_extra_data_t *extra)
 {
     unsigned method_len = parse_header(extra);
@@ -98,7 +109,58 @@ parse_request(epoll_extra_data_t *extra)
 
     log_debug("Received HTTP request to '%s'", uri);
 
-    return 1;
+    return uri;
+}
+
+static int
+send_format(sender_callback_t *cb, const char *format, ...)
+    __attribute__((format(printf, 2, 3)));
+
+static int
+send_format(sender_callback_t *cb, const char *format, ...)
+{
+    int len = 0;
+    char buffer[512] = {0};
+    strbuf_t *str = cb->data;
+
+    va_list vas;
+    va_start(vas, format);
+    len = vsnprintf(buffer, LEN(buffer), format, vas);
+    va_end(vas);
+
+    strbuf_append(str, ">>> %s\n", buffer);
+
+    return len;
+}
+
+static int
+handle_command(command_t *cmd, const char **input, epoll_extra_data_t *extra, nyx_t *nyx)
+{
+    int retval = 0;
+    int fd = extra->fd;
+
+    strbuf_t *str = strbuf_new();
+    strbuf_t *response = strbuf_new_size(32);
+    sender_callback_t *cb = xcalloc1(sizeof(sender_callback_t));
+
+    cb->command = cmd->type;
+    cb->sender = send_format;
+    cb->data = str;
+
+    retval = cmd->handler(cb, input, nyx);
+
+    strbuf_append(response, NYX_RESPONSE_HEADER);
+    strbuf_append(response, "Content-Length: %lu" CRLF CRLF, str->length);
+    strbuf_append(response, "%s", str->buf);
+
+    send(fd, response->buf, response->length, MSG_NOSIGNAL);
+
+    strbuf_free(str);
+    strbuf_free(response);
+
+    free(cb);
+
+    return retval;
 }
 
 int
@@ -112,8 +174,6 @@ http_handle_request(struct epoll_event *event, nyx_t *nyx)
     /* start of new request? */
     if (extra->length == 0)
     {
-        log_debug("Incoming HTTP request");
-
         /* initialize message buffer */
         extra->buffer = xcalloc(NYX_MAX_REQUEST_LEN + 1, sizeof(char));
         extra->length = NYX_MAX_REQUEST_LEN;
@@ -137,10 +197,20 @@ http_handle_request(struct epoll_event *event, nyx_t *nyx)
 
     extra->pos += received;
 
-    if (!parse_request(extra))
+
+    const char *uri = parse_request(extra);
+    if (uri == NULL)
         bad_request(extra->fd);
     else
-        not_found(extra->fd);
+    {
+        command_t *cmd = NULL;
+        const char **commands = split_string(uri, "/");
+
+        if ((cmd = parse_command(commands)) != NULL && cmd->handler != NULL)
+            handle_command(cmd, commands, extra, nyx);
+        else
+            not_found(extra->fd);
+    }
 
     success = 1;
 

@@ -41,6 +41,7 @@ typedef struct sender_callback_t
     connector_command_e command;
     int (*sender)(struct sender_callback_t *, const char *, ...)
         __attribute__((format(printf, 2, 3)));
+    void *data;
 } sender_callback_t;
 
 typedef int (*command_handler)(sender_callback_t *, const char **, nyx_t *);

@@ -290,8 +290,6 @@ handle_request(struct epoll_event *event, nyx_t *nyx)
     int success = 0;
     ssize_t received = 0;
 
-    log_debug("Incoming unix socket request");
-
     epoll_extra_data_t *extra = event->data.ptr;
     int fd = extra->fd;
 
