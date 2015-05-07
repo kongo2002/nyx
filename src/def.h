@@ -18,7 +18,7 @@
 
 #include <stdlib.h>
 
-#define NYX_VERSION_NUMBER "1.2.0"
+#define NYX_VERSION_NUMBER "1.3.0"
 
 #ifndef GIT_VERSION
 #define NYX_GIT
