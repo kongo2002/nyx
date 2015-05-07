@@ -19,6 +19,7 @@
 #include "tests_proc.h"
 #include "tests_utils.h"
 #include "tests_socket.h"
+#include "tests_strbuf.h"
 #include "tests_timestack.h"
 
 int
@@ -38,7 +39,8 @@ main(UNUSED int argc, UNUSED char **argv)
         unit_test(test_proc_num_cpus),
         unit_test(test_proc_page_size),
         unit_test(test_parse_size_unit),
-        unit_test(test_check_http)
+        unit_test(test_check_http),
+        unit_test(test_strbuf_append)
     };
 
     return run_tests(tests);

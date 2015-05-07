@@ -18,10 +18,12 @@
 
 #include <stdarg.h>
 
+#define NYX_DEFAULT_STRBUF_SIZE 8
+
 strbuf_t *
 strbuf_new(void)
 {
-    return strbuf_new_size(8);
+    return strbuf_new_size(NYX_DEFAULT_STRBUF_SIZE);
 }
 
 strbuf_t *
@@ -29,7 +31,7 @@ strbuf_new_size(unsigned long initial_size)
 {
     strbuf_t *str = xcalloc1(sizeof(strbuf_t));
 
-    str->size = initial_size;
+    str->size = MAX(NYX_DEFAULT_STRBUF_SIZE, initial_size);
     str->buf = xcalloc(initial_size, sizeof(char));
 
     return str;
@@ -50,11 +52,11 @@ get_new_size(strbuf_t *buf, unsigned long print_length)
 unsigned long
 strbuf_append(strbuf_t *buf, const char *format, ...)
 {
-    unsigned long printed = 0;
-    unsigned long remaining = buf->size - buf->length;
-
     if (buf == NULL)
         return 0;
+
+    unsigned long printed = 0;
+    unsigned long remaining = buf->size - buf->length;
 
     /* immediately double size */
     if (remaining < 1)
@@ -75,6 +77,8 @@ strbuf_append(strbuf_t *buf, const char *format, ...)
 
     printed = vsnprintf(buf->buf + buf->length, remaining, format, vas);
 
+    va_end(vas);
+
     /* the output was truncated */
     if (printed >= remaining)
     {
@@ -86,14 +90,27 @@ strbuf_append(strbuf_t *buf, const char *format, ...)
             log_critical_perror("nyx: realloc");
 
         buf->buf = new_buffer;
+
+        va_start(vas, format);
         vsnprintf(buf->buf + buf->length, buf->size - buf->length, format, vas);
+        va_end(vas);
     }
 
     buf->length += printed;
 
-    va_end(vas);
-
     return printed;
+}
+
+void
+strbuf_clear(strbuf_t *buf)
+{
+    if (buf == NULL)
+        return;
+
+    if (buf->length > 0)
+        memset(buf->buf, 0, buf->size * sizeof(char));
+
+    buf->length = 0;
 }
 
 void

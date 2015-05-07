@@ -13,29 +13,12 @@
  * limitations under the License.
  */
 
-#include "def.h"
-
-typedef struct
-{
-    char *buf;
-    unsigned long size;
-    unsigned long length;
-} strbuf_t;
-
-strbuf_t *
-strbuf_new(void);
-
-strbuf_t *
-strbuf_new_size(unsigned long initial_size);
-
-unsigned long
-strbuf_append(strbuf_t *buf, const char *format, ...)
-    __attribute__((format(printf, 2, 3)));
+#ifndef __NYX_TESTS_STRBUF_H__
+#define __NYX_TESTS_STRBUF_H__
 
 void
-strbuf_free(strbuf_t *buf);
+test_strbuf_append(void **state);
 
-void
-strbuf_clear(strbuf_t *buf);
+#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */
