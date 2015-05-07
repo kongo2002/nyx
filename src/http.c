@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "http.h"
 #include "command.h"
-#include "nyx.h"
+#include "http.h"
 #include "log.h"
+#include "nyx.h"
 #include "socket.h"
 #include "strbuf.h"
 #include "utils.h"
@@ -39,10 +39,10 @@
 static int
 not_found(int fd)
 {
-    const char response[] = "HTTP/1.0 404 Not Found\r\n"
-        "Server: nyx\r\n"
-        "Content-Length: 10\r\n"
-        "Content-Type: text/plain\r\n\r\n"
+    const char response[] = "HTTP/1.0 404 Not Found" CRLF
+        "Server: nyx" CRLF
+        "Content-Length: 10" CRLF
+        "Content-Type: text/plain" CRLF CRLF
         "not found";
 
     return send(fd, response, LEN(response), MSG_NOSIGNAL) > 0;
@@ -51,10 +51,10 @@ not_found(int fd)
 static int
 bad_request(int fd)
 {
-    const char response[] = "HTTP/1.0 400 Bad Request\r\n"
-        "Server: nyx\r\n"
-        "Content-Length: 12\r\n"
-        "Content-Type: text/plain\r\n\r\n"
+    const char response[] = "HTTP/1.0 400 Bad Request" CRLF
+        "Server: nyx" CRLF
+        "Content-Length: 12" CRLF
+        "Content-Type: text/plain" CRLF CRLF
         "bad request";
 
     return send(fd, response, LEN(response), MSG_NOSIGNAL) > 0;
