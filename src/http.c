@@ -210,6 +210,8 @@ http_handle_request(struct epoll_event *event, nyx_t *nyx)
             handle_command(cmd, commands, extra, nyx);
         else
             not_found(extra->fd);
+
+        strings_free((char **)commands);
     }
 
     success = 1;

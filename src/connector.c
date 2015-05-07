@@ -407,7 +407,7 @@ connector_run(nyx_t *nyx)
 
     int sock = 0, error = 0, epfd = 0, http_sock = 0;
 
-    struct epoll_event base_ev, fd_ev, ev;
+    struct epoll_event base_ev, fd_ev, http_ev, ev;
     struct epoll_event *events = NULL;
 
     log_debug("Starting connector");
@@ -492,7 +492,7 @@ connector_run(nyx_t *nyx)
             if (!unblock_socket(http_sock))
                 goto teardown;
 
-            if (!add_epoll_socket(http_sock, &ev, epfd, http_sock))
+            if (!add_epoll_socket(http_sock, &http_ev, epfd, http_sock))
                 goto teardown;
         }
     }
@@ -621,7 +621,15 @@ teardown:
     }
 
     if (http_sock)
+    {
         close(http_sock);
+
+        if (http_ev.data.ptr)
+        {
+            free(http_ev.data.ptr);
+            http_ev.data.ptr = NULL;
+        }
+    }
 
     log_debug("Connector: terminated");
 
