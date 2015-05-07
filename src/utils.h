@@ -33,6 +33,9 @@ split_string(const char *str, const char *chars);
 const char **
 split_string_whitespace(const char *str);
 
+unsigned int
+count_args(const char **args);
+
 void
 strings_free(char **strings);
 

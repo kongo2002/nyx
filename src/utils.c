@@ -185,6 +185,21 @@ split_string(const char *str, const char *chars)
     return output;
 }
 
+unsigned int
+count_args(const char **args)
+{
+    unsigned int count = 0;
+    const char **arg = args;
+
+    while (*arg)
+    {
+        count++;
+        arg++;
+    }
+
+    return count;
+}
+
 const char **
 split_string_whitespace(const char *str)
 {

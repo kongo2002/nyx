@@ -15,6 +15,7 @@
 
 #include "config.h"
 #include "connector.h"
+#include "command.h"
 #include "def.h"
 #include "fs.h"
 #include "log.h"

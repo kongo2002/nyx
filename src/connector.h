@@ -18,51 +18,8 @@
 
 #include "nyx.h"
 
-typedef enum
-{
-    CMD_PING,
-    CMD_VERSION,
-    CMD_TERMINATE,
-    CMD_STOP,
-    CMD_START,
-    CMD_RESTART,
-    CMD_STATUS,
-    CMD_HISTORY,
-    CMD_CONFIG,
-    CMD_WATCHES,
-    CMD_RELOAD,
-    CMD_QUIT,
-    CMD_SIZE
-} connector_command_e;
-
-typedef struct sender_callback_t
-{
-    int client;
-    connector_command_e command;
-    int (*sender)(struct sender_callback_t *, const char *, ...)
-        __attribute__((format(printf, 2, 3)));
-} sender_callback_t;
-
-typedef int (*command_handler)(sender_callback_t *, const char **, nyx_t *);
-
-typedef struct
-{
-    connector_command_e type;
-    const char *name;
-    command_handler handler;
-    size_t cmd_length;
-    unsigned int min_args;
-    const char *description;
-} command_t;
-
 int
 connector_call(const char **commands, int quiet);
-
-command_t *
-parse_command(const char **input);
-
-void
-print_commands(FILE *out);
 
 void *
 connector_start(void *nyx);

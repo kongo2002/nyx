@@ -14,6 +14,7 @@
  */
 
 #include "connector.h"
+#include "command.h"
 #include "event.h"
 #include "log.h"
 #include "nyx.h"
