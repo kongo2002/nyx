@@ -666,6 +666,7 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
 DECLARE_NYX_FUNC_VALUE(uatoi, polling_interval)
 DECLARE_NYX_FUNC_VALUE(uatoi, check_interval)
 DECLARE_NYX_FUNC_VALUE(uatoi, history_size)
+DECLARE_NYX_FUNC_VALUE(uatoi, http_port)
 
 #ifdef USE_PLUGINS
 DECLARE_NYX_FUNC_VALUE(strdup, plugins)
@@ -678,6 +679,7 @@ static struct config_parser_map nyx_value_map[] =
     SCALAR_HANDLER("polling_interval", handle_nyx_value_polling_interval),
     SCALAR_HANDLER("check_interval", handle_nyx_value_check_interval),
     SCALAR_HANDLER("history_size", handle_nyx_value_history_size),
+    SCALAR_HANDLER("http_port", handle_nyx_value_http_port),
 #ifdef USE_PLUGINS
     SCALAR_HANDLER("plugin_dir", handle_nyx_value_plugins),
 #endif
@@ -686,7 +688,8 @@ static struct config_parser_map nyx_value_map[] =
 static parse_info_t *
 unknown_nyx_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    /* no op */
+    info->handler[YAML_SCALAR_EVENT] = handle_nyx_key;
+
     return info;
 }
 
@@ -708,6 +711,8 @@ handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 
     if (handler == NULL)
     {
+        log_warn("Unknown nyx config key: '%s'", key);
+
         info->handler[YAML_SCALAR_EVENT] = unknown_nyx_key;
         info->handler[YAML_MAPPING_START_EVENT] = unknown_nyx_key;
         info->handler[YAML_SEQUENCE_START_EVENT] = unknown_nyx_key;
