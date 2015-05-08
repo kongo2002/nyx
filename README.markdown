@@ -248,7 +248,7 @@ $ curl localhost:8080/ping
 >>> pong
 
 $ curl localhost:8080/version
->>> nyx-1.3.0
+>>> 1.3.0
 
 $ curl localhost:8080/stop/app
 >>> requested stop for watch 'app'
@@ -308,7 +308,7 @@ $ make PLUGINS=1
 ```
 
 Moreover you have to configure the directory where *nyx* will search for dynamic
-plugin libraries. *nyx* tries to load every `*.so` plugin file on startup.
+plugin libraries. *nyx* tries to load every `.so` plugin file on startup.
 
 ```yaml
 # where to look for plugin files
