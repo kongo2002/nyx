@@ -101,6 +101,11 @@ nyx:
     # size of the history of per-application states
     # (which can be observed via the 'history' command)
     history_size: 20
+
+    # you may configure nyx to open an additional port
+    # that serves an HTTP endpoint similar to the local unix
+    # domain socket
+    http_port: 8080
 ```
 
 
@@ -229,6 +234,26 @@ Right now the following commands are implemented:
 - `reload`: reload the nyx configuration
 - `terminate`: terminate the nyx daemon
 - `quit`: stop the nyx daemon and all watched processes
+
+
+### HTTP command interface
+
+Similar to the default unix domain socket command interface you may configure
+nyx with a `http_port`. That port serves an HTTP endpoint that responds to
+*GET* requests like this:
+
+```bash
+$ curl localhost:8080/ping
+>>> pong
+
+$ curl localhost:8080/version
+>>> nyx-1.3.0
+
+$ curl localhost:8080/stop/app
+>>> requested stop for watch 'app'
+```
+
+The HTTP interface supports all commands of the usual command interface as well.
 
 
 ## Building
