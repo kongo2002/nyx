@@ -21,6 +21,7 @@ sane default configuration values.
 - validate configurable HTTP endpoints
 - minimal dependencies
 - small memory footprint
+- C plugin architecture *(disabled by default)*
 
 The project is inspired by [god][god] - the great ruby process monitor.
 
@@ -298,6 +299,45 @@ The following libraries are necessary to build and run *nyx*:
 - `cmocka` *(for unit tests only)*
 
 
+### Plugin architecture
+
+You may build a *plugin-enabled* nyx version by passing `PLUGINS=1`:
+
+```bash
+$ make PLUGINS=1
+```
+
+Moreover you have to configure the directory where *nyx* will search for dynamic
+plugin libraries. *nyx* tries to load every `*.so` plugin file on startup.
+
+```yaml
+# where to look for plugin files
+nyx:
+    plugin_dir: /var/lib/nyx/plugins
+
+# as plugins may require some config values
+# the whole 'plugins' key/values are passed
+# to every successfully loaded plugin
+plugins:
+    test_key: value
+```
+
+Every C plugin needs to contain at least the `plugin_init` function that is
+expected to return a non-zero return code:
+
+```c
+int
+plugin_init(plugin_manager_t *manager)
+{
+    return 1;
+}
+
+```
+
+You can have a look in the [/plugins/][plugins] subdirectory of this repository
+to see some example plugins.
+
+
 ## Maintainer
 
 The project is written by Gregor Uhlenheuer. You can reach me at
@@ -315,6 +355,7 @@ The project is written by Gregor Uhlenheuer. You can reach me at
 > limitations under the License.
 
 
+[plugins]: https://github.com/kongo2002/nyx/tree/master/plugins/
 [travis]: https://travis-ci.org/kongo2002/nyx/
 [god]: https://github.com/mojombo/god/
 [mail]: mailto:kongo2002@gmail.com
