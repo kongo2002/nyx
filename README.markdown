@@ -13,12 +13,13 @@ sane default configuration values.
 
 ### Features
 
-- control applications via command interface (unix domain socket)
-- [docker][docker] compatible `init` replacement
-- [YAML][yaml] configuration
+- applications are being watched and kept alive (i.e. restarted) automatically
+- simple [YAML][yaml] configuration
 - observe processes' CPU/memory utilization
 - check for opened ports if configured
 - validate configurable HTTP endpoints
+- [docker][docker] compatible `init` replacement
+- control applications via command interface (unix domain socket)
 - minimal dependencies
 - small memory footprint
 - C plugin architecture *(disabled by default)*
