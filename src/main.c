@@ -40,6 +40,9 @@ daemon_mode(nyx_t *nyx)
         log_warn("Failed to initialize event manager "
                   "- trying polling mechanism next");
 
+        log_warn("Try enabling CONFIG_CONNECTOR in your kernel config "
+                 "and run nyx with root privileges");
+
         if (!poll_loop(nyx, dispatch_poll_result))
         {
             log_error("Failed to start loop manager as well - terminating");
