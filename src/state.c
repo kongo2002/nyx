@@ -751,14 +751,14 @@ state_destroy(state_t *state)
 
     if (state->thread != NULL)
     {
-        int join = 0;
+        int join = 0, join_timeout = MAX(NYX_STATE_JOIN_TIMEOUT, state->watch->stop_timeout);
         void *retval;
         time_t now = time(NULL);
         const char *name = state->watch->name;
 
         const struct timespec timeout =
         {
-            .tv_sec = now + NYX_STATE_JOIN_TIMEOUT,
+            .tv_sec = now + join_timeout,
             .tv_nsec = 0
         };
 
@@ -772,7 +772,7 @@ state_destroy(state_t *state)
             if (errno == ETIMEDOUT)
             {
                 log_error("State thread of watch '%s' failed to terminate "
-                          "after waiting %ds", name, NYX_STATE_JOIN_TIMEOUT);
+                          "after waiting %ds", name, join_timeout);
             }
 
             log_error("Joining of state thread of watch '%s' failed: %d",
