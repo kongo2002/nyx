@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "def.h"
 #include "fs.h"
 #include "log.h"
@@ -32,6 +34,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+#define NYX_STATE_JOIN_TIMEOUT 30
 
 typedef int (*transition_func_t)(state_t *, state_e, state_e);
 
@@ -749,15 +753,28 @@ state_destroy(state_t *state)
     {
         int join = 0;
         void *retval;
+        time_t now = time(NULL);
+        const char *name = state->watch->name;
 
-        log_debug("Waiting for state thread of watch '%s' to terminate",
-                state->watch->name);
+        const struct timespec timeout =
+        {
+            .tv_sec = now + NYX_STATE_JOIN_TIMEOUT,
+            .tv_nsec = 0
+        };
+
+        log_debug("Waiting for state thread of watch '%s' to terminate", name);
 
         /* join thread */
-        join = pthread_join(*state->thread, &retval);
+        join = pthread_timedjoin_np(*state->thread, &retval, &timeout);
 
         if (join != 0)
         {
+            if (errno == ETIMEDOUT)
+            {
+                log_error("State thread of watch '%s' failed to terminate "
+                          "after waiting %ds", name, NYX_STATE_JOIN_TIMEOUT);
+            }
+
             log_error("Joining of state thread of watch '%s' failed: %d",
                     state->watch->name, join);
         }
