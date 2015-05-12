@@ -752,7 +752,6 @@ state_destroy(state_t *state)
     if (state->thread != NULL)
     {
         int join = 0, join_timeout = MAX(NYX_STATE_JOIN_TIMEOUT, state->watch->stop_timeout);
-        void *retval;
         time_t now = time(NULL);
         const char *name = state->watch->name;
 
@@ -765,7 +764,7 @@ state_destroy(state_t *state)
         log_debug("Waiting for state thread of watch '%s' to terminate", name);
 
         /* join thread */
-        join = pthread_timedjoin_np(*state->thread, &retval, &timeout);
+        join = pthread_timedjoin_np(*state->thread, NULL, &timeout);
 
         if (join != 0)
         {
