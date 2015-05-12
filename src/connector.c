@@ -217,7 +217,13 @@ connector_call(const char **commands, int quiet)
 
     if (res == -1)
     {
-        log_perror("nyx: connect");
+        /* specialized error message for the common scenario
+         * that the daemon is not running */
+        if (errno == ENOENT)
+            log_error("Failed to connect to nyx - the daemon is probably not running");
+        else
+            log_perror("nyx: connect");
+
         return 0;
     }
 
