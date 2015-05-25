@@ -1,6 +1,7 @@
 *.d
 *.o
 *.pyc
+*.so
 /config.yaml
 /nyx.1.gz
 nyx
