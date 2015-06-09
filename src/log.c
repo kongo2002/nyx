@@ -191,7 +191,7 @@ log_format_msg(FILE *stream, log_level_e level, const char *format, va_list valu
 }
 
 void
-log_message(FILE *stream, log_level_e level, const char *format, ...)
+log_message(nyx_t *nyx, log_level_e level, const char *format, ...)
 {
     if (!quiet)
     {
@@ -201,7 +201,24 @@ log_message(FILE *stream, log_level_e level, const char *format, ...)
         if (use_syslog)
             vsyslog(get_syslog_level(level), format, vas);
         else
+        {
+            FILE *stream = stdout;
+
+            /* write to log file in case we are running as a daemon */
+            if (!nyx->options.no_daemon && !nyx->is_init)
+            {
+                stream = fopen("/var/log/nyx.log", "a");
+
+                /* fallback to stdout */
+                if (stream == NULL)
+                    stream = stdout;
+            }
+
             log_format_msg(stream, level, format, vas);
+
+            if (stream != NULL && stream != stdout)
+                fclose(stream);
+        }
 
         va_end(vas);
     }

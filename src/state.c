@@ -337,7 +337,8 @@ spawn_exec(state_t *state, int start)
 
     if (errno == ENOENT)
     {
-        fprintf(stderr, "%s command '%s' of watch '%s' is not "
+        log_message(state->nyx, NYX_LOG_ERROR,
+                "%s command '%s' of watch '%s' is not "
                 "executable or does not exist at all",
                 (start ? "Start" : "Stop"),
                 executable,
@@ -934,8 +935,10 @@ state_loop(state_t *state)
          * TODO: configurable */
         if (is_flapping(state, 5, 60))
         {
-            log_warn("Watch '%s' appears to be flapping - delay for 5 minutes",
-                    watch->name);
+            log_warn("Watch '%s' appears to be flapping - delay for 5 minutes. "
+                     "Probably the start command is not executable or does "
+                     "not exist at all.",
+                     watch->name);
 
             /* TODO: use select instead */
             safe_sleep(state, 5 * 60);
