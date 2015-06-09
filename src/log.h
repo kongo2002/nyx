@@ -37,8 +37,8 @@ void
 log_shutdown(void);
 
 void
-log_message(log_level_e level, const char *format, ...)
-    __attribute__((format(printf, 2, 3)));
+log_message(FILE *stream, log_level_e level, const char *format, ...)
+    __attribute__((format(printf, 3, 4)));
 
 #define DECLARE_LOG_PROTO(type_, ...) \
     void log_##type_(const char* format, ...) \

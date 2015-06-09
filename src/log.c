@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <time.h>
 #include <unistd.h>
 
 static volatile int use_syslog = 0;
@@ -125,21 +126,33 @@ get_log_prefix(log_level_e level)
 }
 
 static void
-log_msg(log_level_e level, const char *msg, size_t length)
+log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
 {
     /* safe errno */
     int error = errno;
+
+    time_t now = time(NULL);
+    struct tm *time = localtime(&now);
 
     if (color)
     {
         size_t start_length;
         const char *start_color = get_log_color(level, &start_length);
 
-        fwrite(start_color, start_length, 1, stdout);
+        fwrite(start_color, start_length, 1, stream);
     }
 
-    fwrite(get_log_prefix(level), 4, 1, stdout);
-    fwrite(msg, length, 1, stdout);
+    fwrite(get_log_prefix(level), 4, 1, stream);
+
+    fprintf(stream, "%04d-%02d-%02dT%02d:%02d:%02d ",
+                time->tm_year + 1900,
+                time->tm_mon + 1,
+                time->tm_mday,
+                time->tm_hour,
+                time->tm_min,
+                time->tm_sec);
+
+    fwrite(msg, length, 1, stream);
 
     /* errno specific handling */
     if (level & NYX_LOG_PERROR)
@@ -147,24 +160,24 @@ log_msg(log_level_e level, const char *msg, size_t length)
         char buffer[512];
         char *error_msg = strerror_r(error, buffer, 511);
 
-        fputc(':', stdout);
-        fputc(' ', stdout);
-        fwrite(error_msg, strlen(error_msg), 1, stdout);
+        fputc(':', stream);
+        fputc(' ', stream);
+        fwrite(error_msg, strlen(error_msg), 1, stream);
     }
 
     if (color)
     {
         /* write end of coloring */
-        fwrite("\033[0m", 4, 1, stdout);
+        fwrite("\033[0m", 4, 1, stream);
     }
 
-    fputc('\n', stdout);
+    fputc('\n', stream);
 
     errno = error;
 }
 
 static void
-log_format_msg(log_level_e level, const char *format, va_list values)
+log_format_msg(FILE *stream, log_level_e level, const char *format, va_list values)
 {
     char *msg;
 
@@ -172,13 +185,13 @@ log_format_msg(log_level_e level, const char *format, va_list values)
 
     if (length > 0)
     {
-        log_msg(level, msg, length);
+        log_msg(stream, level, msg, length);
         free(msg);
     }
 }
 
 void
-log_message(log_level_e level, const char *format, ...)
+log_message(FILE *stream, log_level_e level, const char *format, ...)
 {
     if (!quiet)
     {
@@ -188,7 +201,7 @@ log_message(log_level_e level, const char *format, ...)
         if (use_syslog)
             vsyslog(get_syslog_level(level), format, vas);
         else
-            log_format_msg(level, format, vas);
+            log_format_msg(stream, level, format, vas);
 
         va_end(vas);
     }
@@ -208,7 +221,7 @@ log_message(log_level_e level, const char *format, ...)
             if (use_syslog) \
                 vsyslog(get_syslog_level(level_), format, vas); \
             else \
-                log_format_msg(level_, format, vas); \
+                log_format_msg(stdout, level_, format, vas); \
             va_end(vas); \
         } \
         if ((level_) & NYX_LOG_CRITICAL) abort(); \
