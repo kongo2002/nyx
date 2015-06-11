@@ -247,18 +247,9 @@ daemonize(nyx_t *nyx)
                 log_critical_perror("nyx: open");
         }
 
-        /* try to use /var/log/nyx.err otherwise /dev/null */
         close(STDERR_FILENO);
-        if (nyx->options.syslog ||
-                open("/var/log/nyx.err",
-                    O_RDWR | O_APPEND | O_CREAT,
-                    S_IRUSR | S_IWUSR |
-                    S_IRGRP | S_IWGRP |
-                    S_IROTH | S_IWOTH) == -1)
-        {
-            if (open("/dev/null", O_RDWR) == -1)
-                log_critical_perror("nyx: open");
-        }
+        if (open("/dev/null", O_RDWR) == -1)
+            log_critical_perror("nyx: open");
 
         /* refresh to new daemon pid */
         nyx->pid = getpid();
