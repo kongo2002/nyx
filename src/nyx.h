@@ -27,8 +27,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#define NYX_DEFAULT_LOG_FILE "/var/log/nyx.log"
-
 typedef struct
 {
     int quiet;
