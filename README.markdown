@@ -95,18 +95,25 @@ watches:
 
 # general nyx settings
 nyx:
+    # log file location of the nyx daemon process
+    # (optional)
+    log_file: /var/log/nyx.log
+
     # interval between consecutive application checks (in sec)
     # this setting is used only in case the event interface
     # using the kernel userspace connector cannot be used
+    # (optional)
     polling_interval: 5
 
     # size of the history of per-application states
     # (which can be observed via the 'history' command)
+    # (optional)
     history_size: 20
 
     # you may configure nyx to open an additional port
     # that serves an HTTP endpoint similar to the local unix
     # domain socket
+    # (optional)
     http_port: 8080
 ```
 
