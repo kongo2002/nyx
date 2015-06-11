@@ -667,6 +667,7 @@ DECLARE_NYX_FUNC_VALUE(uatoi, polling_interval)
 DECLARE_NYX_FUNC_VALUE(uatoi, check_interval)
 DECLARE_NYX_FUNC_VALUE(uatoi, history_size)
 DECLARE_NYX_FUNC_VALUE(uatoi, http_port)
+DECLARE_NYX_FUNC_VALUE(strdup, log_file)
 
 #ifdef USE_PLUGINS
 DECLARE_NYX_FUNC_VALUE(strdup, plugins)
@@ -680,6 +681,7 @@ static struct config_parser_map nyx_value_map[] =
     SCALAR_HANDLER("check_interval", handle_nyx_value_check_interval),
     SCALAR_HANDLER("history_size", handle_nyx_value_history_size),
     SCALAR_HANDLER("http_port", handle_nyx_value_http_port),
+    SCALAR_HANDLER("log_file", handle_nyx_value_log_file),
 #ifdef USE_PLUGINS
     SCALAR_HANDLER("plugin_dir", handle_nyx_value_plugins),
 #endif

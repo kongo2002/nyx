@@ -207,7 +207,11 @@ log_message(nyx_t *nyx, log_level_e level, const char *format, ...)
             /* write to log file in case we are running as a daemon */
             if (!nyx->options.no_daemon && !nyx->is_init)
             {
-                stream = fopen("/var/log/nyx.log", "a");
+                const char *log_file = nyx->options.log_file
+                    ? nyx->options.log_file
+                    : NYX_DEFAULT_LOG_FILE;
+
+                stream = fopen(log_file, "a");
 
                 /* fallback to stdout */
                 if (stream == NULL)

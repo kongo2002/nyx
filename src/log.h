@@ -20,6 +20,8 @@
 
 #include "nyx.h"
 
+#define NYX_DEFAULT_LOG_FILE "/var/log/nyx.log"
+
 typedef enum
 {
     NYX_LOG_DEBUG    = 1 << 0,

@@ -27,6 +27,8 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#define NYX_DEFAULT_LOG_FILE "/var/log/nyx.log"
+
 typedef struct
 {
     int quiet;
@@ -40,6 +42,7 @@ typedef struct
     unsigned check_interval;
     unsigned history_size;
     const char *config_file;
+    const char *log_file;
     const char **commands;
 #ifdef USE_PLUGINS
     const char *plugins;

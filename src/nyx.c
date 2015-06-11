@@ -228,6 +228,10 @@ daemonize(nyx_t *nyx)
             return 0;
         }
 
+        const char *log_file = nyx->options.log_file
+            ? nyx->options.log_file
+            : NYX_DEFAULT_LOG_FILE;
+
         /* reopen file descriptors */
 
         close(STDIN_FILENO);
@@ -237,7 +241,7 @@ daemonize(nyx_t *nyx)
         /* try to use /var/log/nyx.log otherwise /dev/null */
         close(STDOUT_FILENO);
         if (nyx->options.syslog ||
-                open("/var/log/nyx.log",
+                open(log_file,
                     O_WRONLY | O_APPEND | O_CREAT,
                     S_IRUSR | S_IWUSR |
                     S_IRGRP | S_IWGRP |
@@ -715,6 +719,16 @@ destroy_plugins(nyx_t *nyx)
 #endif
 }
 
+static void
+destroy_options(nyx_t *nyx)
+{
+    if (nyx->options.log_file)
+    {
+        free((void *)nyx->options.log_file);
+        nyx->options.log_file = NULL;
+    }
+}
+
 /**
  * @brief Reload the current nyx instance configuration
  * @param nyx nyx instance to reload
@@ -728,6 +742,7 @@ nyx_reload(nyx_t *nyx)
     destroy_plugins(nyx);
     shutdown_proc(nyx);
     clear_watches(nyx);
+    destroy_options(nyx);
 
     nyx->watches = hash_new(_watch_destroy);
     nyx->states = list_new(_state_destroy);
@@ -748,7 +763,7 @@ nyx_reload(nyx_t *nyx)
         }
     }
 
-    log_info("Failed to reload nyx");
+    log_warn("Failed to reload nyx");
 
     return 0;
 }
@@ -796,6 +811,8 @@ nyx_destroy(nyx_t *nyx)
         free(nyx->options.commands);
         nyx->options.commands = NULL;
     }
+
+    destroy_options(nyx);
 
     if (nyx->event > 0)
         close(nyx->event);
