@@ -68,7 +68,7 @@ _state_destroy(void *state)
 void
 print_usage(FILE *out)
 {
-    fputs("usage: nyx -c <file> [options]\n"
+    fputs("Usage: nyx -c <file> [options]\n"
           "       nyx <command>\n"
           "\n"
           "Available commands:\n", out);
