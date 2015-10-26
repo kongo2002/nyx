@@ -715,9 +715,7 @@ dispatch_poll_result(int pid, int running, nyx_t *nyx)
 state_t *
 state_new(watch_t *watch, nyx_t *nyx)
 {
-    int init = 0;
-
-    sem_t *semaphore = xcalloc1(sizeof(sem_t));
+    sem_t *semaphore = NULL;
     state_t *state = xcalloc1(sizeof(state_t));
 
     state->nyx = nyx;
@@ -725,13 +723,25 @@ state_new(watch_t *watch, nyx_t *nyx)
     state->state = STATE_UNMONITORED;
     state->history = timestack_new(MAX(nyx->options.history_size, 20));
 
+#ifndef OSX
     /* initialize unnamed semaphore
      * - process-local semaphore
      * - initially unlocked (= 1) */
-    init = sem_init(semaphore, 0, 1);
+    semaphore = xcalloc1(sizeof(sem_t));
+
+    int init = sem_init(semaphore, 0, 1);
 
     if (init == -1)
         log_critical_perror("nyx: sem_init");
+#else
+    /* initialize a named-semaphore as OSX does not support unnamed ones
+     * - chmod of the semaphore
+     * - initially unlocked (= 1) */
+    semaphore = sem_open(watch->name, O_CREAT, 0644, 1);
+
+    if (semaphore == SEM_FAILED)
+        log_critical_perror("nyx: sem_open");
+#endif
 
     state->sem = semaphore;
 
@@ -789,8 +799,13 @@ state_destroy(state_t *state)
 
     if (sem != NULL)
     {
+#ifndef OSX
         sem_destroy(sem);
         free(sem);
+#else
+        sem_close(sem);
+        sem_unlink(state->watch->name);
+#endif
     }
 
     if (state->history)
