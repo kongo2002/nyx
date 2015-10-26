@@ -390,24 +390,20 @@ close:
 
     free(extra);
 
-#ifndef OSX
-    event->data.ptr = NULL;
-#else
-    event->udata = NULL;
-#endif
+    NYX_EV_GET(event) = NULL;
 
     return success;
 }
 
 static void
-handle_eventfd(NYX_EV_TYPE *event, nyx_t *nyx)
+handle_eventfd(NYX_EV_TYPE *event)
 {
     int err = 0;
     uint64_t value = 0;
     epoll_extra_data_t *extra = NYX_EV_GET(event);
     int fd = extra->fd;
 
-    log_debug("Received epoll event on eventfd interface (%d)", fd);
+    log_debug("Received notification on event interface (%d)", fd);
 
     err = read(fd, &value, sizeof(value));
 
@@ -451,7 +447,8 @@ connector_run(nyx_t *nyx)
     /* ignore SIGPIPE signals (on OSX) */
 #if defined(SO_NOSIGPIPE)
     int on = 1;
-    setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on));
+    if (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on)) != 0)
+        log_perror("nyx: setsockopt");
 #endif
 
     /* remove any existing nyx sockets */
@@ -615,7 +612,7 @@ connector_run(nyx_t *nyx)
             }
             else if (extra->fd == event_interface)
             {
-                handle_eventfd(event, nyx);
+                handle_eventfd(event);
             }
             /* incoming data from one of the client sockets */
             else

@@ -279,21 +279,21 @@ init_event_interface(nyx_t *nyx)
 #ifndef OSX
     nyx->event = eventfd(0, 0);
 
-    if (nyx->event < 1)
-    {
-        log_perror("nyx: eventfd");
-    }
-#else
+    if (nyx->event > 0)
+        return;
+
+    log_perror("nyx: eventfd");
+#endif
+
     /* OSX does not support the eventfd interface
      * that's why we are going to use pipes in that case */
     if (pipe(nyx->event_pipe) == -1)
         log_perror("nyx: pipe");
     else
     {
-        log_debug("Opened event pipe on (%d, %d)",
+        log_debug("Opened event pipe on (read %d, write %d)",
                 nyx->event_pipe[0], nyx->event_pipe[1]);
     }
-#endif
 }
 
 /**
@@ -841,6 +841,12 @@ nyx_destroy(nyx_t *nyx)
 
     if (nyx->event > 0)
         close(nyx->event);
+    else
+    {
+        /* close pipes if no eventfd exists */
+        close(nyx->event_pipe[0]);
+        close(nyx->event_pipe[1]);
+    }
 
     if (nyx->is_daemon)
         clear_pid("nyx", nyx);

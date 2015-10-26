@@ -995,12 +995,7 @@ state_loop_start(void *data)
 {
     state_t *state = data;
 
-    /* if there is no active eventfd interface we are using
-     * pipes instead -> close the write end now */
-    //if (state->nyx->event < 1)
-        //close(state->nyx->event_pipe[1]);
-
-    state_loop((state_t *)state);
+    state_loop(state);
 
     return NULL;
 }
