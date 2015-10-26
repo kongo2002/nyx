@@ -150,6 +150,10 @@ nyx_proc_init(pid_t pid)
 
         return NULL;
     }
+    else
+    {
+        log_debug("Total memory: %lu MB", proc->total_memory / 1024 / 1024);
+    }
 
     if (proc->num_cpus < 1)
     {
@@ -158,6 +162,11 @@ nyx_proc_init(pid_t pid)
 
         return NULL;
     }
+    else
+    {
+        log_debug("Number of CPUs: %d", proc->num_cpus);
+    }
+
 
     if (proc->page_size < 1)
     {
@@ -521,10 +530,26 @@ get_page_size(void)
     return value;
 }
 
-unsigned long
-total_memory_size(void)
+static unsigned long
+total_memory_size_sysconf(void)
+{
+#if defined(_SC_PAGESIZE) && defined(_SC_PHYS_PAGES)
+    long pageSize = get_page_size();
+    unsigned long pages = sysconf(_SC_PHYS_PAGES);
+
+    if (pageSize > 0L && pages > 0L)
+        return pageSize * pages;
+#endif
+
+    return 0L;
+}
+
+static unsigned long
+total_memory_size_proc(void)
 {
     unsigned long mem_size = 0;
+
+#ifndef OSX
     FILE *proc = fopen("/proc/meminfo", "r");
 
     if (proc == NULL)
@@ -540,13 +565,28 @@ total_memory_size(void)
     }
 
     fclose(proc);
+#endif
+
     return mem_size;
 }
 
-int
-num_cpus(void)
+unsigned long
+total_memory_size(void)
+{
+    unsigned long mem_size = total_memory_size_proc();
+
+    if (mem_size < 1L)
+        return total_memory_size_sysconf();
+
+    return mem_size;
+}
+
+static int
+num_cpus_proc(void)
 {
     int cpus = -1;
+
+#ifndef OSX
     FILE *proc = fopen("/proc/stat", "r");
     char buffer[256] = {0};
 
@@ -564,6 +604,37 @@ num_cpus(void)
     }
 
     fclose(proc);
+#endif
+
+    return cpus;
+}
+
+static int
+num_cpus_sysconf(void)
+{
+    int cpus = 0;
+
+#if defined(_SC_NPROCESSORS_ONLN)
+    cpus = sysconf(_SC_NPROCESSORS_ONLN);
+
+    if (cpus == -1)
+    {
+        log_perror("nyx: sysconf");
+        return 0;
+    }
+#endif
+
+    return cpus;
+}
+
+int
+num_cpus(void)
+{
+    int cpus = num_cpus_proc();
+
+    if (cpus < 1)
+        return num_cpus_sysconf();
+
     return cpus;
 }
 
