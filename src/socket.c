@@ -278,10 +278,8 @@ add_epoll_socket(int socket, struct kevent *event, int epoll, int remote)
 
     epoll_extra_data_t *data = epoll_extra_data_new(socket, remote);
 
-    event->udata = data;
-
     /* add read mask */
-    EV_SET(event, socket, EVFILT_READ, EV_ADD, 0, 0, NULL);
+    EV_SET(event, socket, EVFILT_READ, EV_ADD, 0, 0, data);
 
     error = kevent(epoll, event, 1, NULL, 0, NULL);
 

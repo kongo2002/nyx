@@ -125,16 +125,27 @@ wait_interval(unsigned int seconds)
 void
 wait_interval_fd(int fd, unsigned int seconds)
 {
-    struct timeval tv;
+    if (fd > 0)
+    {
+        struct timeval tv;
 
-    tv.tv_usec = 0;
-    tv.tv_sec = seconds;
+        tv.tv_usec = 0;
+        tv.tv_sec = seconds;
 
-    fd_set set;
-    FD_ZERO(&set);
-    FD_SET(fd, &set);
+        fd_set set;
+        FD_ZERO(&set);
+        FD_SET(fd, &set);
 
-    select(fd+1, &set, NULL, NULL, &tv);
+        select(fd+1, &set, NULL, NULL, &tv);
+    }
+    else
+    {
+        /* if there is no valid file descriptor
+         * there is no way to properly select
+         * this will happen on OSX as there is
+         * no event fd support */
+        wait_interval(seconds);
+    }
 }
 
 const char **

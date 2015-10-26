@@ -55,6 +55,7 @@ typedef struct
     int is_daemon;
     const char *pid_dir;
     int event;
+    int event_pipe[2];
     void (*terminate_handler)(int);
     pthread_t *connector_thread;
     pthread_t *proc_thread;

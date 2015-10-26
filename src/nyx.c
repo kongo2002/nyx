@@ -273,6 +273,29 @@ daemonize(nyx_t *nyx)
     return 1;
 }
 
+static void
+init_event_interface(nyx_t *nyx)
+{
+#ifndef OSX
+    nyx->event = eventfd(0, 0);
+
+    if (nyx->event < 1)
+    {
+        log_perror("nyx: eventfd");
+    }
+#else
+    /* OSX does not support the eventfd interface
+     * that's why we are going to use pipes in that case */
+    if (pipe(nyx->event_pipe) == -1)
+        log_perror("nyx: pipe");
+    else
+    {
+        log_debug("Opened event pipe on (%d, %d)",
+                nyx->event_pipe[0], nyx->event_pipe[1]);
+    }
+#endif
+}
+
 /**
  * @brief Daemon mode initialization
  * @param nyx nyx instance
@@ -336,14 +359,7 @@ initialize_daemon(nyx_t *nyx)
     }
 
     /* initialize eventfd with an initial value of '0' */
-#ifndef OSX
-    nyx->event = eventfd(0, 0);
-
-    if (nyx->event < 1)
-    {
-        log_perror("nyx: eventfd");
-    }
-#endif
+    init_event_interface(nyx);
 
     /* start connector */
     nyx->connector_thread = xcalloc(1, sizeof(pthread_t));
@@ -641,10 +657,15 @@ signal_eventfd(uint64_t signal, nyx_t *nyx)
 {
     int error = 0;
 
+    /* no event interface -> use pipes instead */
     if (nyx->event < 1)
-        return 0;
-
-    error = write(nyx->event, &signal, sizeof(signal));
+    {
+        error = write(nyx->event_pipe[1], &signal, sizeof(signal));
+    }
+    else
+    {
+        error = write(nyx->event, &signal, sizeof(signal));
+    }
 
     if (error == -1)
     {
@@ -786,8 +807,7 @@ nyx_destroy(nyx_t *nyx)
         return;
 
     /* signal termination via eventfd (if existing) */
-    if (nyx->event > 0)
-        signal_sent = signal_eventfd(4, nyx);
+    signal_sent = signal_eventfd(4, nyx);
 
     /* tear down connector first */
     if (nyx->connector_thread)

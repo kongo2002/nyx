@@ -407,7 +407,7 @@ handle_eventfd(NYX_EV_TYPE *event, nyx_t *nyx)
     epoll_extra_data_t *extra = NYX_EV_GET(event);
     int fd = extra->fd;
 
-    log_debug("Received epoll event on eventfd interface (%d)", nyx->event);
+    log_debug("Received epoll event on eventfd interface (%d)", fd);
 
     err = read(fd, &value, sizeof(value));
 
@@ -503,14 +503,13 @@ connector_run(nyx_t *nyx)
         goto teardown;
 
     /* add eventfd socket to epoll as well */
-    if (nyx->event > 0)
-    {
-        if (!unblock_socket(nyx->event))
-            goto teardown;
+    int event_interface = nyx->event > 0 ? nyx->event : nyx->event_pipe[0];
 
-        if (!add_epoll_socket(nyx->event, &fd_ev, epfd, sock))
-            goto teardown;
-    }
+    if (!unblock_socket(event_interface))
+        goto teardown;
+
+    if (!add_epoll_socket(event_interface, &fd_ev, epfd, sock))
+        goto teardown;
 
     /* add http socket to epoll as well (if configured) */
     if (nyx->options.http_port)
@@ -614,7 +613,7 @@ connector_run(nyx_t *nyx)
                     continue;
                 }
             }
-            else if (extra->fd == nyx->event)
+            else if (extra->fd == event_interface)
             {
                 handle_eventfd(event, nyx);
             }

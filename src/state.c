@@ -734,10 +734,26 @@ state_new(watch_t *watch, nyx_t *nyx)
     if (init == -1)
         log_critical_perror("nyx: sem_init");
 #else
+    log_debug("Trying to create a new named semaphore (%s)", watch->name);
+
     /* initialize a named-semaphore as OSX does not support unnamed ones
-     * - chmod of the semaphore
+     * - chmod of the semaphore (0644)
      * - initially unlocked (= 1) */
-    semaphore = sem_open(watch->name, O_CREAT, 0644, 1);
+    semaphore = sem_open(watch->name, O_CREAT | O_EXCL, 0644, 1);
+
+    if (semaphore == SEM_FAILED)
+    {
+        /* the semaphore should not exist beforehand ->
+         * try to remove and retry -> then fail */
+        int err = sem_unlink(watch->name);
+        if (err == 0)
+        {
+            /* remove succeeded -> try again */
+            semaphore = sem_open(watch->name, O_CREAT | O_EXCL, 0644, 1);
+        }
+        else
+            log_critical_perror("nyx: sem_unlink");
+    }
 
     if (semaphore == SEM_FAILED)
         log_critical_perror("nyx: sem_open");
@@ -975,8 +991,15 @@ state_loop(state_t *state)
 }
 
 void *
-state_loop_start(void *state)
+state_loop_start(void *data)
 {
+    state_t *state = data;
+
+    /* if there is no active eventfd interface we are using
+     * pipes instead -> close the write end now */
+    //if (state->nyx->event < 1)
+        //close(state->nyx->event_pipe[1]);
+
     state_loop((state_t *)state);
 
     return NULL;
