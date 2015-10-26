@@ -118,6 +118,7 @@ get_log_prefix(log_level_e level)
         case NYX_LOG_ERROR:
             return "[E] ";
         case NYX_LOG_CRITICAL:
+        case NYX_LOG_CRITICAL | NYX_LOG_PERROR:
             return "[C] ";
         case NYX_LOG_INFO:
         default:
@@ -158,7 +159,12 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
     if (level & NYX_LOG_PERROR)
     {
         char buffer[512];
+#ifndef OSX
         char *error_msg = strerror_r(error, buffer, 511);
+#else
+        char *error_msg = buffer;
+        strerror_r(error, buffer, 511);
+#endif
 
         fputc(':', stream);
         fputc(' ', stream);
