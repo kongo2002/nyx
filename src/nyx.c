@@ -35,11 +35,14 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/eventfd.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+
+#ifndef OSX
+#include <sys/eventfd.h>
+#endif
 
 /**
  * @brief Watch destroy callback function
@@ -333,12 +336,14 @@ initialize_daemon(nyx_t *nyx)
     }
 
     /* initialize eventfd with an initial value of '0' */
+#ifndef OSX
     nyx->event = eventfd(0, 0);
 
     if (nyx->event < 1)
     {
         log_perror("nyx: eventfd");
     }
+#endif
 
     /* start connector */
     nyx->connector_thread = xcalloc(1, sizeof(pthread_t));

@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
 
 static int
 empty_or_whitespace(const char *str)

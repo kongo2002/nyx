@@ -71,6 +71,19 @@ http_method_to_string(http_method_e method)
     }
 }
 
+/* OS agnostic send() method wrapper */
+ssize_t
+send_safe(int socket, const void *buffer, size_t length)
+{
+    return send(socket, buffer, length,
+#ifdef OSX
+            0
+#else
+            MSG_NOSIGNAL
+#endif
+            );
+}
+
 int
 unblock_socket(int socket)
 {
@@ -164,7 +177,7 @@ check_http(const char *url, unsigned port, http_method_e method)
     if (!inet_aton("127.0.0.1", &srv.sin_addr))
         goto end;
 
-    if (connect(sockfd, &srv, sizeof(struct sockaddr_in)) != 0)
+    if (connect(sockfd, (struct sockaddr *) &srv, sizeof(struct sockaddr_in)) != 0)
         goto end;
 
     /* start sending */
@@ -245,7 +258,7 @@ check_port(unsigned port)
     if (!inet_aton("127.0.0.1", &srv.sin_addr))
         goto end;
 
-    if (connect(sockfd, &srv, sizeof(srv)) == 0)
+    if (connect(sockfd, (struct sockaddr *) &srv, sizeof(srv)) == 0)
         success = 1;
     else
         log_perror("nyx: connect");
@@ -255,6 +268,29 @@ end:
     return success;
 }
 
+#ifdef OSX
+int
+add_epoll_socket(int socket, struct kevent *event, int epoll, int remote)
+{
+    int error = 0;
+
+    memset(event, 0, sizeof(struct kevent));
+
+    epoll_extra_data_t *data = epoll_extra_data_new(socket, remote);
+
+    event->udata = data;
+
+    /* add read mask */
+    EV_SET(event, socket, EVFILT_READ, EV_ADD, 0, 0, NULL);
+
+    error = kevent(epoll, event, 1, NULL, 0, NULL);
+
+    if (error == -1)
+        log_perror("nyx: kevent");
+
+    return !error;
+}
+#else
 int
 add_epoll_socket(int socket, struct epoll_event *event, int epoll, int remote)
 {
@@ -274,6 +310,7 @@ add_epoll_socket(int socket, struct epoll_event *event, int epoll, int remote)
 
     return !error;
 }
+#endif
 
 epoll_extra_data_t *
 epoll_extra_data_new(int fd, int remote)

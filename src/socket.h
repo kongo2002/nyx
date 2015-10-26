@@ -16,7 +16,20 @@
 #ifndef __NYX_SOCKET_H__
 #define __NYX_SOCKET_H__
 
+/* epoll or kqueue */
+#ifndef OSX
 #include <sys/epoll.h>
+
+#define NYX_EV_TYPE struct epoll_event
+#define NYX_EV_GET(x) (x->data.ptr)
+
+#else
+#include <sys/event.h>
+
+#define NYX_EV_TYPE struct kevent
+#define NYX_EV_GET(x) (x->udata)
+
+#endif
 
 typedef enum
 {
@@ -44,6 +57,9 @@ http_method_from_string(const char *str);
 const char *
 http_method_to_string(http_method_e method);
 
+ssize_t
+send_safe(int socket, const void *buffer, size_t length);
+
 int
 check_port(unsigned port);
 
@@ -54,7 +70,7 @@ int
 unblock_socket(int socket);
 
 int
-add_epoll_socket(int socket, struct epoll_event *event, int epoll, int remote);
+add_epoll_socket(int socket, NYX_EV_TYPE *event, int epoll, int remote);
 
 epoll_extra_data_t *
 epoll_extra_data_new(int fd, int remote);

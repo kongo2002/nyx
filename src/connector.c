@@ -28,7 +28,14 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <string.h>
+
+/* epoll or kqueue */
+#ifndef OSX
 #include <sys/epoll.h>
+#else
+#include <sys/event.h>
+#endif
+
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -57,7 +64,7 @@ send_format_msg(sender_callback_t *cb, const char *format, va_list values)
         int res = 0;
 
         /* send message itself */
-        if ((res = send(cb->client, msg, length, MSG_NOSIGNAL)) < 0)
+        if ((res = send_safe(cb->client, msg, length)) < 0)
             log_perror("nyx: send");
 
         if (res > 0)
@@ -67,7 +74,7 @@ send_format_msg(sender_callback_t *cb, const char *format, va_list values)
             sent += res;
 
             /* send newline */
-            if ((res = send(cb->client, newline, 1, MSG_NOSIGNAL)) < 0)
+            if ((res = send_safe(cb->client, newline, 1)) < 0)
                 log_perror("nyx: send");
             else
                 sent += res;
@@ -156,7 +163,7 @@ send_command(int socket, const char **commands, int quiet)
         printf("<<< %s\n", message + 2);
     }
 
-    sent = send(socket, message, strlen(message), MSG_NOSIGNAL);
+    sent = send_safe(socket, message, strlen(message));
 
     if (sent == -1)
         log_perror("nyx: send");
@@ -291,12 +298,12 @@ init_nyx_addr(struct sockaddr_un *addr)
 }
 
 static int
-handle_request(struct epoll_event *event, nyx_t *nyx)
+handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
 {
     int success = 0;
     ssize_t received = 0;
 
-    epoll_extra_data_t *extra = event->data.ptr;
+    epoll_extra_data_t *extra = NYX_EV_GET(event);
     int fd = extra->fd;
 
     /* start of new request? */
@@ -363,7 +370,7 @@ handle_request(struct epoll_event *event, nyx_t *nyx)
     else
     {
         const char error[] = "unknown command\n";
-        send(fd, error, LEN(error), MSG_NOSIGNAL);
+        send_safe(fd, error, LEN(error));
     }
 
     strings_free((char **)commands);
@@ -382,17 +389,22 @@ close:
     close(fd);
 
     free(extra);
+
+#ifndef OSX
     event->data.ptr = NULL;
+#else
+    event->udata = NULL;
+#endif
 
     return success;
 }
 
 static void
-handle_eventfd(struct epoll_event *event, nyx_t *nyx)
+handle_eventfd(NYX_EV_TYPE *event, nyx_t *nyx)
 {
     int err = 0;
     uint64_t value = 0;
-    epoll_extra_data_t *extra = event->data.ptr;
+    epoll_extra_data_t *extra = NYX_EV_GET(event);
     int fd = extra->fd;
 
     log_debug("Received epoll event on eventfd interface (%d)", nyx->event);
@@ -413,8 +425,8 @@ connector_run(nyx_t *nyx)
 
     int sock = 0, error = 0, epfd = 0, http_sock = 0;
 
-    struct epoll_event base_ev, fd_ev, http_ev, ev;
-    struct epoll_event *events = NULL;
+    NYX_EV_TYPE base_ev, fd_ev, http_ev, ev;
+    NYX_EV_TYPE *events = NULL;
 
     log_debug("Starting connector");
 
@@ -435,6 +447,12 @@ connector_run(nyx_t *nyx)
         umask(old_mask);
         return 0;
     }
+
+    /* ignore SIGPIPE signals (on OSX) */
+#if defined(SO_NOSIGPIPE)
+    int on = 1;
+    setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on));
+#endif
 
     /* remove any existing nyx sockets */
     unlink(NYX_SOCKET_ADDR);
@@ -463,13 +481,22 @@ connector_run(nyx_t *nyx)
         goto teardown;
     }
 
-    /* initialize epoll */
+    /* initialize epoll/kqueue */
+#ifndef OSX
     epfd = epoll_create(max_conn);
     if (epfd == -1)
     {
         log_perror("nyx: epoll_create");
         goto teardown;
     }
+#else
+    epfd = kqueue();
+    if (epfd == -1)
+    {
+        log_perror("nyx: kqueue");
+        goto teardown;
+    }
+#endif
 
     /* add new listening socket to epoll instance */
     if (!add_epoll_socket(sock, &base_ev, epfd, sock))
@@ -503,16 +530,20 @@ connector_run(nyx_t *nyx)
         }
     }
 
-    events = xcalloc(max_conn, sizeof(struct epoll_event));
+    events = xcalloc(max_conn, sizeof(NYX_EV_TYPE));
 
     while (!need_exit && !restart)
     {
         int i = 0, n = 0;
-        struct epoll_event *event = NULL;
+        NYX_EV_TYPE *event = NULL;
 
         log_debug("Connector: waiting for connections");
 
+#ifndef OSX
         n = epoll_wait(epfd, events, max_conn, -1);
+#else
+        n = kevent(epfd, NULL, 0, events, max_conn, NULL);
+#endif
 
         /* epoll listening failed for some reason */
         if (n < 1)
@@ -531,13 +562,17 @@ connector_run(nyx_t *nyx)
         /* process all received events */
         for (i = 0, event = events; i < n; event++, i++)
         {
-            epoll_extra_data_t *extra = event->data.ptr;
+            epoll_extra_data_t *extra = NYX_EV_GET(event);
 
             /* error on the socket */
+#ifndef OSX
             if ((event->events & EPOLLERR) ||
                 (event->events & EPOLLHUP) ||
                 (event->events & EPOLLRDHUP) ||
                 !(event->events & EPOLLIN))
+#else
+            if (event->flags & EV_EOF)
+#endif
             {
                 close(extra->fd);
 
@@ -614,6 +649,7 @@ teardown:
         events = NULL;
     }
 
+#ifndef OSX
     if (base_ev.data.ptr)
     {
         free(base_ev.data.ptr);
@@ -625,16 +661,37 @@ teardown:
         free(fd_ev.data.ptr);
         fd_ev.data.ptr = NULL;
     }
+#else
+    if (base_ev.udata)
+    {
+        free(base_ev.udata);
+        base_ev.udata = NULL;
+    }
+
+    if (nyx->event > 0 && fd_ev.udata)
+    {
+        free(fd_ev.udata);
+        fd_ev.udata = NULL;
+    }
+#endif
 
     if (http_sock)
     {
         close(http_sock);
 
+#ifndef OSX
         if (http_ev.data.ptr)
         {
             free(http_ev.data.ptr);
             http_ev.data.ptr = NULL;
         }
+#else
+        if (http_ev.udata)
+        {
+            free(http_ev.udata);
+            http_ev.udata = NULL;
+        }
+#endif
     }
 
     log_debug("Connector: terminated");

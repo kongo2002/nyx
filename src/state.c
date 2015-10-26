@@ -170,7 +170,7 @@ close_fds(int pid)
         struct dirent *entry = NULL;
         while ((entry = readdir(dir)) != NULL)
         {
-            if (!entry->d_name)
+            if (entry->d_name == NULL)
                 continue;
 
             unsigned long fd = atol(entry->d_name);
@@ -765,7 +765,12 @@ state_destroy(state_t *state)
         log_debug("Waiting for state thread of watch '%s' to terminate", name);
 
         /* join thread */
-        join = pthread_timedjoin_np(*state->thread, NULL, &timeout);
+        join =
+#ifndef OSX
+            pthread_timedjoin_np(*state->thread, NULL, &timeout);
+#else
+            pthread_join(*state->thread, NULL);
+#endif
 
         if (join != 0)
         {

@@ -34,7 +34,8 @@ daemon_mode(nyx_t *nyx)
         return 0;
     }
 
-    /* start the event handler loop */
+    /* start the event handler loop (not supported on OSX)*/
+#ifndef OSX
     if (!event_loop(nyx, dispatch_event))
     {
         log_warn("Failed to initialize event manager "
@@ -42,13 +43,16 @@ daemon_mode(nyx_t *nyx)
 
         log_warn("Try enabling CONFIG_CONNECTOR in your kernel config "
                  "and run nyx with root privileges");
+#endif
 
         if (!poll_loop(nyx, dispatch_poll_result))
         {
             log_error("Failed to start loop manager as well - terminating");
             return 0;
         }
+#ifndef OSX
     }
+#endif
 
     return 1;
 }

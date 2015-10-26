@@ -15,12 +15,13 @@
 
 #include "def.h"
 #include "nyx.h"
+#include "socket.h"
 
 int
 http_init(unsigned port);
 
 int
-http_handle_request(struct epoll_event *event, nyx_t *nyx);
+http_handle_request(NYX_EV_TYPE *event, nyx_t *nyx);
 
 /* vim: set et sw=4 sts=4 tw=80: */
 

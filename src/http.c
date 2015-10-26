@@ -45,7 +45,7 @@ not_found(int fd)
         "Content-Type: text/plain" CRLF CRLF
         "not found";
 
-    return send(fd, response, LEN(response), MSG_NOSIGNAL) > 0;
+    return send_safe(fd, response, LEN(response)) > 0;
 }
 
 static int
@@ -57,7 +57,7 @@ bad_request(int fd)
         "Content-Type: text/plain" CRLF CRLF
         "bad request";
 
-    return send(fd, response, LEN(response), MSG_NOSIGNAL) > 0;
+    return send_safe(fd, response, LEN(response)) > 0;
 }
 
 static int
@@ -153,7 +153,7 @@ handle_command(command_t *cmd, const char **input, epoll_extra_data_t *extra, ny
     strbuf_append(response, "Content-Length: %lu" CRLF CRLF, str->length);
     strbuf_append(response, "%s", str->buf);
 
-    send(fd, response->buf, response->length, MSG_NOSIGNAL);
+    send_safe(fd, response->buf, response->length);
 
     strbuf_free(str);
     strbuf_free(response);
@@ -164,12 +164,12 @@ handle_command(command_t *cmd, const char **input, epoll_extra_data_t *extra, ny
 }
 
 int
-http_handle_request(struct epoll_event *event, nyx_t *nyx)
+http_handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
 {
     int success = 0;
     ssize_t received = 0;
 
-    epoll_extra_data_t *extra = event->data.ptr;
+    epoll_extra_data_t *extra = NYX_EV_GET(event);
 
     /* start of new request? */
     if (extra->length == 0)
@@ -229,7 +229,8 @@ close:
     close(extra->fd);
 
     free(extra);
-    event->data.ptr = NULL;
+
+    NYX_EV_GET(event) = NULL;
 
     return success;
 }

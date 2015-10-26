@@ -26,6 +26,18 @@ TOBJECTS := $(patsubst tests/%.c,tests/%.o, $(TSRCS))
 TLIBS    := -lcmocka
 TDEPS    := $(filter-out src/main.o, $(OBJECTS))
 
+# OS SPECIFICS
+
+ifeq ($(shell uname -s), Darwin)
+    CXXFLAGS+= -DOSX
+    OBJECTS := $(filter-out src/event.o, $(OBJECTS))
+    TDEPS   := $(filter-out src/event.o, $(TDEPS))
+
+    IS_OSX := yes
+else
+    IS_OSX := no
+endif
+
 # PLUGINS
 
 PLUGINS ?= 0
@@ -79,6 +91,7 @@ options:
 	@echo "CC         : $(CC)"
 	@echo "PLUGINS    : $(HAS_PLUGINS)"
 	@echo "SSL        : $(HAS_SSL)"
+	@echo "OSX        : $(IS_OSX)"
 	@echo "CXXFLAGS   : $(CXXFLAGS)"
 	@echo "INSTALLDIR : $(INSTALLDIR)"
 	@echo "MANPREFIX  : $(MANPREFIX)"
