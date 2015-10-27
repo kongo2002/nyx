@@ -26,7 +26,7 @@ test_proc_system_info(UNUSED void **state)
     int success = 0;
     sys_info_t *info = sys_info_new();
 
-    success = sys_info_read_proc(info, getpid());
+    success = sys_info_read_proc(info, getpid(), get_page_size());
 
     assert_int_not_equal(0, success);
 
