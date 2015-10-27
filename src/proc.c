@@ -104,12 +104,11 @@ calculate_proc_diff(proc_stat_t *proc, long page_size)
     sys_info_t current;
     memset(&current, 0, sizeof(sys_info_t));
 
-    if (!sys_info_read_proc(&current, proc->pid))
+    if (!sys_info_read_proc(&current, proc->pid, page_size))
         return 0;
 
-    /* correct mem_usage from 'number of pages' to 'in kilobytes' unit */
     if (current.resident_set_size)
-        stack_long_add(proc->mem_usage, current.resident_set_size * page_size / 1024);
+        stack_long_add(proc->mem_usage, current.resident_set_size);
 
     /* calculate cpu diff/usage */
     diff = current.total_time - proc->info.total_time;
@@ -152,7 +151,7 @@ nyx_proc_init(pid_t pid)
     }
     else
     {
-        log_debug("Total memory: %lu MB", proc->total_memory / 1024 / 1024);
+        log_debug("Total memory: %lu MB", proc->total_memory / 1024);
     }
 
     if (proc->num_cpus < 1)
@@ -191,7 +190,7 @@ nyx_proc_init(pid_t pid)
     list_add(proc->processes, me);
 
     /* get current nyx process statistics */
-    success = sys_info_read_proc(&me->info, me->pid);
+    success = sys_info_read_proc(&me->info, me->pid, proc->page_size);
 
     if (!success)
     {
@@ -433,8 +432,9 @@ sys_proc_dump(sys_proc_stat_t *stat)
     log_info("  Total time:   %llu", stat->total);
 }
 
-int
-sys_proc_read(sys_proc_stat_t *stat)
+#ifndef OSX
+static int
+sys_proc_read_proc(sys_proc_stat_t *stat)
 {
     FILE *proc = fopen("/proc/stat", "r");
 
@@ -470,6 +470,52 @@ sys_proc_read(sys_proc_stat_t *stat)
     fclose(proc);
     return 1;
 }
+#else
+/* #include <sys/proc_info.h> */
+#include <sys/resource.h>
+#include <sys/mman.h>
+#include <libproc.h>
+#include <mach/mach_host.h>
+
+static int
+sys_proc_read_osx(sys_proc_stat_t *stat)
+{
+    unsigned i, j, cpu_count;
+    processor_info_array_t p;
+    mach_msg_type_number_t info_size;
+
+    if (host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &cpu_count, &p, &info_size) != 0)
+        return 0;
+
+    processor_cpu_load_info_data_t *data = (processor_cpu_load_info_data_t *) p;
+    stat->total = 0;
+
+    for (i = 0; i < cpu_count; i++)
+    {
+        /* states: 0: user, 1: system, 2: idle, 3: nice */
+        for (j = 0; j < CPU_STATE_MAX; j++)
+        {
+            stat->total += data[i].cpu_ticks[j];
+        }
+    }
+
+    /* correct total system ticks in respect
+     * to the process load */
+    stat->total *= 10000000;
+
+    return 1;
+}
+#endif
+
+int
+sys_proc_read(sys_proc_stat_t *stat)
+{
+#ifndef OSX
+    return sys_proc_read_proc(stat);
+#else
+    return sys_proc_read_osx(stat);
+#endif
+}
 
 sys_info_t *
 sys_info_new(void)
@@ -480,8 +526,9 @@ sys_info_new(void)
 }
 
 int
-sys_info_read_proc(sys_info_t *sys, pid_t pid)
+sys_info_read_proc(sys_info_t *sys, pid_t pid, long page_size)
 {
+#ifndef OSX
     char buffer[64] = {0};
     sprintf(buffer, "/proc/%d/stat", pid);
     FILE *proc = NULL;
@@ -497,7 +544,7 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid)
                &sys->user_time,
                &sys->system_time,
                &sys->child_user_time,
-               &sys->child_user_time,
+               &sys->child_system_time,
                &sys->virtual_size,
                &sys->resident_set_size) != 6)
     {
@@ -507,6 +554,9 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid)
         return 0;
     }
 
+    /* correct RSS from 'number of pages' to 'in kilobytes' unit */
+    sys->resident_set_size *= page_size / 1024;
+
     sys->total_time = sys->user_time +
         sys->system_time +
         sys->child_user_time +
@@ -514,6 +564,23 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid)
 
     fclose(proc);
     return 1;
+#else
+    struct proc_taskinfo pti;
+
+    size_t pti_size = sizeof(pti);
+    size_t result = proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &pti, pti_size);
+    if (result != pti_size)
+        return 0;
+
+    sys->user_time = pti.pti_total_user;
+    sys->system_time = pti.pti_total_system;
+    sys->total_time = sys->user_time + sys->system_time;
+
+    sys->virtual_size = pti.pti_virtual_size;
+    sys->resident_set_size = pti.pti_resident_size / 1024;
+
+    return 1;
+#endif
 }
 
 long
@@ -534,11 +601,11 @@ static unsigned long
 total_memory_size_sysconf(void)
 {
 #if defined(_SC_PAGESIZE) && defined(_SC_PHYS_PAGES)
-    long pageSize = get_page_size();
+    long page_size = get_page_size();
     unsigned long pages = sysconf(_SC_PHYS_PAGES);
 
-    if (pageSize > 0L && pages > 0L)
-        return pageSize * pages;
+    if (page_size > 0L && pages > 0L)
+        return page_size * pages / 1024;
 #endif
 
     return 0L;

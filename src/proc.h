@@ -131,7 +131,7 @@ void
 sys_info_dump(sys_info_t *sys);
 
 int
-sys_info_read_proc(sys_info_t *sys, pid_t pid);
+sys_info_read_proc(sys_info_t *sys, pid_t pid, long page_size);
 
 unsigned long
 total_memory_size(void);
