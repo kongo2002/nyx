@@ -366,8 +366,10 @@ nyx_proc_start(void *state)
                     proc->watch->max_cpu &&
                     stack_double_satisfy(proc->cpu_usage, exceeds_cpu, proc) >= PROC_STAT_STACK_LIMIT)
             {
-                log_warn("Process '%s' (%d) exceeds its CPU usage maximum of %u%%",
-                        proc->name, proc->pid, proc->watch->max_cpu);
+                log_warn("Process '%s' (%d) exceeds its CPU usage maximum of %u%%"
+                         " in at least %d of the last %d tests",
+                         proc->name, proc->pid, proc->watch->max_cpu,
+                         PROC_STAT_STACK_LIMIT, PROC_STAT_STACK_SIZE);
 
                 handle_events = sys->event_handler(PROC_MAX_CPU, proc, nyx);
             }
@@ -380,8 +382,10 @@ nyx_proc_start(void *state)
                 unsigned long bytes;
                 char unit = get_size_unit(proc->watch->max_memory, &bytes);
 
-                log_warn("Process '%s' (%d) exceeds its memory usage maximum of %ld%c",
-                        proc->name, proc->pid, bytes, unit);
+                log_warn("Process '%s' (%d) exceeds its memory usage maximum of %ld%c"
+                         " in at least %d of the last %d tests",
+                         proc->name, proc->pid, bytes, unit,
+                         PROC_STAT_STACK_LIMIT, PROC_STAT_STACK_SIZE);
 
                 handle_events = sys->event_handler(PROC_MAX_MEMORY, proc, nyx);
             }
