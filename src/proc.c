@@ -475,6 +475,7 @@ sys_proc_read_proc(sys_proc_stat_t *stat)
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <libproc.h>
+#include <mach/mach.h>
 #include <mach/mach_host.h>
 
 static int
@@ -502,6 +503,9 @@ sys_proc_read_osx(sys_proc_stat_t *stat)
     /* correct total system ticks in respect
      * to the process load */
     stat->total *= 10000000;
+
+    /* free resources */
+    vm_deallocate(mach_task_self(), (vm_address_t)p, sizeof(integer_t) * info_size);
 
     return 1;
 }
