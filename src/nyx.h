@@ -69,6 +69,22 @@ typedef struct
 #endif
 } nyx_t;
 
+typedef enum
+{
+    NYX_SUCCESS,
+    NYX_FAILURE,
+    NYX_INVALID_USAGE,
+    NYX_INVALID_CONFIG,
+    NYX_NO_COMMAND,
+    NYX_INVALID_COMMAND,
+    NYX_COMMAND_FAILED,
+    NYX_INSTANCE_RUNNING,
+    NYX_NO_VALID_WATCH,
+    NYX_NO_PID_DIR,
+    NYX_FAILED_DAEMONIZE,
+    NYX_NO_DAEMON_FOUND
+} nyx_error_e;
+
 void
 print_usage(FILE *out);
 
@@ -79,7 +95,7 @@ void
 print_help(void) __attribute__((noreturn));
 
 nyx_t *
-nyx_initialize(int argc, char **args);
+nyx_initialize(int argc, char **args, nyx_error_e *error);
 
 int
 nyx_watches_init(nyx_t *nyx);

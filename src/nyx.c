@@ -318,7 +318,7 @@ initialize_daemon(nyx_t *nyx)
     nyx->pid_dir = determine_pid_dir();
 
     if (nyx->pid_dir == NULL)
-        return 0;
+        return NYX_NO_PID_DIR;
 
     nyx->pid = getpid();
     nyx->is_init = nyx->pid == 1;
@@ -328,7 +328,7 @@ initialize_daemon(nyx_t *nyx)
     {
         log_error("nyx instance appears to be running on PID %d - PID folder '%s'",
                   pid, nyx->pid_dir);
-        return 0;
+        return NYX_INSTANCE_RUNNING;
     }
 
     nyx->watches = hash_new(_watch_destroy);
@@ -337,7 +337,7 @@ initialize_daemon(nyx_t *nyx)
 
     /* parse config */
     if (!parse_config(nyx))
-        return 0;
+        return NYX_INVALID_CONFIG;
 
     /* nyx should run as a daemon process */
     if (!nyx->is_init && !nyx->options.no_daemon)
@@ -345,7 +345,7 @@ initialize_daemon(nyx_t *nyx)
         if (!daemonize(nyx))
         {
             log_error("Failed to daemonize nyx");
-            return 0;
+            return NYX_FAILED_DAEMONIZE;
         }
     }
     /* otherwise in the foreground */
@@ -381,7 +381,7 @@ initialize_daemon(nyx_t *nyx)
             nyx->options.plugin_config);
 #endif
 
-    return 1;
+    return NYX_SUCCESS;
 }
 
 /**
@@ -391,7 +391,7 @@ initialize_daemon(nyx_t *nyx)
  * @return nyx instance
  */
 nyx_t *
-nyx_initialize(int argc, char **args)
+nyx_initialize(int argc, char **args, nyx_error_e *error)
 {
     int arg = 0;
 
@@ -451,7 +451,7 @@ nyx_initialize(int argc, char **args)
 
     if (nyx->is_daemon)
     {
-        if (!initialize_daemon(nyx))
+        if ((*error = initialize_daemon(nyx)) != NYX_SUCCESS)
         {
             nyx_destroy(nyx);
             return NULL;

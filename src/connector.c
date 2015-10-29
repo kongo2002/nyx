@@ -199,10 +199,11 @@ print_response(char *buffer, size_t len, int quiet)
     }
 }
 
-int
+nyx_error_e
 connector_call(const char **commands, int quiet)
 {
-    int sock = 0, res = 0, success = 0;
+    nyx_error_e retcode = NYX_COMMAND_FAILED;
+    int sock = 0, res = 0;
     char buffer[1024] = {0};
     size_t total = 0, size = LEN(buffer);
     struct sockaddr_un addr;
@@ -213,7 +214,7 @@ connector_call(const char **commands, int quiet)
     if (sock == -1)
     {
         log_perror("nyx: socket");
-        return 0;
+        return NYX_COMMAND_FAILED;
     }
 
     memset(&addr, 0, sizeof(struct sockaddr_un));
@@ -227,11 +228,14 @@ connector_call(const char **commands, int quiet)
         /* specialized error message for the common scenario
          * that the daemon is not running */
         if (errno == ENOENT)
+        {
             log_error("Failed to connect to nyx - the daemon is probably not running");
+            return NYX_NO_DAEMON_FOUND;
+        }
         else
             log_perror("nyx: connect");
 
-        return 0;
+        return NYX_COMMAND_FAILED;
     }
 
     if (send_command(sock, commands, quiet) == -1)
@@ -251,7 +255,7 @@ connector_call(const char **commands, int quiet)
             else if (res == 0)
             {
                 done = 1;
-                success = 1;
+                retcode = NYX_SUCCESS;
             }
             else
             {
@@ -264,10 +268,10 @@ connector_call(const char **commands, int quiet)
 
     close(sock);
 
-    if (success)
+    if (retcode == NYX_SUCCESS)
         print_response(buffer, total, quiet);
 
-    return success;
+    return retcode;
 }
 
 static int

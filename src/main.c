@@ -24,14 +24,14 @@
 
 #include <stdio.h>
 
-static int
+static nyx_error_e
 daemon_mode(nyx_t *nyx)
 {
     if (!nyx_watches_init(nyx))
     {
         log_error("No valid watched configured - terminating now");
 
-        return 0;
+        return NYX_NO_VALID_WATCH;
     }
 
     /* start the event handler loop (not supported on OSX)*/
@@ -48,59 +48,59 @@ daemon_mode(nyx_t *nyx)
         if (!poll_loop(nyx, dispatch_poll_result))
         {
             log_error("Failed to start loop manager as well - terminating");
-            return 0;
+            return NYX_FAILURE;
         }
 #ifndef OSX
     }
 #endif
 
-    return 1;
+    return NYX_SUCCESS;
 }
 
-static int
+static nyx_error_e
 command_mode(nyx_t *nyx)
 {
-    int success = 0;
+    nyx_error_e retcode = NYX_FAILURE;
 
     if (!nyx->options.commands)
     {
         log_error("no command specified at all");
-        return 0;
+        return NYX_NO_COMMAND;
     }
 
     if (parse_command(nyx->options.commands) != NULL)
     {
-        success = connector_call(nyx->options.commands,
+        retcode = connector_call(nyx->options.commands,
                 nyx->options.quiet);
     }
     else
     {
         log_error("Invalid command '%s'", nyx->options.commands[0]);
-        return 0;
+        return NYX_INVALID_COMMAND;
     }
 
-    return success;
+    return retcode;
 }
 
 int
 main(int argc, char **argv)
 {
-    int success = 0;
+    nyx_error_e retcode = NYX_FAILURE;
     nyx_t *nyx = NULL;
 
     if (argc < 2)
     {
         print_usage(stderr);
         fputs("\nTry 'nyx -h' for more information\n", stderr);
-        return 1;
+        return NYX_INVALID_USAGE;
     }
 
     /* initialize log and main application data */
-    nyx = nyx_initialize(argc, argv);
+    nyx = nyx_initialize(argc, argv, &retcode);
 
     if (nyx != NULL)
     {
-        success = nyx->is_daemon
+        retcode = nyx->is_daemon
             ? daemon_mode(nyx)
             : command_mode(nyx);
     }
@@ -108,7 +108,7 @@ main(int argc, char **argv)
     nyx_destroy(nyx);
     log_shutdown();
 
-    return !success;
+    return retcode;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

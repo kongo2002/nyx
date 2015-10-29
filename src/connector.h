@@ -18,7 +18,7 @@
 
 #include "nyx.h"
 
-int
+nyx_error_e
 connector_call(const char **commands, int quiet);
 
 void *
