@@ -34,11 +34,7 @@ static volatile int color = 0;
 void
 log_init(nyx_t *nyx)
 {
-#ifndef NDEBUG
-    quiet = 0;
-#else
     quiet = nyx->options.quiet;
-#endif
 
     color = !nyx->options.no_color &&
         !nyx->options.syslog &&
