@@ -685,6 +685,7 @@ static struct config_parser_map nyx_value_map[] =
 #ifdef USE_PLUGINS
     SCALAR_HANDLER("plugin_dir", handle_nyx_value_plugins),
 #endif
+    { NULL, {0}, NULL }
 };
 
 static parse_info_t *
