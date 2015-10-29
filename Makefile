@@ -8,7 +8,7 @@ LIBS     := -lyaml -lpthread
 
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
-    CXXFLAGS+= -O0 -ggdb
+    CXXFLAGS+= -O0 -g
     BUILD=DEBUG
 else
     CXXFLAGS+= -O2 -DNDEBUG -Wno-unused-parameter
@@ -103,6 +103,9 @@ nyx: $(OBJECTS)
 
 check: test
 	@./test
+
+run-tests: nyx
+	@./tests/scripts/run-tests.sh
 
 test: $(TOBJECTS) $(TDEPS)
 	$(CC) $(TOBJECTS) $(TDEPS) -o test $(LIBS) $(TLIBS)

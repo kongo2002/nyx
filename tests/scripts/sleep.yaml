@@ -1,0 +1,6 @@
+watches:
+    sleep:
+        start: sleep 10
+
+nyx:
+    polling_interval: 1
