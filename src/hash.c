@@ -306,7 +306,9 @@ hash_remove(hash_t *hash, const char *key)
     if (pair == NULL)
         return 0;
 
+    hash->count--;
     bucket->count--;
+
     new_pairs = bucket->count
         ? xcalloc(bucket->count, sizeof(pair_t))
         : NULL;
@@ -396,6 +398,35 @@ hash_iter(hash_iter_t *iter, const char **key, void **data)
         iter->_pair += 1;
 
     return 1;
+}
+
+int
+hash_filter(hash_t *hash, filter_callback_t filter_func)
+{
+    if (hash == NULL || filter_func == NULL)
+        return 0;
+
+    int filtered = 0;
+    const char *key = NULL;
+    void *data = NULL;
+    hash_iter_t *iter = hash_iter_start(hash);
+
+    while (hash_iter(iter, &key, &data))
+    {
+        /* predicate matches -> remove */
+        if (filter_func(data))
+        {
+            if (hash_remove(hash, key))
+            {
+                hash_iter_rewind(iter);
+                filtered++;
+            }
+        }
+    }
+
+    free(iter);
+
+    return filtered;
 }
 
 void

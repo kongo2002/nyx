@@ -161,8 +161,6 @@ watch_validate(watch_t *watch)
         result &= valid;
     }
 
-    watch->invalid = !result;
-
     return result;
 }
 

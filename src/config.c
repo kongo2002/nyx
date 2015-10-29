@@ -892,6 +892,12 @@ dump_watch(void *data)
     watch_dump((watch_t *) data);
 }
 
+static int
+invalid_watch(void *watch)
+{
+    return !watch_validate((watch_t *)watch);
+}
+
 int
 parse_config(nyx_t *nyx)
 {
@@ -978,15 +984,23 @@ parse_config(nyx_t *nyx)
     parse_info_destroy(info);
     fclose(cfg);
 
-    if (hash_count(nyx->watches) < 1)
+    /* validate watches */
+    int filtered = 0;
+    if ((filtered = hash_filter(nyx->watches, invalid_watch)) > 0)
     {
-        log_error("No watches configured");
+        log_warn("Found %d invalid watches", filtered);
+    }
+
+    int valid_watches = hash_count(nyx->watches);
+    if (valid_watches < 1)
+    {
+        log_error("No valid watches configured");
         return 0;
     }
 
     if (success)
     {
-        log_info("Found %d watch definitions", hash_count(nyx->watches));
+        log_info("Found %d watch definitions", valid_watches);
 
         hash_foreach(nyx->watches, dump_watch);
     }

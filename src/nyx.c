@@ -570,11 +570,10 @@ proc_required(nyx_t *nyx)
     {
         watch_t *watch = data;
 
-        if (watch_validate(watch) &&
-            (watch->max_cpu > 0 ||
-             watch->max_memory > 0 ||
-             watch->port_check > 0 ||
-             watch->http_check != NULL))
+        if (watch->max_cpu > 0 ||
+            watch->max_memory > 0 ||
+            watch->port_check > 0 ||
+            watch->http_check != NULL)
         {
             required = 1;
             break;
@@ -616,12 +615,6 @@ nyx_watches_init(nyx_t *nyx)
     {
         state_t *state = NULL;
         watch_t *watch = data;
-
-        if (!watch_validate(watch))
-        {
-            log_error("Invalid watch '%s' - skipping", watch->name);
-            continue;
-        }
 
         log_debug("Initialize watch '%s'", watch->name);
 

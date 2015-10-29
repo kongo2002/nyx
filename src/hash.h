@@ -18,6 +18,8 @@
 
 typedef void (*callback_t)(void *value);
 
+typedef int (*filter_callback_t)(void *value);
+
 typedef struct
 {
     const char *key;
@@ -84,6 +86,9 @@ hash_count(hash_t *hash);
 
 int
 hash_remove(hash_t *hash, const char *key);
+
+int
+hash_filter(hash_t *hash, filter_callback_t filter_func);
 
 #endif
 
