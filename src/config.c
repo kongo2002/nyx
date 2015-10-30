@@ -231,7 +231,13 @@ handle_mapping_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
     log_debug("handle_mapping: end");
 
-    return parser_up(info, event, data);
+    parse_info_t *parent = parser_up(info, event, data);
+
+    /* as soon as any mapping (known or unknown) ends
+     * the next scalar value has to be a key */
+    parent->handler[YAML_SCALAR_EVENT] = handle_scalar_key;
+
+    return parent;
 }
 
 static parse_info_t *
