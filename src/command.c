@@ -260,8 +260,13 @@ handle_watches(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 static int
 handle_reload(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 {
-    nyx_reload(nyx);
+    if (!nyx->options.config_file)
+    {
+        cb->sender(cb, "no config file to reload");
+        return 0;
+    }
 
+    nyx_reload(nyx);
     cb->sender(cb, "ok");
 
     return 1;

@@ -23,6 +23,7 @@
 #include "process.h"
 #include "state.h"
 #include "watch.h"
+#include "utils.h"
 
 #ifdef USE_PLUGINS
 #include "plugins.h"
@@ -88,13 +89,14 @@ print_help(void)
     print_usage(stdout);
     puts("\n"
          "Options:\n"
-         "   -c  --config    (path to configuration file)\n"
-         "   -D  --no-daemon (do not daemonize)\n"
-         "   -s  --syslog    (log into syslog)\n"
-         "   -q  --quiet     (output error messages only)\n"
-         "   -C  --no-color  (no terminal coloring)\n"
-         "   -V  --version   (version information)\n"
-         "   -h  --help      (print this help)\n"
+         "   -c  --config <file>     (path to configuration file)\n"
+         "   -D  --no-daemon         (do not daemonize)\n"
+         "       --run               (specify an ad-hoc executable watch)\n"
+         "   -s  --syslog <command>  (log into syslog)\n"
+         "   -q  --quiet             (output error messages only)\n"
+         "   -C  --no-color          (no terminal coloring)\n"
+         "   -V  --version           (version information)\n"
+         "   -h  --help              (print this help)\n"
          "\n"
          "Configuration:\n"
 #ifdef USE_PLUGINS
@@ -115,6 +117,7 @@ static const struct option long_options[] =
 {
     { .name = "help",      .has_arg = 0, .flag = NULL, .val = 'h'},
     { .name = "config",    .has_arg = 1, .flag = NULL, .val = 'c'},
+    { .name = "run",       .has_arg = 1, .flag = NULL, .val = 'r'},
     { .name = "no-color",  .has_arg = 0, .flag = NULL, .val = 'C'},
     { .name = "no-daemon", .has_arg = 0, .flag = NULL, .val = 'D'},
     { .name = "quiet",     .has_arg = 0, .flag = NULL, .val = 'q'},
@@ -335,8 +338,8 @@ initialize_daemon(nyx_t *nyx)
     nyx->states = list_new(_state_destroy);
     nyx->state_map = hash_new(NULL);
 
-    /* parse config */
-    if (!parse_config(nyx))
+    /* parse config (if specified) */
+    if (nyx->options.config_file && !parse_config(nyx))
         return NYX_INVALID_CONFIG;
 
     /* nyx should run as a daemon process */
@@ -394,6 +397,7 @@ nyx_t *
 nyx_initialize(int argc, char **args, nyx_error_e *error)
 {
     int arg = 0;
+    const char **adhoc_watch = NULL;
 
     nyx_t *nyx = calloc(1, sizeof(nyx_t));
 
@@ -423,6 +427,9 @@ nyx_initialize(int argc, char **args, nyx_error_e *error)
             case 'c':
                 nyx->options.config_file = optarg;
                 break;
+            case 'r':
+                adhoc_watch = split_string_whitespace(optarg);
+                break;
             case 'V':
                 puts("nyx " NYX_VERSION);
                 free(nyx);
@@ -439,12 +446,35 @@ nyx_initialize(int argc, char **args, nyx_error_e *error)
         }
     }
 
-    /* if a config file is given
-     * this has to be a daemon */
+    /* if a config file is given this has to be a daemon */
     nyx->is_daemon = nyx->options.config_file && *nyx->options.config_file;
 
     /* initialize logging */
     log_init(nyx);
+
+    /* either config file or adhoc watch, not both */
+    if (adhoc_watch)
+    {
+        if (nyx->is_daemon)
+        {
+            log_error("You must not specify a config file and an adhoc watch");
+            *error = NYX_INVALID_USAGE;
+            free(nyx);
+            return NULL;
+        }
+
+#ifndef NDEBUG
+        log_debug("Specified adhoc watch to use:");
+
+        const char **value = adhoc_watch;
+        while (*value)
+        {
+            log_debug("  '%s'", *value);
+            value++;
+        }
+#endif
+        nyx->is_daemon = 1;
+    }
 
     /* globally ignore SIGUSR1 */
     signal(SIGUSR1, SIG_IGN);
@@ -455,6 +485,16 @@ nyx_initialize(int argc, char **args, nyx_error_e *error)
         {
             nyx_destroy(nyx);
             return NULL;
+        }
+
+        /* add adhoc watch if specified */
+        if (adhoc_watch)
+        {
+            const char *adhoc_name = strdup("__run__");
+            watch_t *adhoc = watch_new(adhoc_name);
+            adhoc->start = adhoc_watch;
+
+            hash_add(nyx->watches, adhoc_name, adhoc);
         }
     }
     else
