@@ -134,12 +134,18 @@ determine_pid_dir(void)
 FILE *
 open_pid_file(const char *pid_dir, const char *name, const char *mode)
 {
+    if (pid_dir == NULL)
+        return NULL;
+
     return fopen(get_pid_file(pid_dir, name), mode);
 }
 
 int
 remove_pid_file(const char *pid_dir, const char *name)
 {
+    if (pid_dir == NULL)
+        return 0;
+
     return remove(get_pid_file(pid_dir, name));
 }
 
