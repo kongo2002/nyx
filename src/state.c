@@ -381,6 +381,8 @@ read_pipe(int fd)
 
         fclose(stream);
     }
+    else
+        log_warn("Failed to read of pipe (%d)", fd);
 
     return value;
 }
@@ -743,11 +745,16 @@ state_new(watch_t *watch, nyx_t *nyx)
 
     if (semaphore == SEM_FAILED)
     {
+        log_debug("Semaphore (%s) already exists - trying to unlink",
+                watch->name);
+
         /* the semaphore should not exist beforehand ->
          * try to remove and retry -> then fail */
         int err = sem_unlink(watch->name);
         if (err == 0)
         {
+            log_debug("Try to create semaphore (%s) again", watch->name);
+
             /* remove succeeded -> try again */
             semaphore = sem_open(watch->name, O_CREAT | O_EXCL, 0644, 1);
         }
