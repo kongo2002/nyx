@@ -218,6 +218,20 @@ watches:
 ```
 
 
+#### Ad-hoc usage
+
+You may specify an *ad-hoc* executable to *nyx* instead of passing a
+configuration file with the `--run` command argument. This is a shortcut usage
+that will initialize exactly one watch using the default configuration options:
+
+```bash
+$ nyx --run "mongod -f /etc/mongod.conf"
+```
+
+You must not use both ad-hoc executable *and* configuration file at the same
+time.
+
+
 ### Command interface
 
 You can interact with a running *nyx* daemon instance using the same executable:
