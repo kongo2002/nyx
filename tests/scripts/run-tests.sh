@@ -4,6 +4,8 @@ cd "$(dirname $0)"
 
 source ./common.sh
 
+log "RUNTIME TESTS"
+
 # intital check
 check_nyx_off
 
