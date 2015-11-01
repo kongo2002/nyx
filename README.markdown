@@ -239,7 +239,7 @@ You can interact with a running *nyx* daemon instance using the same executable:
 ```bash
 $ nyx version
 <<< version
->>> 0.0.1
+>>> 1.4.0
 
 ```
 
@@ -270,7 +270,7 @@ $ curl localhost:8080/ping
 >>> pong
 
 $ curl localhost:8080/version
->>> 1.3.0
+>>> 1.4.0
 
 $ curl localhost:8080/stop/app
 >>> requested stop for watch 'app'
