@@ -27,6 +27,19 @@ sane default configuration values.
 The project is inspired by [god][god] - the great ruby process monitor.
 
 
+### Event interface
+
+On linux a *nyx* daemon running with root privileges may utilize the kernel
+userspace connector to retrieve process events. That way there is *no need for
+polling* the program's running status so that *nyx* recognizes a program
+shutdown/failure immediately without any delay.
+
+So you should consider checking the `CONFIG_CONNECTOR` kernel configuration for
+this mechanism to work. Otherwise *nyx* will fallback to a polling approach (use
+the `polling_interval` setting to modify the interval which defaults to 5
+seconds).
+
+
 ## Usage
 
 
