@@ -6,6 +6,8 @@ nyx \- the lean, docker\-optimized linux process monitor
 .PP
 nyx \-c [\f[I]config\-file\f[]] [\f[I]options\f[]]...
 .PP
+nyx \-\-run [\f[I]command\f[]]
+.PP
 nyx [\f[I]command\f[]] [\f[I]argument\f[]]...
 .SH DESCRIPTION
 .PP
@@ -25,6 +27,14 @@ starting/stopping an instance of your application.
 .B \-c \f[I]config\-file\f[], \-\-config=\f[I]config\-file\f[]
 Specify the YAML configuration which results in nyx to be run in
 server\-mode.
+.RS
+.RE
+.TP
+.B \-\-run=\f[I]command\f[]
+Pass a command that should be watched instead of specifying a
+configuration file.
+This is a simple shortcut to watch an application with the default
+options in an \[aq]adhoc\[aq] fashion.
 .RS
 .RE
 .TP
@@ -155,6 +165,86 @@ watches:
 .fi
 .PP
 All config values apart from the \f[I]start\f[] value are optional.
+.SS Adhoc usage
+.PP
+Using the \f[I]\-\-run\f[] argument you may specify an executable in an
+\[aq]adhoc\[aq] fashion without using a configuration file at all:
+.IP
+.nf
+\f[C]
+nyx\ \-\-run\ \[aq]mongod\ \-f\ /etc/mongod.conf\[aq]
+\f[]
+.fi
+.PP
+Using this operation all configuration values are set to the appropriate
+default values.
+.SH EXIT STATUS
+.PP
+On successful termination the exit status is 0.
+In case of an error the status codes are the following:
+.TP
+.B 0
+success
+.RS
+.RE
+.TP
+.B 1
+general failure (i.e.
+out of memory)
+.RS
+.RE
+.TP
+.B 2
+invalid usage (i.e.
+too few arguments)
+.RS
+.RE
+.TP
+.B 3
+invalid configuration
+.RS
+.RE
+.TP
+.B 4
+no command given
+.RS
+.RE
+.TP
+.B 5
+command does not exist
+.RS
+.RE
+.TP
+.B 6
+command execution failed (i.e.
+unknown watch)
+.RS
+.RE
+.TP
+.B 7
+another nyx instance is already running
+.RS
+.RE
+.TP
+.B 8
+no valid watch configured
+.RS
+.RE
+.TP
+.B 9
+cannot open/find any directory to store PID files into
+.RS
+.RE
+.TP
+.B 10
+failed to daemonize the nyx process
+.RS
+.RE
+.TP
+.B 11
+no running daemon found to communicate with
+.RS
+.RE
 .SH SEE ALSO
 .PP
 \f[C]syslog\f[] (3).
