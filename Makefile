@@ -106,6 +106,7 @@ check: test
 
 run-tests: nyx
 	@./tests/scripts/run-tests.sh
+	@./tests/scripts/run-configs.sh
 
 test: $(TOBJECTS) $(TDEPS)
 	$(CC) $(TOBJECTS) $(TDEPS) -o test $(LIBS) $(TLIBS)

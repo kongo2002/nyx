@@ -1,0 +1,7 @@
+wrong:
+    tag: 'something'
+
+watches:
+
+    watch:
+        start: [ 'exec' , 'something']

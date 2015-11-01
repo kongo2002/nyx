@@ -1,0 +1,15 @@
+wrong:
+    tag: something
+
+nyx:
+    polling_interval: 3
+
+watches:
+
+    watch:
+
+        stop: ['stop', 'me']
+        start: [ 'exec' , 'something']
+
+plugins:
+    values: [1, 2, 4]

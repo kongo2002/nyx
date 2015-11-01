@@ -1,0 +1,5 @@
+watches:
+    watch:
+        start:
+            [ 'exec'
+            , 'something']

@@ -1,0 +1,9 @@
+nyx:
+    polling_interval: 5
+
+watches:
+
+    watch:
+
+        stop: ['stop', 'me']
+        start: [ 'exec' , 'something']

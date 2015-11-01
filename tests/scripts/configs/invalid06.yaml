@@ -1,0 +1,4 @@
+watches:
+    watch:
+        stop: stop
+        max_cpu: 99%
