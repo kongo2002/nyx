@@ -19,6 +19,7 @@
 #define _GNU_SOURCE
 
 #include <errno.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +31,8 @@
 static volatile int use_syslog = 0;
 static volatile int quiet = 0;
 static volatile int color = 0;
+
+pthread_mutex_t log_mutex;
 
 void
 log_init(nyx_t *nyx)
@@ -46,6 +49,12 @@ log_init(nyx_t *nyx)
 
     if (use_syslog)
         openlog("nyx", LOG_NDELAY, LOG_USER);
+
+    if (pthread_mutex_init(&log_mutex, NULL) != 0)
+    {
+        fprintf(stderr, "failed to initialize log mutex");
+        abort();
+    }
 }
 
 void
@@ -53,6 +62,12 @@ log_shutdown(void)
 {
     if (use_syslog)
         closelog();
+
+    if (pthread_mutex_destroy(&log_mutex) != 0)
+    {
+        fprintf(stderr, "failed to dispose log mutex");
+        abort();
+    }
 }
 
 static const char *
@@ -131,6 +146,12 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
     time_t now = time(NULL);
     struct tm *time = localtime(&now);
 
+    if (pthread_mutex_lock(&log_mutex) != 0)
+    {
+        fprintf(stderr, "failed to lock log mutex");
+        abort();
+    }
+
     if (color)
     {
         size_t start_length;
@@ -174,6 +195,12 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
     }
 
     fputc('\n', stream);
+
+    if (pthread_mutex_unlock(&log_mutex) != 0)
+    {
+        fprintf(stderr, "failed to unlock log mutex");
+        abort();
+    }
 
     errno = error;
 }
