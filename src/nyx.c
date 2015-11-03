@@ -73,6 +73,7 @@ void
 print_usage(FILE *out)
 {
     fputs("Usage: nyx -c <file> [options]\n"
+          "       nyx --run <executable>\n"
           "       nyx <command>\n"
           "\n"
           "Available commands:\n", out);
@@ -89,14 +90,14 @@ print_help(void)
     print_usage(stdout);
     puts("\n"
          "Options:\n"
-         "   -c  --config <file>  (path to configuration file)\n"
-         "   -D  --no-daemon      (do not daemonize)\n"
-         "       --run <command>  (specify an ad-hoc executable watch)\n"
-         "   -s  --syslog         (log into syslog)\n"
-         "   -q  --quiet          (output error messages only)\n"
-         "   -C  --no-color       (no terminal coloring)\n"
-         "   -V  --version        (version information)\n"
-         "   -h  --help           (print this help)\n"
+         "   -c  --config <file>    (path to configuration file)\n"
+         "   -D  --no-daemon        (do not daemonize)\n"
+         "       --run <executable> (specify an ad-hoc executable watch)\n"
+         "   -s  --syslog           (log into syslog)\n"
+         "   -q  --quiet            (output error messages only)\n"
+         "   -C  --no-color         (no terminal coloring)\n"
+         "   -V  --version          (version information)\n"
+         "   -h  --help             (print this help)\n"
          "\n"
          "Configuration:\n"
 #ifdef USE_PLUGINS
