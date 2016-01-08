@@ -199,10 +199,10 @@ split_string(const char *str, const char *chars)
     return output;
 }
 
-unsigned int
+uint32_t
 count_args(const char **args)
 {
-    unsigned int count = 0;
+    uint32_t count = 0;
     const char **arg = args;
 
     while (*arg)

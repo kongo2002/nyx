@@ -44,8 +44,8 @@ typedef enum
 
 typedef struct
 {
-    int fd;
-    int remote_socket;
+    int32_t fd;
+    int32_t remote_socket;
     char *buffer;
     unsigned int pos;
     unsigned int length;

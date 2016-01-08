@@ -38,8 +38,8 @@
     "Server: nyx" CRLF \
     "Content-Type: text/plain" CRLF
 
-static int
-not_found(int fd)
+static bool
+not_found(int32_t fd)
 {
     const char response[] = "HTTP/1.0 404 Not Found" CRLF
         "Server: nyx" CRLF
@@ -50,8 +50,8 @@ not_found(int fd)
     return send_safe(fd, response, LEN(response)) > 0;
 }
 
-static int
-bad_request(int fd)
+static bool
+bad_request(int32_t fd)
 {
     const char response[] = "HTTP/1.0 400 Bad Request" CRLF
         "Server: nyx" CRLF
@@ -62,7 +62,7 @@ bad_request(int fd)
     return send_safe(fd, response, LEN(response)) > 0;
 }
 
-static int
+static uintptr_t
 parse_header(epoll_extra_data_t *extra)
 {
     char *buffer = extra->buffer;
@@ -101,10 +101,10 @@ parse_header(epoll_extra_data_t *extra)
 static const char *
 parse_request(epoll_extra_data_t *extra)
 {
-    unsigned method_len = parse_header(extra);
+    uintptr_t method_len = parse_header(extra);
 
     if (!method_len)
-        return 0;
+        return NULL;
 
     /* skip method portion of request line */
     const char *uri = extra->buffer + method_len;
@@ -114,20 +114,19 @@ parse_request(epoll_extra_data_t *extra)
     return uri;
 }
 
-static int
+static uint32_t
 send_format(sender_callback_t *cb, const char *format, ...)
     __attribute__((format(printf, 2, 3)));
 
-static int
+static uint32_t
 send_format(sender_callback_t *cb, const char *format, ...)
 {
-    int len = 0;
     char buffer[512] = {0};
     strbuf_t *str = cb->data;
 
     va_list vas;
     va_start(vas, format);
-    len = vsnprintf(buffer, LEN(buffer), format, vas);
+    uint32_t len = vsnprintf(buffer, LEN(buffer), format, vas);
     va_end(vas);
 
     strbuf_append(str, ">>> %s\n", buffer);
@@ -135,11 +134,11 @@ send_format(sender_callback_t *cb, const char *format, ...)
     return len;
 }
 
-static int
+static bool
 handle_command(command_t *cmd, const char **input, epoll_extra_data_t *extra, nyx_t *nyx)
 {
-    int retval = 0;
-    int fd = extra->fd;
+    bool success = false;
+    int32_t fd = extra->fd;
 
     strbuf_t *str = strbuf_new();
     strbuf_t *response = strbuf_new_size(32);
@@ -149,7 +148,7 @@ handle_command(command_t *cmd, const char **input, epoll_extra_data_t *extra, ny
     cb->sender = send_format;
     cb->data = str;
 
-    retval = cmd->handler(cb, input, nyx);
+    success = cmd->handler(cb, input, nyx);
 
     strbuf_append(response, NYX_RESPONSE_HEADER);
     strbuf_append(response, "Content-Length: %lu" CRLF CRLF, str->length);
@@ -162,13 +161,13 @@ handle_command(command_t *cmd, const char **input, epoll_extra_data_t *extra, ny
 
     free(cb);
 
-    return retval;
+    return success;
 }
 
-int
+bool
 http_handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
 {
-    int success = 0;
+    bool success = false;
     ssize_t received = 0;
 
     epoll_extra_data_t *extra = NYX_EV_GET(event);
@@ -188,7 +187,7 @@ http_handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
         if (received < 0)
         {
             if (errno == EAGAIN)
-                return 1;
+                return true;
             else
             {
                 log_perror("nyx: recv");
@@ -216,7 +215,7 @@ http_handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
         strings_free((char **)commands);
     }
 
-    success = 1;
+    success = true;
 
 close:
     extra->pos = 0;
@@ -238,10 +237,10 @@ close:
 }
 
 
-int
-http_init(unsigned port)
+int32_t
+http_init(uint32_t port)
 {
-    int sock_fd = 0, err = 0;
+    int32_t sock_fd = 0, err = 0;
     char port_buffer[8] = {0};
 
     sprintf(port_buffer, "%u", port);

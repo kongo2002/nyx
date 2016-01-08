@@ -134,9 +134,9 @@ static const struct option long_options[] =
  * @param signum signal number
  */
 static void
-handle_child_stop(UNUSED int signum)
+handle_child_stop(UNUSED int32_t signum)
 {
-    int last_errno = errno;
+    int32_t last_errno = errno;
 
     log_debug("Received child stop signal - waiting for termination");
 
@@ -150,7 +150,7 @@ handle_child_stop(UNUSED int signum)
 }
 
 static void
-handle_sigpipe(UNUSED int signal)
+handle_sigpipe(UNUSED int32_t signal)
 {
     log_debug("Received SIGPIPE - ignoring for now");
 }
@@ -161,7 +161,7 @@ handle_sigpipe(UNUSED int signal)
  * @param terminate_handler program termination handler callback
  */
 void
-setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int))
+setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int32_t))
 {
     log_debug("Setting up signals");
 
@@ -217,7 +217,7 @@ is_nyx_running(nyx_t *nyx)
  * @param nyx nyx instance
  * @return 1 on success, 0 otherwise
  */
-static int
+static bool
 daemonize(nyx_t *nyx)
 {
     pid_t pid = fork();
@@ -225,7 +225,7 @@ daemonize(nyx_t *nyx)
     if (pid == -1)
     {
         log_perror("nyx: fork");
-        return 0;
+        return false;
     }
 
     /* child process */
@@ -234,7 +234,7 @@ daemonize(nyx_t *nyx)
         if (setsid() == -1)
         {
             log_perror("nyx: setsid");
-            return 0;
+            return false;
         }
 
         const char *log_file = nyx->options.log_file
@@ -276,7 +276,7 @@ daemonize(nyx_t *nyx)
         exit(EXIT_SUCCESS);
     }
 
-    return 1;
+    return true;
 }
 
 static void
@@ -571,7 +571,7 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
  * @param nyx nyx instance
  * @return 1 on success, 0 otherwise
  */
-static int
+static bool
 nyx_proc_initialize(nyx_t *nyx)
 {
     /* try to initialize proc watch/thread */
@@ -583,7 +583,7 @@ nyx_proc_initialize(nyx_t *nyx)
 
         nyx->proc_thread = xcalloc1(sizeof(pthread_t));
 
-        int err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx);
+        int32_t err = pthread_create(nyx->proc_thread, NULL, nyx_proc_start, nyx);
 
         if (err)
         {
@@ -601,10 +601,10 @@ nyx_proc_initialize(nyx_t *nyx)
     return nyx->proc != NULL;
 }
 
-static int
+static bool
 proc_required(nyx_t *nyx)
 {
-    int required = 0;
+    bool required = false;
     const char *key = NULL;
     void *data = NULL;
     hash_iter_t *iter = hash_iter_start(nyx->watches);
@@ -618,7 +618,7 @@ proc_required(nyx_t *nyx)
             watch->port_check > 0 ||
             watch->http_check != NULL)
         {
-            required = 1;
+            required = true;
             break;
         }
     }
@@ -631,12 +631,12 @@ proc_required(nyx_t *nyx)
 /**
  * @brief Initialize watches
  * @param nyx nyx instance
- * @return 1 on success, 0 otherwise
+ * @return 'true' on success, 'false' otherwise
  */
-int
+bool
 nyx_watches_init(nyx_t *nyx)
 {
-    int rc = 1, init = 0;
+    int32_t rc = 1, init = 0;
     const char *key = NULL;
     void *data = NULL;
     hash_iter_t *iter = hash_iter_start(nyx->watches);
@@ -686,30 +686,30 @@ nyx_watches_init(nyx_t *nyx)
  * @brief Fire a signal using the eventfd interface
  * @param signal signal to send
  * @param nyx    nyx instance
- * @return 1 on success, 0 otherwise
+ * @return 'true' on success, 'false' otherwise
  */
-int
+bool
 signal_eventfd(uint64_t signal, nyx_t *nyx)
 {
-    int error = 0;
+    ssize_t rc = 0;
 
     /* no event interface -> use pipes instead */
     if (nyx->event < 1)
     {
-        error = write(nyx->event_pipe[1], &signal, sizeof(signal));
+        rc = write(nyx->event_pipe[1], &signal, sizeof(signal));
     }
     else
     {
-        error = write(nyx->event, &signal, sizeof(signal));
+        rc = write(nyx->event, &signal, sizeof(signal));
     }
 
-    if (error == -1)
+    if (rc == -1)
     {
         log_perror("nyx: write");
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 static void
@@ -797,9 +797,9 @@ destroy_options(nyx_t *nyx)
 /**
  * @brief Reload the current nyx instance configuration
  * @param nyx nyx instance to reload
- * @return 1 on success; 0 otherwise
+ * @return true on success; false otherwise
  */
-int
+bool
 nyx_reload(nyx_t *nyx)
 {
     log_info("Start reloading nyx");
@@ -824,13 +824,13 @@ nyx_reload(nyx_t *nyx)
 #endif
 
             log_info("Successfully reloaded nyx");
-            return 1;
+            return true;
         }
     }
 
     log_warn("Failed to reload nyx");
 
-    return 0;
+    return false;
 }
 
 /**
@@ -840,13 +840,11 @@ nyx_reload(nyx_t *nyx)
 void
 nyx_destroy(nyx_t *nyx)
 {
-    int signal_sent = 0;
-
     if (nyx == NULL)
         return;
 
     /* signal termination via eventfd (if existing) */
-    signal_sent = signal_eventfd(4, nyx);
+    bool signal_sent = signal_eventfd(4, nyx);
 
     /* tear down connector first */
     if (nyx->connector_thread)

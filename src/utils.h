@@ -33,7 +33,7 @@ split_string(const char *str, const char *chars);
 const char **
 split_string_whitespace(const char *str);
 
-unsigned int
+uint32_t
 count_args(const char **args);
 
 void

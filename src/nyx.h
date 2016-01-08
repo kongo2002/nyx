@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_H__
-#define __NYX_H__
+#pragma once
 
 #include "hash.h"
 #include "list.h"
@@ -25,21 +24,22 @@
 #endif
 
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
 
 typedef struct
 {
-    int quiet;
-    int no_color;
-    int no_daemon;
-    int syslog;
-    unsigned http_port;
-    unsigned def_start_timeout;
-    unsigned def_stop_timeout;
-    unsigned polling_interval;
-    unsigned check_interval;
-    unsigned history_size;
+    bool quiet;
+    bool no_color;
+    bool no_daemon;
+    bool syslog;
+    int32_t http_port;
+    uint32_t def_start_timeout;
+    uint32_t def_stop_timeout;
+    uint32_t polling_interval;
+    uint32_t check_interval;
+    uint32_t history_size;
     const char *config_file;
     const char *log_file;
     const char **commands;
@@ -52,12 +52,12 @@ typedef struct
 typedef struct
 {
     pid_t pid;
-    int is_init;
-    int is_daemon;
+    bool is_init;
+    bool is_daemon;
     const char *pid_dir;
-    int event;
-    int event_pipe[2];
-    void (*terminate_handler)(int);
+    int32_t event;
+    int32_t event_pipe[2];
+    void (*terminate_handler)(int32_t);
     pthread_t *connector_thread;
     pthread_t *proc_thread;
     nyx_proc_t *proc;
@@ -98,13 +98,13 @@ print_help(void) __attribute__((noreturn));
 nyx_t *
 nyx_initialize(int argc, char **args, nyx_error_e *error);
 
-int
+bool
 nyx_watches_init(nyx_t *nyx);
 
-int
+bool
 nyx_reload(nyx_t *nyx);
 
-int
+bool
 signal_eventfd(uint64_t signal, nyx_t *nyx);
 
 void
@@ -112,7 +112,5 @@ setup_signals(nyx_t *nyx, void (*terminate_handler)(int));
 
 void
 nyx_destroy(nyx_t *nyx);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_COMMAND_H__
-#define __NYX_COMMAND_H__
+#pragma once
 
 #include "nyx.h"
 
@@ -37,14 +36,14 @@ typedef enum
 
 typedef struct sender_callback_t
 {
-    int client;
+    int32_t client;
     connector_command_e command;
-    int (*sender)(struct sender_callback_t *, const char *, ...)
+    uint32_t (*sender)(struct sender_callback_t *, const char *, ...)
         __attribute__((format(printf, 2, 3)));
     void *data;
 } sender_callback_t;
 
-typedef int (*command_handler)(sender_callback_t *, const char **, nyx_t *);
+typedef bool (*command_handler)(sender_callback_t *, const char **, nyx_t *);
 
 typedef struct
 {
@@ -52,7 +51,7 @@ typedef struct
     const char *name;
     command_handler handler;
     size_t cmd_length;
-    unsigned int min_args;
+    uint32_t min_args;
     const char *description;
 } command_t;
 
@@ -61,7 +60,5 @@ print_commands(FILE *out);
 
 command_t *
 parse_command(const char **input);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

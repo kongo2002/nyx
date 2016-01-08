@@ -19,7 +19,7 @@
 #include "state.h"
 #include "utils.h"
 
-static int
+static bool
 handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, state_e new_state)
 {
     const char *name = input[1];
@@ -28,7 +28,7 @@ handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, stat
     if (state == NULL)
     {
         cb->sender(cb, "unknown watch '%s'", name);
-        return 0;
+        return false;
     }
 
     /* request state change */
@@ -37,7 +37,7 @@ handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, stat
             state_to_human_string(new_state),
             name);
 
-    return 1;
+    return true;
 }
 
 static void
@@ -79,7 +79,7 @@ send_keys(sender_callback_t *cb, const char *name, hash_t *keys)
     free(iter);
 }
 
-static int
+static bool
 handle_config(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
@@ -88,7 +88,7 @@ handle_config(sender_callback_t *cb, const char **input, nyx_t *nyx)
     if (state == NULL)
     {
         cb->sender(cb, "unknown watch '%s'", name);
-        return 0;
+        return false;
     }
 
     watch_t *watch = state->watch;
@@ -130,10 +130,10 @@ handle_config(sender_callback_t *cb, const char **input, nyx_t *nyx)
 
     send_keys(cb, "env", watch->env);
 
-    return 1;
+    return true;
 }
 
-static int
+static bool
 handle_history(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
@@ -142,11 +142,11 @@ handle_history(sender_callback_t *cb, const char **input, nyx_t *nyx)
     if (state == NULL)
     {
         cb->sender(cb, "unknown watch '%s'", name);
-        return 0;
+        return false;
     }
 
     if (state->history->count < 1)
-        return 1;
+        return true;
 
     unsigned i = state->history->count;
 
@@ -165,22 +165,22 @@ handle_history(sender_callback_t *cb, const char **input, nyx_t *nyx)
             state_to_human_string(elem->value));
     }
 
-    return 1;
+    return true;
 }
 
-static int
+static bool
 handle_ping(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
 {
-    return cb->sender(cb, "pong");
+    return cb->sender(cb, "pong") > 0;
 }
 
-static int
+static bool
 handle_version(sender_callback_t *cb, UNUSED const char **input, UNUSED nyx_t *nyx)
 {
-    return cb->sender(cb, NYX_VERSION);
+    return cb->sender(cb, NYX_VERSION) > 0;
 }
 
-static int
+static bool
 handle_terminate(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 {
     /* trigger the eventfd */
@@ -190,10 +190,10 @@ handle_terminate(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
     if (nyx->terminate_handler)
         nyx->terminate_handler(0);
 
-    return cb->sender(cb, "ok");
+    return cb->sender(cb, "ok") > 0;
 }
 
-static int
+static bool
 handle_quit(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     if (nyx->states)
@@ -216,29 +216,29 @@ handle_quit(sender_callback_t *cb, const char **input, nyx_t *nyx)
     return handle_terminate(cb, input, nyx);
 }
 
-static int
+static bool
 handle_stop(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     return handle_status_change(cb, input, nyx, STATE_STOPPING);
 }
 
-static int
+static bool
 handle_restart(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     return handle_status_change(cb, input, nyx, STATE_RESTARTING);
 }
 
-static int
+static bool
 handle_start(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     return handle_status_change(cb, input, nyx, STATE_STARTING);
 }
 
-static int
+static bool
 handle_watches(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 {
     if (!nyx->states)
-        return 0;
+        return false;
 
     list_node_t *node = nyx->states->head;
 
@@ -254,25 +254,29 @@ handle_watches(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
         node = node->next;
     }
 
-    return 1;
+    return true;
 }
 
-static int
+static bool
 handle_reload(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
 {
     if (!nyx->options.config_file)
     {
         cb->sender(cb, "no config file to reload");
-        return 0;
+        return false;
     }
 
-    nyx_reload(nyx);
-    cb->sender(cb, "ok");
+    if (!nyx_reload(nyx))
+    {
+        cb->sender(cb, "failed to reload config");
+        return false;
+    }
 
-    return 1;
+    cb->sender(cb, "ok");
+    return true;
 }
 
-static int
+static bool
 handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
 {
     const char *name = input[1];
@@ -281,7 +285,7 @@ handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
     if (state == NULL)
     {
         cb->sender(cb, "unknown watch '%s'", name);
-        return 0;
+        return false;
     }
 
     /* print pid if running */
@@ -295,7 +299,7 @@ handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
     else
         cb->sender(cb, "%s: %s", name, state_to_human_string(state->state));
 
-    return 1;
+    return true;
 }
 
 #define CMD(t, n, h, a, d) \
@@ -332,15 +336,14 @@ static command_t commands[] =
 
 #undef CMD
 
-static unsigned int
+static size_t
 command_max_length(void)
 {
-    int idx = 0;
-    unsigned int len = 0;
+    size_t idx = 0, len = 0;
 
     while (idx < CMD_SIZE)
     {
-        unsigned int cmd_len = commands[idx++].cmd_length;
+        size_t cmd_len = commands[idx++].cmd_length;
         len = MAX(len, cmd_len);
     }
 
@@ -348,13 +351,11 @@ command_max_length(void)
 }
 
 static void
-print_command(FILE *out, unsigned int pad, command_t *cmd)
+print_command(FILE *out, size_t pad, command_t *cmd)
 {
-    unsigned int i = 0;
-
     fprintf(out, "  %s", cmd->name);
 
-    for (i = cmd->cmd_length; i < pad; i++)
+    for (uint32_t i = cmd->cmd_length; i < pad; i++)
         fputc(' ', out);
 
     fprintf(out, "%s\n", cmd->description);
@@ -363,8 +364,8 @@ print_command(FILE *out, unsigned int pad, command_t *cmd)
 void
 print_commands(FILE *out)
 {
-    int idx = 0;
-    unsigned int pad_to = command_max_length() + 2;
+    uint32_t idx = 0;
+    size_t pad_to = command_max_length() + 2;
 
     while (idx < CMD_SIZE)
     {
@@ -377,7 +378,7 @@ parse_command(const char **input)
 {
     size_t i = 0;
     size_t size = LEN(commands);
-    unsigned int args = 0;
+    uint32_t args = 0;
     command_t *command = commands;
 
     /* no input commands given at all */

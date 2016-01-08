@@ -48,20 +48,20 @@
 
 static volatile int need_exit = 0;
 
-static int
+static uint32_t
 send_format(sender_callback_t *cb, const char *format, ...)
     __attribute__((format(printf, 2, 3)));
 
-static int
+static uint32_t
 send_format_msg(sender_callback_t *cb, const char *format, va_list values)
 {
     char *msg;
-    int sent = 0;
+    uint32_t sent = 0;
     int length = vasprintf(&msg, format, values);
 
     if (length > 0)
     {
-        int res = 0;
+        ssize_t res = 0;
 
         /* send message itself */
         if ((res = send_safe(cb->client, msg, length)) < 0)
@@ -86,14 +86,13 @@ send_format_msg(sender_callback_t *cb, const char *format, va_list values)
     return sent;
 }
 
-static int
+static uint32_t
 send_format(sender_callback_t *cb, const char *format, ...)
 {
-    int sent;
     va_list vas;
     va_start(vas, format);
 
-    sent = send_format_msg(cb, format, vas);
+    uint32_t sent = send_format_msg(cb, format, vas);
 
     va_end(vas);
 
@@ -102,9 +101,9 @@ send_format(sender_callback_t *cb, const char *format, ...)
 
 
 static size_t
-get_message_length(const char **strings, int count)
+get_message_length(const char **strings, uint32_t count)
 {
-    int i = count;
+    uint32_t i = count;
     size_t length = 0;
     const char **string = strings;
 
@@ -120,7 +119,7 @@ get_message_length(const char **strings, int count)
 }
 
 static const char *
-get_message(const char **commands, int count)
+get_message(const char **commands, uint32_t count)
 {
     size_t length = get_message_length(commands, count);
 
@@ -135,7 +134,7 @@ get_message(const char **commands, int count)
     /* write commands itself */
     while (count-- > 0)
     {
-        int len = sprintf(start, "%s", *cmd);
+        int32_t len = sprintf(start, "%s", *cmd);
 
         if (count > 0)
         {
@@ -151,10 +150,10 @@ get_message(const char **commands, int count)
 }
 
 static ssize_t
-send_command(int socket, const char **commands, int quiet)
+send_command(int32_t socket, const char **commands, bool quiet)
 {
     ssize_t sent = 0;
-    unsigned int num_args = count_args(commands);
+    uint32_t num_args = count_args(commands);
     const char *message = get_message(commands, num_args);
 
     if (!quiet)
@@ -174,7 +173,7 @@ send_command(int socket, const char **commands, int quiet)
 }
 
 static void
-print_response(char *buffer, size_t len, int quiet)
+print_response(char *buffer, size_t len, bool quiet)
 {
     size_t idx = 0;
     char *msg = buffer, *ptr = buffer;
@@ -200,10 +199,10 @@ print_response(char *buffer, size_t len, int quiet)
 }
 
 nyx_error_e
-connector_call(const char **commands, int quiet)
+connector_call(const char **commands, bool quiet)
 {
     nyx_error_e retcode = NYX_COMMAND_FAILED;
-    int sock = 0, res = 0;
+    int32_t sock = 0, res = 0;
     char buffer[1024] = {0};
     size_t total = 0, size = LEN(buffer);
     struct sockaddr_un addr;
@@ -244,7 +243,7 @@ connector_call(const char **commands, int quiet)
     }
     else
     {
-        int done = 0;
+        bool done = false;
 
         do
         {
@@ -254,13 +253,13 @@ connector_call(const char **commands, int quiet)
             }
             else if (res == 0)
             {
-                done = 1;
+                done = true;
                 retcode = NYX_SUCCESS;
             }
             else
             {
                 log_perror("nyx: recv");
-                done = 1;
+                done = true;
             }
         } while (!done && total + 1 < size);
 
@@ -274,20 +273,19 @@ connector_call(const char **commands, int quiet)
     return retcode;
 }
 
-static int
-handle_command(command_t *cmd, int client, const char **input, nyx_t *nyx)
+static bool
+handle_command(command_t *cmd, int32_t client, const char **input, nyx_t *nyx)
 {
     if (cmd->handler == NULL)
-        return 0;
+        return false;
 
-    int retval = 0;
     sender_callback_t *callback = xcalloc1(sizeof(sender_callback_t));
 
     callback->command = cmd->type;
     callback->client = client;
     callback->sender = send_format;
 
-    retval = cmd->handler(callback, input, nyx);
+    bool retval = cmd->handler(callback, input, nyx);
 
     free(callback);
     return retval;
@@ -301,14 +299,14 @@ init_nyx_addr(struct sockaddr_un *addr)
     strncpy(addr->sun_path, NYX_SOCKET_ADDR, sizeof(addr->sun_path)-1);
 }
 
-static int
+static bool
 handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
 {
-    int success = 0;
+    bool success = false;
     ssize_t received = 0;
 
     epoll_extra_data_t *extra = NYX_EV_GET(event);
-    int fd = extra->fd;
+    int32_t fd = extra->fd;
 
     /* start of new request? */
     if (extra->length == 0)
@@ -327,7 +325,7 @@ handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
             goto close;
         }
 
-        int parsed = sscanf(extra->buffer, "%2u", &extra->length);
+        int32_t parsed = sscanf(extra->buffer, "%2u", &extra->length);
 
         if (parsed != 1 || extra->length < 1)
             goto close;
@@ -342,7 +340,7 @@ handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
         if (received < 0)
         {
             if (errno == EAGAIN)
-                return 1;
+                return true;
             else
             {
                 log_perror("nyx: recv");
@@ -354,7 +352,7 @@ handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
     extra->pos += received;
 
     if (extra->pos < extra->length)
-        return 1;
+        return true;
 
     /* parse input buffer */
     command_t *cmd = NULL;
@@ -378,7 +376,7 @@ handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
     }
 
     strings_free((char **)commands);
-    success = 1;
+    success = true;
 
 close:
     extra->pos = 0;
@@ -417,10 +415,10 @@ handle_eventfd(NYX_EV_TYPE *event)
     need_exit = 1;
 }
 
-static int
+static bool
 connector_run(nyx_t *nyx)
 {
-    int restart = 0;
+    bool restart = false;
     static int max_conn = 16;
 
     int sock = 0, error = 0, epfd = 0, http_sock = 0;
@@ -534,7 +532,7 @@ connector_run(nyx_t *nyx)
 
     while (!need_exit && !restart)
     {
-        int i = 0, n = 0;
+        int32_t i = 0, n = 0;
         NYX_EV_TYPE *event = NULL;
 
         log_debug("Connector: waiting for connections");
@@ -551,7 +549,7 @@ connector_run(nyx_t *nyx)
             if (errno == EINTR)
             {
                 log_debug("Connector: caught interrupt");
-                restart = 1;
+                restart = true;
                 continue;
             }
 
@@ -587,7 +585,7 @@ connector_run(nyx_t *nyx)
              * -> accept a new connection */
             if (extra->fd == sock || (http_sock && http_sock == extra->fd))
             {
-                int client = 0;
+                int32_t client = 0;
                 struct sockaddr_un caddr;
                 socklen_t client_len = sizeof(struct sockaddr_un);
 
@@ -624,12 +622,12 @@ connector_run(nyx_t *nyx)
                 if (http_sock && extra->remote_socket == http_sock)
                 {
                     if (!http_handle_request(event, nyx))
-                        restart = 1;
+                        restart = true;
                 }
                 else
                 {
                     if (!handle_request(event, nyx))
-                        restart = 1;
+                        restart = true;
                 }
             }
         }

@@ -19,7 +19,7 @@
 #include "nyx.h"
 
 nyx_error_e
-connector_call(const char **commands, int quiet);
+connector_call(const char **commands, bool quiet);
 
 void *
 connector_start(void *nyx);

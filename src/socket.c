@@ -73,7 +73,7 @@ http_method_to_string(http_method_e method)
 
 /* OS agnostic send() method wrapper */
 ssize_t
-send_safe(int socket, const void *buffer, size_t length)
+send_safe(int32_t socket, const void *buffer, size_t length)
 {
     return send(socket, buffer, length,
 #ifdef OSX
