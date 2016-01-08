@@ -24,6 +24,7 @@
 #include "plugins.h"
 #endif
 
+#include <pthread.h>
 #include <stdint.h>
 #include <sys/types.h>
 

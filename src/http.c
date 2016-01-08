@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "command.h"
 #include "http.h"
 #include "log.h"

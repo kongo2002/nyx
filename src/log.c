@@ -30,7 +30,7 @@
 
 static volatile int use_syslog = 0;
 static volatile int quiet = 0;
-static volatile int color = 0;
+static volatile int use_color = 0;
 
 pthread_mutex_t log_mutex;
 
@@ -39,7 +39,7 @@ log_init(nyx_t *nyx)
 {
     quiet = nyx->options.quiet;
 
-    color = !nyx->options.no_color &&
+    use_color = !nyx->options.no_color &&
         !nyx->options.syslog &&
         (nyx->options.no_daemon || !nyx->is_daemon);
 
@@ -129,7 +129,7 @@ get_log_prefix(log_level_e level)
         case NYX_LOG_ERROR:
             return "[E] ";
         case NYX_LOG_CRITICAL:
-        case NYX_LOG_CRITICAL | NYX_LOG_PERROR:
+        /* case NYX_LOG_CRITICAL | NYX_LOG_PERROR: */
             return "[C] ";
         case NYX_LOG_INFO:
         default:
@@ -152,7 +152,7 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
         abort();
     }
 
-    if (color)
+    if (use_color)
     {
         size_t start_length;
         const char *start_color = get_log_color(level, &start_length);
@@ -188,7 +188,7 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
         fwrite(error_msg, strlen(error_msg), 1, stream);
     }
 
-    if (color)
+    if (use_color)
     {
         /* write end of coloring */
         fwrite("\033[0m", 4, 1, stream);

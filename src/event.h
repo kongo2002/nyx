@@ -48,7 +48,7 @@ typedef struct process_event_data_t
     {
         process_event_fork_t fork;
         process_event_exit_t exit;
-    };
+    } data;
 } process_event_data_t;
 
 typedef int (*process_handler_t)(int pid, process_event_data_t *event_data, nyx_t *nyx);

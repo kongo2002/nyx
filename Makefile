@@ -1,5 +1,5 @@
 CC       ?= gcc
-CXXFLAGS := -Wall -Wextra -std=gnu89
+CXXFLAGS := -std=c99 -pedantic -Wall -Wextra
 
 INCLUDES := -I.
 LIBS     := -lyaml -lpthread
@@ -8,7 +8,7 @@ LIBS     := -lyaml -lpthread
 
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
-    CXXFLAGS+= -O0 -g
+    CXXFLAGS+= -O0 -g -Werror -Wshadow
     BUILD=DEBUG
 else
     CXXFLAGS+= -O2 -DNDEBUG -Wno-unused-parameter

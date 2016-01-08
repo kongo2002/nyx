@@ -37,19 +37,6 @@ hash_string(const char *str)
     return hash;
 }
 
-static inline unsigned long
-hash_int(unsigned value)
-{
-    unsigned c2 = 0x27d4eb2d;
-
-    value = (value ^ 61) ^ (value >> 16);
-    value += value << 3;
-    value ^= value >> 4;
-    value *= c2;
-    value ^= value >> 15;
-    return value;
-}
-
 hash_t *
 hash_new_initial(unsigned int initial_size, callback_t free_value)
 {

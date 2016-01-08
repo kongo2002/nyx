@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "def.h"
 #include "list.h"
 #include "log.h"

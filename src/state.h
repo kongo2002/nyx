@@ -49,11 +49,8 @@ typedef struct
     nyx_t *nyx;
 } state_t;
 
-inline const char *
+const char *
 state_to_human_string(state_e state);
-
-inline const char *
-state_to_string(state_e state);
 
 state_t *
 state_new(watch_t *watch, nyx_t *nyx);

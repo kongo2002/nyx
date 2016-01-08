@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "config.h"
 #include "connector.h"
 #include "command.h"
@@ -753,10 +755,10 @@ clear_watches(nyx_t *nyx)
     }
 }
 
+#ifdef USE_PLUGINS
 static void
 destroy_plugins(nyx_t *nyx)
 {
-#ifdef USE_PLUGINS
     if (nyx->plugins)
     {
         log_debug("Shutdown plugins");
@@ -776,8 +778,11 @@ destroy_plugins(nyx_t *nyx)
         hash_destroy(nyx->options.plugin_config);
         nyx->options.plugin_config = NULL;
     }
-#endif
 }
+#else
+static void
+destroy_plugins(UNUSED nyx_t *unused) { }
+#endif
 
 static void
 destroy_options(nyx_t *nyx)

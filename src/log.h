@@ -48,15 +48,15 @@ log_message(nyx_t *nyx, log_level_e level, const char *format, ...)
         __VA_ARGS__;
 
 #ifndef NDEBUG
-DECLARE_LOG_PROTO (debug)
+DECLARE_LOG_PROTO (debug, __attribute__(()))
 #else
-#define log_debug(fmt, ...)
+#define log_debug(...)
 #endif
 
-DECLARE_LOG_PROTO (info)
-DECLARE_LOG_PROTO (warn)
-DECLARE_LOG_PROTO (error)
-DECLARE_LOG_PROTO (perror)
+DECLARE_LOG_PROTO (info, __attribute__(()))
+DECLARE_LOG_PROTO (warn, __attribute__(()))
+DECLARE_LOG_PROTO (error, __attribute__(()))
+DECLARE_LOG_PROTO (perror, __attribute__(()))
 DECLARE_LOG_PROTO (critical, __attribute__((noreturn)))
 DECLARE_LOG_PROTO (critical_perror, __attribute__((noreturn)))
 

@@ -88,7 +88,7 @@ set_process_event_listen(int socket, int enable)
         {
             struct cn_msg cn_msg;
             enum proc_cn_mcast_op cn_mcast;
-        };
+        } data;
     } nlcn_msg;
 
     memset(&nlcn_msg, 0, sizeof(nlcn_msg));
@@ -97,12 +97,12 @@ set_process_event_listen(int socket, int enable)
     nlcn_msg.nl_hdr.nlmsg_type = NLMSG_DONE;
 
     /* connect to process events */
-    nlcn_msg.cn_msg.id.idx = CN_IDX_PROC;
-    nlcn_msg.cn_msg.id.val = CN_VAL_PROC;
-    nlcn_msg.cn_msg.len = sizeof(enum proc_cn_mcast_op);
+    nlcn_msg.data.cn_msg.id.idx = CN_IDX_PROC;
+    nlcn_msg.data.cn_msg.id.val = CN_VAL_PROC;
+    nlcn_msg.data.cn_msg.len = sizeof(enum proc_cn_mcast_op);
 
     /* either start or stop listening to events */
-    nlcn_msg.cn_mcast =
+    nlcn_msg.data.cn_mcast =
         enable
         ? PROC_CN_MCAST_LISTEN
         : PROC_CN_MCAST_IGNORE;
@@ -146,10 +146,10 @@ set_event_data(process_event_data_t *data, struct proc_event *event)
         case PROC_EVENT_FORK:
             data->type = EVENT_FORK;
 
-            data->fork.parent_pid = event->event_data.fork.parent_pid;
-            data->fork.parent_thread_group_id = event->event_data.fork.parent_tgid;
-            data->fork.child_pid = event->event_data.fork.child_pid;
-            data->fork.child_thread_group_id = event->event_data.fork.child_tgid;
+            data->data.fork.parent_pid = event->event_data.fork.parent_pid;
+            data->data.fork.parent_thread_group_id = event->event_data.fork.parent_tgid;
+            data->data.fork.child_pid = event->event_data.fork.child_pid;
+            data->data.fork.child_thread_group_id = event->event_data.fork.child_tgid;
 
             log_debug("fork: parent tid=%d pid=%d -> child tid=%d pid=%d",
                     event->event_data.fork.parent_pid,
@@ -157,22 +157,22 @@ set_event_data(process_event_data_t *data, struct proc_event *event)
                     event->event_data.fork.child_pid,
                     event->event_data.fork.child_tgid);
 
-            return data->fork.parent_pid;
+            return data->data.fork.parent_pid;
 
         case PROC_EVENT_EXIT:
             data->type = EVENT_EXIT;
 
-            data->exit.pid = event->event_data.exit.process_pid;
-            data->exit.exit_code = event->event_data.exit.exit_code;
-            data->exit.exit_signal = event->event_data.exit.exit_signal;
-            data->exit.thread_group_id = event->event_data.exit.process_tgid;
+            data->data.exit.pid = event->event_data.exit.process_pid;
+            data->data.exit.exit_code = event->event_data.exit.exit_code;
+            data->data.exit.exit_signal = event->event_data.exit.exit_signal;
+            data->data.exit.thread_group_id = event->event_data.exit.process_tgid;
 
             log_debug("exit: tid=%d pid=%d exit_code=%d",
                     event->event_data.exit.process_pid,
                     event->event_data.exit.process_tgid,
                     event->event_data.exit.exit_code);
 
-            return data->exit.pid;
+            return data->data.exit.pid;
 
         /* unhandled events */
         case PROC_EVENT_NONE:
@@ -223,7 +223,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
         {
             struct cn_msg cn_msg;
             struct proc_event proc_ev;
-        };
+        } data;
     } nlcn_msg;
 
     log_debug("Starting event manager loop");
@@ -295,7 +295,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
                     break;
                 }
 
-                pid = set_event_data(event_data, &nlcn_msg.proc_ev);
+                pid = set_event_data(event_data, &(nlcn_msg.data).proc_ev);
 
                 if (pid > 0)
                     handler(pid, event_data, nyx);

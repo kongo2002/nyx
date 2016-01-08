@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "fs.h"
 #include "process.h"
 
@@ -36,7 +38,7 @@ determine_pid(const char *name, nyx_t *nyx)
 
     if ((file = open_pid_file(nyx->pid_dir, name, "r")) != NULL)
     {
-        matched = fscanf(file, "%ud", &pid);
+        matched = fscanf(file, "%dd", &pid);
         fclose(file);
     }
 

@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "def.h"
 #include "log.h"
 #include "proc.h"
@@ -349,11 +351,11 @@ nyx_proc_start(void *state)
             double cpu_usage = stack_double_newest(proc->cpu_usage);
 
             unsigned long out_mem = 0;
-            char unit = get_size_unit(mem_usage, &out_mem);
+            char mem_unit = get_size_unit(mem_usage, &out_mem);
 
             log_debug("Process '%s' (%d): CPU %4.1f%% MEM (%lu%c) %5.2f%%",
                     proc->name, proc->pid, cpu_usage,
-                    out_mem, unit,
+                    out_mem, mem_unit,
                     ((double)mem_usage / sys->total_memory * 100.0));
 #endif
 

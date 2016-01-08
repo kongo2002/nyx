@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "config.h"
 #include "def.h"
 #include "log.h"
@@ -615,7 +617,6 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
     log_debug("handle watch");
 
-    const char *w_name;
     const char *name = get_scalar_value(event);
 
     if (name == NULL)
@@ -628,7 +629,7 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
         return info;
     }
 
-    w_name = strdup(name);
+    const char *w_name = strdup(name);
     watch_t *watch = watch_new(w_name);
 
     hash_add(info->nyx->watches, w_name, watch);

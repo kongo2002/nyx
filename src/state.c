@@ -39,6 +39,7 @@
 
 typedef int (*transition_func_t)(state_t *, state_e, state_e);
 
+#ifndef NDEBUG
 static const char *state_to_str[] =
 {
     "STATE_INIT",
@@ -51,6 +52,13 @@ static const char *state_to_str[] =
     "STATE_QUIT",
     "STATE_SIZE"
 };
+
+static const char *
+state_to_string(state_e state)
+{
+    return state_to_str[state];
+}
+#endif
 
 static const char *state_to_human_str[] =
 {
@@ -69,12 +77,6 @@ const char *
 state_to_human_string(state_e state)
 {
     return state_to_human_str[state];
-}
-
-const char *
-state_to_string(state_e state)
-{
-    return state_to_str[state];
 }
 
 void
@@ -156,7 +158,7 @@ set_environment(const watch_t *watch)
 static void
 close_fds(int pid)
 {
-    int fd, max;
+    int max;
     char path[256] = {0};
 
     /* first we try to search in /proc/{pid}/fd */
@@ -170,9 +172,6 @@ close_fds(int pid)
         struct dirent *entry = NULL;
         while ((entry = readdir(dir)) != NULL)
         {
-            if (entry->d_name == NULL)
-                continue;
-
             unsigned long fd = atol(entry->d_name);
 
             if (fd >= 3 && fd != dir_fd)
@@ -188,7 +187,7 @@ close_fds(int pid)
     if ((max = getdtablesize()) == -1)
         max = 256;
 
-    for (fd = 3 /* stderr + 1 */; fd < max; fd++)
+    for (int fd = 3 /* stderr + 1 */; fd < max; fd++)
         close(fd);
 }
 
