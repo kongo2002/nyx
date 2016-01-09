@@ -82,31 +82,29 @@ send_safe(int32_t sock, const void *buffer, size_t length)
             );
 }
 
-int
-unblock_socket(int sock)
+bool
+unblock_socket(int32_t sock)
 {
-    int flags = 0, err = 0;
-
-    flags = fcntl(sock, F_GETFL, 0);
+    int32_t flags = fcntl(sock, F_GETFL, 0);
 
     if (flags == -1)
     {
         log_perror("nyx: fcntl");
-        return 0;
+        return false;
     }
 
     /* add non-blocking flag */
     flags |= O_NONBLOCK;
 
-    err = fcntl(sock, F_SETFL, flags);
+    int32_t err = fcntl(sock, F_SETFL, flags);
 
     if (err == -1)
     {
         log_perror("nyx: fcntl");
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 #define REQUEST_TEMPLATE "%s /%s HTTP/1.0\r\nHost: localhost\r\nUser-Agent: nyx\r\n\r\n"
@@ -133,19 +131,20 @@ build_request(const char *url, http_method_e method)
 
 #undef REQUEST_TEMPLATE
 
-int
-check_http(const char *url, unsigned port, http_method_e method)
+bool
+check_http(const char *url, uint16_t port, http_method_e method)
 {
-    int success = 0;
+    bool success = false;
     ssize_t total = 0, res = 0;
     char *request = NULL;
     struct sockaddr_in srv;
-    int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    int32_t sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (sockfd < 1)
     {
         log_perror("nyx: socket");
-        return 0;
+        return false;
     }
 
     /* set timeouts */
@@ -218,7 +217,7 @@ check_http(const char *url, unsigned port, http_method_e method)
         char *code = buffer + 9;
 
         if (strncmp(code, "200", 3) == 0)
-            success = 1;
+            success = true;
         else
         {
             log_warn("HTTP check to '%s' failed with return code %s",
@@ -234,18 +233,18 @@ end:
     return success;
 }
 
-int
-check_port(unsigned port)
+bool
+check_port(uint16_t port)
 {
-    int success = 0;
+    bool success = false;
     struct sockaddr_in srv;
 
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    int32_t sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (sockfd == -1)
     {
         log_perror("nyx: socket");
-        return 0;
+        return false;
     }
 
     memset(&srv, 0, sizeof(struct sockaddr_in));
@@ -257,7 +256,7 @@ check_port(unsigned port)
         goto end;
 
     if (connect(sockfd, (struct sockaddr *) &srv, sizeof(srv)) == 0)
-        success = 1;
+        success = true;
     else
         log_perror("nyx: connect");
 
@@ -267,11 +266,9 @@ end:
 }
 
 #ifdef OSX
-int
-add_epoll_socket(int sock, struct kevent *event, int epoll, int remote)
+bool
+add_epoll_socket(int32_t sock, struct kevent *event, int32_t epoll, int32_t remote)
 {
-    int error = 0;
-
     memset(event, 0, sizeof(struct kevent));
 
     epoll_extra_data_t *data = epoll_extra_data_new(sock, remote);
@@ -279,7 +276,7 @@ add_epoll_socket(int sock, struct kevent *event, int epoll, int remote)
     /* add read mask */
     EV_SET(event, sock, EVFILT_READ, EV_ADD, 0, 0, data);
 
-    error = kevent(epoll, event, 1, NULL, 0, NULL);
+    int32_t error = kevent(epoll, event, 1, NULL, 0, NULL);
 
     if (error == -1)
         log_perror("nyx: kevent");
@@ -287,11 +284,9 @@ add_epoll_socket(int sock, struct kevent *event, int epoll, int remote)
     return !error;
 }
 #else
-int
-add_epoll_socket(int sock, struct epoll_event *event, int epoll, int remote)
+bool
+add_epoll_socket(int32_t sock, struct epoll_event *event, int32_t epoll, int32_t remote)
 {
-    int error = 0;
-
     memset(event, 0, sizeof(struct epoll_event));
 
     epoll_extra_data_t *data = epoll_extra_data_new(sock, remote);
@@ -299,7 +294,7 @@ add_epoll_socket(int sock, struct epoll_event *event, int epoll, int remote)
     event->data.ptr = data;
     event->events = EPOLLIN | EPOLLRDHUP;
 
-    error = epoll_ctl(epoll, EPOLL_CTL_ADD, sock, event);
+    int32_t error = epoll_ctl(epoll, EPOLL_CTL_ADD, sock, event);
 
     if (error == -1)
         log_perror("nyx: epoll_ctl");
@@ -309,7 +304,7 @@ add_epoll_socket(int sock, struct epoll_event *event, int epoll, int remote)
 #endif
 
 epoll_extra_data_t *
-epoll_extra_data_new(int fd, int remote)
+epoll_extra_data_new(int32_t fd, int32_t remote)
 {
     epoll_extra_data_t *extra = xcalloc1(sizeof(epoll_extra_data_t));
 

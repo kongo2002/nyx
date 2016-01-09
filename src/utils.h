@@ -42,10 +42,10 @@ void
 strings_free(char **strings);
 
 void
-wait_interval(unsigned int seconds);
+wait_interval(uint32_t seconds);
 
 void
-wait_interval_fd(int fd, unsigned int seconds);
+wait_interval_fd(int32_t fd, uint32_t seconds);
 
 #endif
 

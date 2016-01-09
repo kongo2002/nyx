@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_SOCKET_H__
-#define __NYX_SOCKET_H__
+#pragma once
+
+#include <stdbool.h>
 
 /* epoll or kqueue */
 #ifndef OSX
@@ -60,21 +61,19 @@ http_method_to_string(http_method_e method);
 ssize_t
 send_safe(int sock, const void *buffer, size_t length);
 
-int
-check_port(unsigned port);
+bool
+check_port(uint16_t port);
 
-int
-check_http(const char *url, unsigned port, http_method_e method);
+bool
+check_http(const char *url, uint16_t port, http_method_e method);
 
-int
-unblock_socket(int sock);
+bool
+unblock_socket(int32_t sock);
 
-int
-add_epoll_socket(int sock, NYX_EV_TYPE *event, int epoll, int remote);
+bool
+add_epoll_socket(int32_t sock, NYX_EV_TYPE *event, int32_t epoll, int32_t remote);
 
 epoll_extra_data_t *
-epoll_extra_data_new(int fd, int remote);
-
-#endif
+epoll_extra_data_new(int32_t fd, int32_t remote);
 
 /* vim: set et sw=4 sts=4 tw=80: */

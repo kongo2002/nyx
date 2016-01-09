@@ -22,6 +22,7 @@
 
 #include <ctype.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
 #include <sys/select.h>
 
@@ -72,14 +73,14 @@ get_size_unit(unsigned long long kbytes, unsigned long *out_bytes)
     return 'K';
 }
 
-unsigned long
+uint64_t
 parse_size_unit(const char *input)
 {
     char unit;
     int matched = 0;
-    unsigned long long size = 0;
+    uint64_t size = 0;
 
-    if ((matched = sscanf(input, "%llu %c", &size, &unit)) >= 1)
+    if ((matched = sscanf(input, "%" PRIu64 "%c", &size, &unit)) >= 1)
     {
         /* no unit specified
          * -> default to kilobytes */
@@ -114,7 +115,7 @@ parse_size_unit(const char *input)
 }
 
 void
-wait_interval(unsigned int seconds)
+wait_interval(uint32_t seconds)
 {
     struct timeval tv;
 
@@ -125,7 +126,7 @@ wait_interval(unsigned int seconds)
 }
 
 void
-wait_interval_fd(int fd, unsigned int seconds)
+wait_interval_fd(int32_t fd, uint32_t seconds)
 {
     if (fd > 0)
     {

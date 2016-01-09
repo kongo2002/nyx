@@ -45,8 +45,9 @@
 #define NYX_SOCKET_ADDR "/tmp/nyx.sock"
 
 #define NYX_MAX_MSG_LEN 128
+#define NYX_CONNECTOR_MAX_CONN 16
 
-static volatile int need_exit = 0;
+static volatile bool need_exit = false;
 
 static uint32_t
 send_format(sender_callback_t *cb, const char *format, ...)
@@ -57,7 +58,7 @@ send_format_msg(sender_callback_t *cb, const char *format, va_list values)
 {
     char *msg;
     uint32_t sent = 0;
-    int length = vasprintf(&msg, format, values);
+    int32_t length = vasprintf(&msg, format, values);
 
     if (length > 0)
     {
@@ -400,28 +401,25 @@ close:
 static void
 handle_eventfd(NYX_EV_TYPE *event)
 {
-    int err = 0;
-    uint64_t value = 0;
     epoll_extra_data_t *extra = NYX_EV_GET(event);
-    int fd = extra->fd;
+    int32_t fd = extra->fd;
 
     log_debug("Received notification on event interface (%d)", fd);
 
-    err = read(fd, &value, sizeof(value));
+    uint64_t value = 0;
+    ssize_t retval = read(fd, &value, sizeof(value));
 
-    if (err == -1)
+    if (retval == -1)
         log_perror("nyx: read");
 
-    need_exit = 1;
+    need_exit = true;
 }
 
 static bool
 connector_run(nyx_t *nyx)
 {
     bool restart = false;
-    static int max_conn = 16;
-
-    int sock = 0, error = 0, epfd = 0, http_sock = 0;
+    int32_t error = 0, epfd = 0, http_sock = 0;
 
     NYX_EV_TYPE base_ev, fd_ev, http_ev, ev;
     NYX_EV_TYPE *events = NULL;
@@ -436,7 +434,7 @@ connector_run(nyx_t *nyx)
     mode_t old_mask = umask(0);
 
     /* create a UNIX domain, connection based socket */
-    sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    int32_t sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
     if (sock == -1)
     {
@@ -448,7 +446,7 @@ connector_run(nyx_t *nyx)
 
     /* ignore SIGPIPE signals (on OSX) */
 #if defined(SO_NOSIGPIPE)
-    int on = 1;
+    bool on = true;
     if (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on)) != 0)
         log_perror("nyx: setsockopt");
 #endif
@@ -472,7 +470,7 @@ connector_run(nyx_t *nyx)
         return 0;
 
     /* listen on requests */
-    error = listen(sock, max_conn);
+    error = listen(sock, NYX_CONNECTOR_MAX_CONN);
 
     if (error)
     {
@@ -482,7 +480,7 @@ connector_run(nyx_t *nyx)
 
     /* initialize epoll/kqueue */
 #ifndef OSX
-    epfd = epoll_create(max_conn);
+    epfd = epoll_create(NYX_CONNECTOR_MAX_CONN);
     if (epfd == -1)
     {
         log_perror("nyx: epoll_create");
@@ -528,7 +526,7 @@ connector_run(nyx_t *nyx)
         }
     }
 
-    events = xcalloc(max_conn, sizeof(NYX_EV_TYPE));
+    events = xcalloc(NYX_CONNECTOR_MAX_CONN, sizeof(NYX_EV_TYPE));
 
     while (!need_exit && !restart)
     {
@@ -538,9 +536,9 @@ connector_run(nyx_t *nyx)
         log_debug("Connector: waiting for connections");
 
 #ifndef OSX
-        n = epoll_wait(epfd, events, max_conn, -1);
+        n = epoll_wait(epfd, events, NYX_CONNECTOR_MAX_CONN, -1);
 #else
-        n = kevent(epfd, NULL, 0, events, max_conn, NULL);
+        n = kevent(epfd, NULL, 0, events, NYX_CONNECTOR_MAX_CONN, NULL);
 #endif
 
         /* epoll listening failed for some reason */
