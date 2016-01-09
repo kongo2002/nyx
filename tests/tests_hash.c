@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "tests.h"
 #include "tests_hash.h"
 #include "../src/hash.h"

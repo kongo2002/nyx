@@ -153,15 +153,15 @@ handle_history(sender_callback_t *cb, const char **input, nyx_t *nyx)
     while (i-- > 0)
     {
         timestack_elem_t *elem = &state->history->elements[i];
-        struct tm *time = localtime(&elem->time);
+        struct tm *ltime = localtime(&elem->time);
 
         cb->sender(cb, "%04d-%02d-%02dT%02d:%02d:%02d: %s",
-            time->tm_year + 1900,
-            time->tm_mon + 1,
-            time->tm_mday,
-            time->tm_hour,
-            time->tm_min,
-            time->tm_sec,
+            ltime->tm_year + 1900,
+            ltime->tm_mon + 1,
+            ltime->tm_mday,
+            ltime->tm_hour,
+            ltime->tm_min,
+            ltime->tm_sec,
             state_to_human_string(elem->value));
     }
 

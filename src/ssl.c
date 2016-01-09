@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _DEFAULT_SOURCE
+
 #include "def.h"
 #include "log.h"
 #include "ssl.h"

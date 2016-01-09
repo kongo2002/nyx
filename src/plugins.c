@@ -63,7 +63,11 @@ init_plugin(const char *path, const char *name, plugin_manager_t *manager)
     }
 
     /* we got the dynamic handle, now try to find the initialization function */
-    plugin_init_func init_func = dlsym(handle, NYX_PLUGIN_INIT_FUNC);
+    plugin_init_func init_func = NULL;
+
+    /* this casting trickery is taken directly from the 'dlsym' manpage
+     * to silence compiler warnings with '-pedantic' */
+    *(void **)(&init_func) = dlsym(handle, NYX_PLUGIN_INIT_FUNC);
 
     if (init_func == NULL)
     {

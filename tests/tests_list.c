@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define _GNU_SOURCE
+
 #include "tests.h"
 #include "tests_list.h"
 #include "../src/list.h"

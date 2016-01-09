@@ -16,6 +16,8 @@
 #ifndef __NYX_UTILS_H__
 #define __NYX_UTILS_H__
 
+#include <stdint.h>
+
 #include "list.h"
 
 const char **
