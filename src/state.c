@@ -100,7 +100,7 @@ set_state(state_t *state, state_e value)
 static int
 to_unmonitored(state_t *state, state_e from, state_e to)
 {
-    int running = 0;
+    int is_running = 0;
     watch_t *watch = state->watch;
     pid_t pid = state->pid;
 
@@ -118,15 +118,15 @@ to_unmonitored(state_t *state, state_e from, state_e to)
 
     if (pid > 0)
     {
-        running = check_process_running(pid);
+        is_running = check_process_running(pid);
 
-        if (!running)
+        if (!is_running)
             clear_pid(watch->name, state->nyx);
 
-        state->pid = running ? pid : 0;
+        state->pid = is_running ? pid : 0;
     }
 
-    set_state(state, running
+    set_state(state, is_running
         ? STATE_RUNNING
         : STATE_STOPPED);
 
@@ -686,18 +686,18 @@ dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
 }
 
 int
-dispatch_poll_result(int pid, int running, nyx_t *nyx)
+dispatch_poll_result(int pid, int is_running, nyx_t *nyx)
 {
     log_debug("Incoming polling data for PID %d: running: %s",
-            pid, (running ? "true" : "false"));
+            pid, (is_running ? "true" : "false"));
 
     state_t *state = find_state_by_pid(nyx->states, pid);
 
     if (state != NULL)
     {
-        state_e next_state = running ? STATE_RUNNING : STATE_STOPPED;
+        state_e next_state = is_running ? STATE_RUNNING : STATE_STOPPED;
 
-        if (!running)
+        if (!is_running)
         {
             state->pid = 0;
             clear_pid(state->watch->name, nyx);
@@ -883,14 +883,14 @@ process_state(state_t *state, state_e old_state, state_e new_state)
 static int
 is_flapping(state_t *state, unsigned int changes, int within)
 {
-    unsigned int i = 0, stopped = 0, started = 0;
+    unsigned int i = 0, is_stopped = 0, started = 0;
     timestack_t *hist = state->history;
     timestack_elem_t *elem = hist->elements;
 
     if (hist->count < (changes * 2))
         return 0;
 
-    time_t start = time(NULL);
+    time_t start_time = time(NULL);
 
     while (i++ < hist->count)
     {
@@ -902,7 +902,7 @@ is_flapping(state_t *state, unsigned int changes, int within)
             continue;
         }
 
-        time_t diff = start - elem->time;
+        time_t diff = start_time - elem->time;
 
         if (diff > within)
             return 0;
@@ -910,9 +910,9 @@ is_flapping(state_t *state, unsigned int changes, int within)
         if (value == STATE_STARTING)
             started++;
         else if (value == STATE_STOPPED)
-            stopped++;
+            is_stopped++;
 
-        if (started > changes && stopped > changes)
+        if (started > changes && is_stopped > changes)
             return 1;
 
         elem++;

@@ -77,7 +77,7 @@ netlink_connect(void)
  * Subscribe on process events
  */
 static int
-set_process_event_listen(int socket, int enable)
+set_process_event_listen(int sock, int enable)
 {
     int rc;
 
@@ -107,7 +107,7 @@ set_process_event_listen(int socket, int enable)
         ? PROC_CN_MCAST_LISTEN
         : PROC_CN_MCAST_IGNORE;
 
-    rc = send(socket, &nlcn_msg, sizeof(nlcn_msg), 0);
+    rc = send(sock, &nlcn_msg, sizeof(nlcn_msg), 0);
 
     if (rc == -1)
     {
@@ -119,15 +119,15 @@ set_process_event_listen(int socket, int enable)
 }
 
 static int
-subscribe_event_listen(int socket)
+subscribe_event_listen(int sock)
 {
-    return set_process_event_listen(socket, 1);
+    return set_process_event_listen(sock, 1);
 }
 
 static int
-unsubscribe_event_listen(int socket)
+unsubscribe_event_listen(int sock)
 {
-    return set_process_event_listen(socket, 0);
+    return set_process_event_listen(sock, 0);
 }
 
 static process_event_data_t *
@@ -347,17 +347,17 @@ on_terminate(UNUSED int signum)
 int
 event_loop(nyx_t *nyx, process_handler_t handler)
 {
-    int socket;
+    int sock;
     int rc = 1;
 
     /* reset exit state in case this is a restart */
     need_exit = 0;
 
-    socket = netlink_connect();
-    if (socket == -1)
+    sock = netlink_connect();
+    if (sock == -1)
         return 0;
 
-    rc = subscribe_event_listen(socket);
+    rc = subscribe_event_listen(sock);
     if (rc == -1)
     {
         rc = 0;
@@ -368,17 +368,17 @@ event_loop(nyx_t *nyx, process_handler_t handler)
     setup_signals(nyx, on_terminate);
 
     /* start listening on process events */
-    rc = handle_process_event(socket, nyx, handler);
+    rc = handle_process_event(sock, nyx, handler);
     if (rc == -1)
     {
         rc = 0;
         goto out;
     }
 
-    unsubscribe_event_listen(socket);
+    unsubscribe_event_listen(sock);
 
 out:
-    close(socket);
+    close(sock);
 
     log_debug("Event manager: terminated");
     return rc;

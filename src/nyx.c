@@ -150,7 +150,7 @@ handle_child_stop(UNUSED int32_t signum)
 }
 
 static void
-handle_sigpipe(UNUSED int32_t signal)
+handle_sigpipe(UNUSED int32_t signum)
 {
     log_debug("Received SIGPIPE - ignoring for now");
 }
@@ -684,23 +684,23 @@ nyx_watches_init(nyx_t *nyx)
 
 /**
  * @brief Fire a signal using the eventfd interface
- * @param signal signal to send
+ * @param signum signal to send
  * @param nyx    nyx instance
  * @return 'true' on success, 'false' otherwise
  */
 bool
-signal_eventfd(uint64_t signal, nyx_t *nyx)
+signal_eventfd(uint64_t signum, nyx_t *nyx)
 {
     ssize_t rc = 0;
 
     /* no event interface -> use pipes instead */
     if (nyx->event < 1)
     {
-        rc = write(nyx->event_pipe[1], &signal, sizeof(signal));
+        rc = write(nyx->event_pipe[1], &signum, sizeof(signum));
     }
     else
     {
-        rc = write(nyx->event, &signal, sizeof(signal));
+        rc = write(nyx->event, &signum, sizeof(signum));
     }
 
     if (rc == -1)

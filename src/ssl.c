@@ -67,14 +67,14 @@ tcp_connect(int port)
 ssl_connection_t *
 ssl_connect(int port)
 {
-    int socket = tcp_connect(port);
+    int sock = tcp_connect(port);
 
-    if (!socket)
+    if (!sock)
         return NULL;
 
     ssl_connection_t *conn = xcalloc1(sizeof(ssl_connection_t));
 
-    conn->socket = socket;
+    conn->socket = sock;
     conn->context = SSL_CTX_new(SSLv23_client_method());
 
     if (conn->context == NULL)

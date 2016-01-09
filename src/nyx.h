@@ -105,7 +105,7 @@ bool
 nyx_reload(nyx_t *nyx);
 
 bool
-signal_eventfd(uint64_t signal, nyx_t *nyx);
+signal_eventfd(uint64_t signum, nyx_t *nyx);
 
 void
 setup_signals(nyx_t *nyx, void (*terminate_handler)(int));

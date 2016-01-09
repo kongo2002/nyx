@@ -71,9 +71,9 @@ http_method_to_string(http_method_e method)
 
 /* OS agnostic send() method wrapper */
 ssize_t
-send_safe(int32_t socket, const void *buffer, size_t length)
+send_safe(int32_t sock, const void *buffer, size_t length)
 {
-    return send(socket, buffer, length,
+    return send(sock, buffer, length,
 #ifdef OSX
             0
 #else
@@ -83,11 +83,11 @@ send_safe(int32_t socket, const void *buffer, size_t length)
 }
 
 int
-unblock_socket(int socket)
+unblock_socket(int sock)
 {
     int flags = 0, err = 0;
 
-    flags = fcntl(socket, F_GETFL, 0);
+    flags = fcntl(sock, F_GETFL, 0);
 
     if (flags == -1)
     {
@@ -98,7 +98,7 @@ unblock_socket(int socket)
     /* add non-blocking flag */
     flags |= O_NONBLOCK;
 
-    err = fcntl(socket, F_SETFL, flags);
+    err = fcntl(sock, F_SETFL, flags);
 
     if (err == -1)
     {
@@ -268,16 +268,16 @@ end:
 
 #ifdef OSX
 int
-add_epoll_socket(int socket, struct kevent *event, int epoll, int remote)
+add_epoll_socket(int sock, struct kevent *event, int epoll, int remote)
 {
     int error = 0;
 
     memset(event, 0, sizeof(struct kevent));
 
-    epoll_extra_data_t *data = epoll_extra_data_new(socket, remote);
+    epoll_extra_data_t *data = epoll_extra_data_new(sock, remote);
 
     /* add read mask */
-    EV_SET(event, socket, EVFILT_READ, EV_ADD, 0, 0, data);
+    EV_SET(event, sock, EVFILT_READ, EV_ADD, 0, 0, data);
 
     error = kevent(epoll, event, 1, NULL, 0, NULL);
 
@@ -288,18 +288,18 @@ add_epoll_socket(int socket, struct kevent *event, int epoll, int remote)
 }
 #else
 int
-add_epoll_socket(int socket, struct epoll_event *event, int epoll, int remote)
+add_epoll_socket(int sock, struct epoll_event *event, int epoll, int remote)
 {
     int error = 0;
 
     memset(event, 0, sizeof(struct epoll_event));
 
-    epoll_extra_data_t *data = epoll_extra_data_new(socket, remote);
+    epoll_extra_data_t *data = epoll_extra_data_new(sock, remote);
 
     event->data.ptr = data;
     event->events = EPOLLIN | EPOLLRDHUP;
 
-    error = epoll_ctl(epoll, EPOLL_CTL_ADD, socket, event);
+    error = epoll_ctl(epoll, EPOLL_CTL_ADD, sock, event);
 
     if (error == -1)
         log_perror("nyx: epoll_ctl");

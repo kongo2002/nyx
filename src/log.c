@@ -144,7 +144,7 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
     int error = errno;
 
     time_t now = time(NULL);
-    struct tm *time = localtime(&now);
+    struct tm *ltime = localtime(&now);
 
     if (pthread_mutex_lock(&log_mutex) != 0)
     {
@@ -163,12 +163,12 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
     fwrite(get_log_prefix(level), 4, 1, stream);
 
     fprintf(stream, "%04d-%02d-%02dT%02d:%02d:%02d ",
-                time->tm_year + 1900,
-                time->tm_mon + 1,
-                time->tm_mday,
-                time->tm_hour,
-                time->tm_min,
-                time->tm_sec);
+                ltime->tm_year + 1900,
+                ltime->tm_mon + 1,
+                ltime->tm_mday,
+                ltime->tm_hour,
+                ltime->tm_min,
+                ltime->tm_sec);
 
     fwrite(msg, length, 1, stream);
 

@@ -58,7 +58,7 @@ const char *
 http_method_to_string(http_method_e method);
 
 ssize_t
-send_safe(int socket, const void *buffer, size_t length);
+send_safe(int sock, const void *buffer, size_t length);
 
 int
 check_port(unsigned port);
@@ -67,10 +67,10 @@ int
 check_http(const char *url, unsigned port, http_method_e method);
 
 int
-unblock_socket(int socket);
+unblock_socket(int sock);
 
 int
-add_epoll_socket(int socket, NYX_EV_TYPE *event, int epoll, int remote);
+add_epoll_socket(int sock, NYX_EV_TYPE *event, int epoll, int remote);
 
 epoll_extra_data_t *
 epoll_extra_data_new(int fd, int remote);

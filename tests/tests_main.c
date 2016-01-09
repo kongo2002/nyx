@@ -25,25 +25,25 @@
 int
 main(UNUSED int argc, UNUSED char **argv)
 {
-    const UnitTest tests[] =
+    const struct CMUnitTest tests[] =
     {
-        unit_test(test_list_create),
-        unit_test(test_list_add),
-        unit_test(test_hash_create),
-        unit_test(test_hash_add),
-        unit_test(test_timestack_create),
-        unit_test(test_timestack_add),
-        unit_test(test_proc_system_info),
-        unit_test(test_proc_total_memory_size),
-        unit_test(test_proc_stat),
-        unit_test(test_proc_num_cpus),
-        unit_test(test_proc_page_size),
-        unit_test(test_parse_size_unit),
-        unit_test(test_check_http),
-        unit_test(test_strbuf_append)
+        cmocka_unit_test(test_list_create),
+        cmocka_unit_test(test_list_add),
+        cmocka_unit_test(test_hash_create),
+        cmocka_unit_test(test_hash_add),
+        cmocka_unit_test(test_timestack_create),
+        cmocka_unit_test(test_timestack_add),
+        cmocka_unit_test(test_proc_system_info),
+        cmocka_unit_test(test_proc_total_memory_size),
+        cmocka_unit_test(test_proc_stat),
+        cmocka_unit_test(test_proc_num_cpus),
+        cmocka_unit_test(test_proc_page_size),
+        cmocka_unit_test(test_parse_size_unit),
+        cmocka_unit_test(test_check_http),
+        cmocka_unit_test(test_strbuf_append)
     };
 
-    return run_tests(tests);
+    return cmocka_run_group_tests(tests, NULL, NULL);
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

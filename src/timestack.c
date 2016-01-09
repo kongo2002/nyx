@@ -99,15 +99,15 @@ timestack_dump(timestack_t *timestack)
 
     while (i++ < count)
     {
-        struct tm *time = localtime(&elem->time);
+        struct tm *ltime = localtime(&elem->time);
 
         log_info("%04d-%02d-%02dT%02d:%02d:%02d: %d",
-                time->tm_year + 1900,
-                time->tm_mon + 1,
-                time->tm_mday,
-                time->tm_hour,
-                time->tm_min,
-                time->tm_sec,
+                ltime->tm_year + 1900,
+                ltime->tm_mon + 1,
+                ltime->tm_mday,
+                ltime->tm_hour,
+                ltime->tm_min,
+                ltime->tm_sec,
                 elem->value);
 
         elem++;
