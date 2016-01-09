@@ -20,9 +20,7 @@
 #include "ssl.h"
 
 #include <arpa/inet.h>
-#include <netinet/in.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 
@@ -55,7 +53,7 @@ tcp_connect(int port)
     srv.sin_family = AF_INET;
     srv.sin_port = htons(port ? port : 443);
 
-    if (!inet_aton("127.0.0.1", &srv.sin_addr))
+    if (!inet_pton(AF_INET, "127.0.0.1", &srv.sin_addr))
         return 0;
 
     if (connect(sockfd, (struct sockaddr *)&srv, sizeof(srv)) == 0)

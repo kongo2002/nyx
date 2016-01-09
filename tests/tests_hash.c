@@ -36,7 +36,6 @@ void
 test_hash_add(UNUSED void **state)
 {
     unsigned int i = 0, size = 512;
-    char *value = NULL;
     char buffer[512] = {0};
 
     hash_t *hash = hash_new(free);
@@ -46,7 +45,7 @@ test_hash_add(UNUSED void **state)
     for (i = 0; i < size; i++)
     {
         sprintf(buffer, "value%u", i);
-        value = strdup(buffer);
+        char *value = strdup(buffer);
 
         sprintf(buffer, "key%u", i);
         assert_int_equal(1, hash_add(hash, buffer, value));

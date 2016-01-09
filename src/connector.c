@@ -150,7 +150,7 @@ get_message(const char **commands, uint32_t count)
 }
 
 static ssize_t
-send_command(int32_t socket, const char **commands, bool quiet)
+send_command(int32_t sock, const char **commands, bool quiet)
 {
     ssize_t sent = 0;
     uint32_t num_args = count_args(commands);
@@ -162,7 +162,7 @@ send_command(int32_t socket, const char **commands, bool quiet)
         printf("<<< %s\n", message + 2);
     }
 
-    sent = send_safe(socket, message, strlen(message));
+    sent = send_safe(sock, message, strlen(message));
 
     if (sent == -1)
         log_perror("nyx: send");

@@ -19,9 +19,7 @@
 
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <netinet/in.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -174,7 +172,7 @@ check_http(const char *url, unsigned port, http_method_e method)
     srv.sin_family = AF_INET;
     srv.sin_port = htons(port ? port : 80);
 
-    if (!inet_aton("127.0.0.1", &srv.sin_addr))
+    if (!inet_pton(AF_INET, "127.0.0.1", &srv.sin_addr))
         goto end;
 
     if (connect(sockfd, (struct sockaddr *) &srv, sizeof(struct sockaddr_in)) != 0)
@@ -255,7 +253,7 @@ check_port(unsigned port)
     srv.sin_family = AF_INET;
     srv.sin_port = htons(port);
 
-    if (!inet_aton("127.0.0.1", &srv.sin_addr))
+    if (!inet_pton(AF_INET, "127.0.0.1", &srv.sin_addr))
         goto end;
 
     if (connect(sockfd, (struct sockaddr *) &srv, sizeof(srv)) == 0)
