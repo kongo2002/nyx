@@ -415,16 +415,16 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
         switch (arg)
         {
             case 'q':
-                nyx->options.quiet = 1;
+                nyx->options.quiet = true;
                 break;
             case 's':
-                nyx->options.syslog = 1;
+                nyx->options.syslog = true;
                 break;
             case 'C':
-                nyx->options.no_color = 1;
+                nyx->options.no_color = true;
                 break;
             case 'D':
-                nyx->options.no_daemon = 1;
+                nyx->options.no_daemon = true;
                 break;
             case 'c':
                 nyx->options.config_file = optarg;
@@ -475,7 +475,7 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
             value++;
         }
 #endif
-        nyx->is_daemon = 1;
+        nyx->is_daemon = true;
     }
 
     /* globally ignore SIGUSR1 */
