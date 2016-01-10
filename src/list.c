@@ -28,7 +28,7 @@ list_new(void (*free_func)(void *))
 }
 
 void *
-list_find(list_t *list, int (*predicate)(void *))
+list_find(list_t *list, bool (*predicate)(void *))
 {
     if (list == NULL)
         return NULL;
@@ -115,9 +115,9 @@ list_destroy(list_t *list)
 }
 
 void
-list_foreach(list_t *list, void (*func)(unsigned long, void *))
+list_foreach(list_t *list, void (*func)(uint64_t, void *))
 {
-    unsigned long i = 0;
+    uint64_t i = 0;
     list_node_t *node = list->head;
 
     while (node)
@@ -127,7 +127,7 @@ list_foreach(list_t *list, void (*func)(unsigned long, void *))
     }
 }
 
-unsigned long
+uint64_t
 list_size(list_t *list)
 {
     return list->count;

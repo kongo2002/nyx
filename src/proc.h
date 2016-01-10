@@ -44,7 +44,7 @@ typedef struct
 
 } sys_info_t;
 
-DECLARE_STACK(unsigned long, long)
+DECLARE_STACK(uint64_t, long)
 DECLARE_STACK(double, double)
 
 typedef struct
@@ -88,7 +88,7 @@ typedef struct
     /** list of watched processes */
     list_t *processes;
     /** process event handler */
-    int (*event_handler)(proc_event_e, proc_stat_t *, void *);
+    bool (*event_handler)(proc_event_e, proc_stat_t *, void *);
 } nyx_proc_t;
 
 nyx_proc_t *

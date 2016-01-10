@@ -24,9 +24,9 @@ const char **
 strings_to_null_terminated(list_t *list);
 
 char
-get_size_unit(unsigned long long kbytes, unsigned long *out_bytes);
+get_size_unit(uint64_t kbytes, uint64_t *out_bytes);
 
-unsigned long
+uint64_t
 parse_size_unit(const char *input);
 
 const char **

@@ -15,20 +15,22 @@
 
 #include "def.h"
 
+#include <stdint.h>
+
 typedef struct
 {
     char *buf;
-    unsigned long size;
-    unsigned long length;
+    uint64_t size;
+    uint64_t length;
 } strbuf_t;
 
 strbuf_t *
 strbuf_new(void);
 
 strbuf_t *
-strbuf_new_size(unsigned long initial_size);
+strbuf_new_size(uint64_t initial_size);
 
-unsigned long
+uint64_t
 strbuf_append(strbuf_t *buf, const char *format, ...)
     __attribute__((format(printf, 2, 3)));
 

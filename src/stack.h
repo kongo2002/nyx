@@ -13,21 +13,22 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_STACK_H__
-#define __NYX_STACK_H__
+#pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
 
 #define DECLARE_STACK(type_, name_) \
     typedef struct  \
     { \
-        unsigned count; \
-        unsigned max; \
+        uint32_t count; \
+        uint32_t max; \
         type_ *elements; \
     } stack_##name_##_t; \
     \
     stack_##name_##_t * \
-    stack_##name_##_new(unsigned size); \
+    stack_##name_##_new(uint32_t size); \
     \
     void \
     stack_##name_##_destroy(stack_##name_##_t *stack); \
@@ -38,12 +39,12 @@
     type_ \
     stack_##name_##_newest(stack_##name_##_t *stack); \
     \
-    unsigned \
-    stack_##name_##_satisfy(stack_##name_##_t *stack, int (*predicate)(type_, void *), void *obj);
+    uint32_t \
+    stack_##name_##_satisfy(stack_##name_##_t *stack, bool (*predicate)(type_, void *), void *obj);
 
 #define IMPLEMENT_STACK(type_, name_) \
     stack_##name_##_t * \
-    stack_##name_##_new(unsigned size) \
+    stack_##name_##_new(uint32_t size) \
     { \
         stack_##name_##_t *stack = xcalloc1(sizeof(stack_##name_##_t)); \
         stack->max = size; \
@@ -61,8 +62,8 @@
     void \
     stack_##name_##_add(stack_##name_##_t *stack, type_ value) \
     { \
-        unsigned size = stack->max; \
-        unsigned count = stack->count + 1; \
+        uint32_t size = stack->max; \
+        uint32_t count = stack->count + 1; \
         stack->count = MIN(size, count); \
         type_ *start = stack->elements; \
         type_ *to = start + 1; \
@@ -76,10 +77,10 @@
         return stack->elements[0]; \
     } \
     \
-    unsigned \
-    stack_##name_##_satisfy(stack_##name_##_t *stack, int (*predicate)(type_, void *), void *obj) \
+    uint32_t \
+    stack_##name_##_satisfy(stack_##name_##_t *stack, bool (*predicate)(type_, void *), void *obj) \
     { \
-        unsigned i = 0, count = 0; \
+        uint32_t i = 0, count = 0; \
         while (i < stack->count) \
         { \
             if (predicate(stack->elements[i++], obj)) \
@@ -88,7 +89,5 @@
         return count; \
     }
 
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

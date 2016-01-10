@@ -148,7 +148,7 @@ handle_history(sender_callback_t *cb, const char **input, nyx_t *nyx)
     if (state->history->count < 1)
         return true;
 
-    unsigned i = state->history->count;
+    uint32_t i = state->history->count;
 
     while (i-- > 0)
     {

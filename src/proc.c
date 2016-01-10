@@ -21,6 +21,7 @@
 #include "socket.h"
 #include "utils.h"
 
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -241,7 +242,7 @@ nyx_proc_terminate(void)
     need_exit = 1;
 }
 
-static int
+static bool
 exceeds_cpu(double value, void *obj)
 {
     proc_stat_t *proc = obj;
@@ -249,21 +250,21 @@ exceeds_cpu(double value, void *obj)
     return proc->watch && proc->watch->max_cpu && value >= proc->watch->max_cpu;
 }
 
-static int
-exceeds_mem(unsigned long value, void *obj)
+static bool
+exceeds_mem(uint64_t value, void *obj)
 {
     proc_stat_t *proc = obj;
 
     return proc->watch && proc->watch->max_memory && value >= proc->watch->max_memory;
 }
 
-static int
+static bool
 proc_port_check(proc_stat_t *proc, nyx_t *nyx)
 {
     watch_t *watch = proc->watch;
 
     if (!watch->port_check)
-        return 1;
+        return true;
 
     if (!check_port(watch->port_check))
     {
@@ -273,16 +274,16 @@ proc_port_check(proc_stat_t *proc, nyx_t *nyx)
         return nyx->proc->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
     }
 
-    return 1;
+    return true;
 }
 
-static int
+static bool
 proc_http_check(proc_stat_t *proc, nyx_t *nyx)
 {
     watch_t *watch = proc->watch;
 
     if (watch->http_check == NULL)
-        return 1;
+        return true;
 
     if (!check_http(watch->http_check, watch->http_check_port, watch->http_check_method))
     {
@@ -294,7 +295,7 @@ proc_http_check(proc_stat_t *proc, nyx_t *nyx)
         return nyx->proc->event_handler(PROC_HTTP_CHECK_FAILED, proc, nyx);
     }
 
-    return 1;
+    return true;
 }
 
 static void
@@ -327,7 +328,7 @@ nyx_proc_start(void *state)
 
     setup_proc_signals();
 
-    unsigned interval = nyx->options.check_interval;
+    uint32_t interval = nyx->options.check_interval;
 
     log_debug("Starting proc watch - check interval %us", interval);
 
@@ -347,13 +348,13 @@ nyx_proc_start(void *state)
             calculate_proc_stats(proc, sys, period);
 
 #ifndef NDEBUG
-            long mem_usage = stack_long_newest(proc->mem_usage);
+            uint64_t mem_usage = stack_long_newest(proc->mem_usage);
             double cpu_usage = stack_double_newest(proc->cpu_usage);
 
-            unsigned long out_mem = 0;
+            uint64_t out_mem = 0;
             char mem_unit = get_size_unit(mem_usage, &out_mem);
 
-            log_debug("Process '%s' (%d): CPU %4.1f%% MEM (%lu%c) %5.2f%%",
+            log_debug("Process '%s' (%d): CPU %4.1f%% MEM (%" PRIu64 "%c) %5.2f%%",
                     proc->name, proc->pid, cpu_usage,
                     out_mem, mem_unit,
                     ((double)mem_usage / sys->total_memory * 100.0));
@@ -361,7 +362,7 @@ nyx_proc_start(void *state)
 
             /* no event handler registered
              * -> nothing to be done anyways */
-            int handle_events = sys->event_handler != NULL && proc->watch != NULL;
+            bool handle_events = sys->event_handler != NULL && proc->watch != NULL;
 
             /* handle CPU events? */
             if (handle_events &&

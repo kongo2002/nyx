@@ -27,7 +27,7 @@ strbuf_new(void)
 }
 
 strbuf_t *
-strbuf_new_size(unsigned long initial_size)
+strbuf_new_size(uint64_t initial_size)
 {
     strbuf_t *str = xcalloc1(sizeof(strbuf_t));
 
@@ -37,11 +37,11 @@ strbuf_new_size(unsigned long initial_size)
     return str;
 }
 
-static unsigned long
-get_new_size(strbuf_t *buf, unsigned long print_length)
+static uint64_t
+get_new_size(strbuf_t *buf, uint64_t print_length)
 {
-    unsigned long new_size = buf->size;
-    unsigned long min_required = buf->length + print_length + 1;
+    uint64_t new_size = buf->size;
+    uint64_t min_required = buf->length + print_length + 1;
 
     while (new_size <= min_required)
         new_size *= 2;
@@ -49,14 +49,13 @@ get_new_size(strbuf_t *buf, unsigned long print_length)
     return new_size;
 }
 
-unsigned long
+uint64_t
 strbuf_append(strbuf_t *buf, const char *format, ...)
 {
     if (buf == NULL)
         return 0;
 
-    unsigned long printed = 0;
-    unsigned long remaining = buf->size - buf->length;
+    uint64_t remaining = buf->size - buf->length;
 
     /* immediately double size */
     if (remaining < 1)
@@ -75,7 +74,7 @@ strbuf_append(strbuf_t *buf, const char *format, ...)
     va_list vas;
     va_start(vas, format);
 
-    printed = vsnprintf(buf->buf + buf->length, remaining, format, vas);
+    uint64_t printed = vsnprintf(buf->buf + buf->length, remaining, format, vas);
 
     va_end(vas);
 

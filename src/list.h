@@ -13,15 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_LIST_H__
-#define __NYX_LIST_H__
+#pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 typedef struct list_t
 {
-    unsigned long count;
+    uint64_t count;
     struct list_node_t *head;
     struct list_node_t *tail;
     void (*free_func)(void *);
@@ -38,7 +39,7 @@ list_t *
 list_new(void (*free_func)(void *));
 
 void *
-list_find(list_t *list, int (*predicate)(void *));
+list_find(list_t *list, bool (*predicate)(void *));
 
 void
 list_destroy(list_t *list);
@@ -50,11 +51,9 @@ void
 list_remove(list_t *list, list_node_t *node);
 
 void
-list_foreach(list_t *list, void (*func)(unsigned long, void *));
+list_foreach(list_t *list, void (*func)(uint64_t, void *));
 
-unsigned long
+uint64_t
 list_size(list_t *list);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

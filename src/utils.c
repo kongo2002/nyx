@@ -21,27 +21,27 @@
 #include "utils.h"
 
 #include <ctype.h>
-#include <stdlib.h>
 #include <inttypes.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
 
-static int
+static bool
 empty_or_whitespace(const char *str)
 {
     char c;
 
     if (str == NULL)
-        return 1;
+        return true;
 
     while ((c = *str) != '\0')
     {
         if (!isspace(c))
-            return 0;
+            return false;
         str++;
     }
 
-    return 1;
+    return true;
 }
 
 #define ONE_M 1024UL
@@ -49,7 +49,7 @@ empty_or_whitespace(const char *str)
 #define ONE_T (ONE_G * ONE_G)
 
 char
-get_size_unit(unsigned long long kbytes, unsigned long *out_bytes)
+get_size_unit(uint64_t kbytes, uint64_t *out_bytes)
 {
     if (kbytes > 10UL * ONE_T)
     {
@@ -77,7 +77,7 @@ uint64_t
 parse_size_unit(const char *input)
 {
     char unit;
-    int matched = 0;
+    int32_t matched = 0;
     uint64_t size = 0;
 
     if ((matched = sscanf(input, "%" PRIu64 " %c", &size, &unit)) >= 1)
@@ -154,12 +154,12 @@ wait_interval_fd(int32_t fd, uint32_t seconds)
 const char **
 strings_to_null_terminated(list_t *list)
 {
-    unsigned long size = list_size(list);
+    uint64_t size = list_size(list);
     const char **output = NULL;
 
     if (size > 0)
     {
-        unsigned long i = 0;
+        uint64_t i = 0;
         output = xcalloc(size + 1, sizeof(char *));
 
         list_node_t *node = list->head;

@@ -524,9 +524,9 @@ nyx_initialize(int argc, char **args, nyx_error_e *error)
  * @param event event type
  * @param proc  proc system instance
  * @param nyx   nyx instance
- * @return 0 if no further events should be handled, 1 otherwise
+ * @return false if no further events should be handled, true otherwise
  */
-static int
+static bool
 handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
 {
     hash_t *states = ((nyx_t *)nyx)->state_map;
@@ -542,7 +542,7 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
         if (event == PROC_HTTP_CHECK_FAILED || event == PROC_PORT_NOT_OPEN)
         {
             if (state->history == NULL || state->history->count < 1)
-                return 1;
+                return true;
 
             time_t now = time(NULL);
             timestack_elem_t *newest = &state->history->elements[0];
@@ -555,15 +555,15 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
                     "because the latest state change was just %ds ago",
                     event, proc->name, last_state_ago);
 
-                return 1;
+                return true;
             }
         }
 
         set_state(state, STATE_RESTARTING);
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 /**
