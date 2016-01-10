@@ -80,7 +80,7 @@ parse_size_unit(const char *input)
     int matched = 0;
     uint64_t size = 0;
 
-    if ((matched = sscanf(input, "%" PRIu64 "%c", &size, &unit)) >= 1)
+    if ((matched = sscanf(input, "%" PRIu64 " %c", &size, &unit)) >= 1)
     {
         /* no unit specified
          * -> default to kilobytes */
