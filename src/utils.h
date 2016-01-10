@@ -13,12 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_UTILS_H__
-#define __NYX_UTILS_H__
-
-#include <stdint.h>
+#pragma once
 
 #include "list.h"
+
+#include <stdint.h>
 
 const char **
 strings_to_null_terminated(list_t *list);
@@ -46,7 +45,5 @@ wait_interval(uint32_t seconds);
 
 void
 wait_interval_fd(int32_t fd, uint32_t seconds);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

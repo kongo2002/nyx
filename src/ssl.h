@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>

@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_PLUGINS_H__
-#define __NYX_PLUGINS_H__
+#pragma once
 
 #include "hash.h"
 #include "list.h"
@@ -78,7 +77,5 @@ plugin_repository_destroy(plugin_repository_t *repository);
 
 void
 notify_state_change(plugin_repository_t *repo, const char *name, pid_t pid, int new_state);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

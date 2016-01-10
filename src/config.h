@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_CONFIG_H__
-#define __NYX_CONFIG_H__
+#pragma once
 
 #include "nyx.h"
 #include "hash.h"
@@ -66,7 +65,5 @@ parse_info_new_child(parse_info_t *parent);
 
 bool
 parse_config(nyx_t *nyx);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

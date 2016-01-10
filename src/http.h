@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "def.h"
 #include "nyx.h"
 #include "socket.h"

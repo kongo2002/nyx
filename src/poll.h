@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_POLL_H__
-#define __NYX_POLL_H__
+#pragma once
 
 #include "nyx.h"
 
@@ -22,7 +21,5 @@ typedef bool (*poll_handler_t)(int pid, bool is_running, nyx_t *nyx);
 
 bool
 poll_loop(nyx_t *nyx, poll_handler_t handler);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_EVENT_H__
-#define __NYX_EVENT_H__
+#pragma once
 
 #include "nyx.h"
 
@@ -55,7 +54,5 @@ typedef bool (*process_handler_t)(pid_t pid, process_event_data_t *event_data, n
 
 bool
 event_loop(nyx_t *nyx, process_handler_t handler);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

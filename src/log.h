@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_LOG_H__
-#define __NYX_LOG_H__
+#pragma once
 
 #define _GNU_SOURCE
 
@@ -61,7 +60,5 @@ DECLARE_LOG_PROTO (critical, __attribute__((noreturn)))
 DECLARE_LOG_PROTO (critical_perror, __attribute__((noreturn)))
 
 #undef DECLARE_LOG_PROTO
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

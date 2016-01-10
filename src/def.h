@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_DEF_H__
-#define __NYX_DEF_H__
+#pragma once
 
 #include <stdlib.h>
 
@@ -43,7 +42,5 @@ xcalloc(size_t count, size_t size);
 
 void *
 xcalloc1(size_t size);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

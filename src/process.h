@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_PROCESS_H__
-#define __NYX_PROCESS_H__
+#pragma once
 
 #include "nyx.h"
 
@@ -29,7 +28,5 @@ check_process_running(pid_t pid);
 
 bool
 clear_pid(const char *name, nyx_t *nyx);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */
