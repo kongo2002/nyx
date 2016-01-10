@@ -26,6 +26,16 @@ TOBJECTS := $(patsubst tests/%.c,tests/%.o, $(TSRCS))
 TLIBS    := -lcmocka
 TDEPS    := $(filter-out src/main.o, $(OBJECTS))
 
+# LOOK FOR LOCALLY CMOCKA SOURCES
+
+CMOCKA_HEADER="$(shell find . -name cmocka.h)"
+ifneq ($(CMOCKA_HEADER), "")
+    CMOCKA_LIB="$(shell find . -name libcmocka.so | grep -v obj32)"
+
+    TINCLUDES+= -I"$(shell dirname $(CMOCKA_HEADER))"
+    TLIBS+= -L"$(shell dirname $(CMOCKA_LIB))"
+endif
+
 # OS SPECIFICS
 
 ifeq ($(shell uname -s), Darwin)
@@ -102,7 +112,11 @@ nyx: $(OBJECTS)
 	$(CC) $(OBJECTS) -o nyx $(LIBS)
 
 check: test
+ifneq ("$(CMOCKA_LIB)", "")
+	@LD_LIBRARY_PATH=$(shell dirname $(CMOCKA_LIB)) ./test
+else
 	@./test
+endif
 
 run-tests: nyx
 	@./tests/scripts/run-tests.sh
@@ -112,7 +126,7 @@ test: $(TOBJECTS) $(TDEPS)
 	$(CC) $(TOBJECTS) $(TDEPS) -o test $(LIBS) $(TLIBS)
 
 tests/%.o: tests/%.c
-	$(CC) -c $(CXXFLAGS) $(INCLUDES) -o $@ $<
+	$(CC) -c $(CXXFLAGS) $(INCLUDES) $(TINCLUDES) -o $@ $<
 
 src/%.o: src/%.c
 	$(CC) -c $(CXXFLAGS) $(INCLUDES) -MMD -MF $(patsubst %.o,%.d,$@) -o $@ $<
