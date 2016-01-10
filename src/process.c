@@ -48,18 +48,18 @@ determine_pid(const char *name, nyx_t *nyx)
     return 0;
 }
 
-int
+bool
 check_process_running(pid_t pid)
 {
     if (kill(pid, 0) == 0)
     {
         /* process is either running or a zombie */
-        return 1;
+        return true;
     }
 
     /* TODO: handle different errors? */
 
-    return 0;
+    return false;
 }
 
 int

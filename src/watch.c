@@ -87,10 +87,10 @@ watch_destroy(watch_t *watch)
     free(watch);
 }
 
-int
+bool
 watch_validate(watch_t *watch)
 {
-    int result = 1, valid = 0;
+    bool result = true, valid = false;
     uid_t uid = 0;
     gid_t gid = 0;
 

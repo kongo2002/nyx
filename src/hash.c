@@ -387,13 +387,13 @@ hash_iter(hash_iter_t *iter, const char **key, void **data)
     return 1;
 }
 
-int
+uint32_t
 hash_filter(hash_t *hash, filter_callback_t filter_func)
 {
     if (hash == NULL || filter_func == NULL)
         return 0;
 
-    int filtered = 0;
+    uint32_t filtered = 0;
     const char *key = NULL;
     void *data = NULL;
     hash_iter_t *iter = hash_iter_start(hash);

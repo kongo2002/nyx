@@ -899,22 +899,22 @@ dump_watch(void *data)
     watch_dump((watch_t *) data);
 }
 
-static int
+static bool
 invalid_watch(void *watch)
 {
     return !watch_validate((watch_t *)watch);
 }
 
-int
+bool
 parse_config(nyx_t *nyx)
 {
-    int success = 1;
+    bool success = true;
     FILE *cfg = NULL;
     handler_func_t handler = NULL;
     const char *config_file = nyx->options.config_file;
 
     if (config_file == NULL)
-        return 0;
+        return false;
 
     yaml_parser_t parser;
     yaml_event_t event;
@@ -924,7 +924,7 @@ parse_config(nyx_t *nyx)
     if (cfg == NULL)
     {
         log_perror("nyx: fopen");
-        return 0;
+        return false;
     }
 
     /* initialize yaml parser */
@@ -932,7 +932,7 @@ parse_config(nyx_t *nyx)
     {
         log_warn("Failed to parse config file %s", config_file);
         fclose(cfg);
-        return 0;
+        return false;
     }
 
     parse_info_t *info = parse_info_new(nyx);
@@ -946,7 +946,7 @@ parse_config(nyx_t *nyx)
         if (!yaml_parser_parse(&parser, &event))
         {
            log_error("Parser error: %d", parser.error);
-           success = 0;
+           success = false;
            break;
         }
 
@@ -957,7 +957,7 @@ parse_config(nyx_t *nyx)
             if (new_info == NULL)
             {
                 log_warn("Invalid configuration '%s'", config_file);
-                success = 0;
+                success = false;
                 break;
             }
 
@@ -1002,7 +1002,7 @@ parse_config(nyx_t *nyx)
     if (valid_watches < 1)
     {
         log_error("No valid watches configured");
-        return 0;
+        return false;
     }
 
     if (success)

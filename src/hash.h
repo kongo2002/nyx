@@ -13,12 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_HASH_H__
-#define __NYX_HASH_H__
+#pragma once
+
+#include <stdbool.h>
+#include <stdint.h>
 
 typedef void (*callback_t)(void *value);
 
-typedef int (*filter_callback_t)(void *value);
+typedef bool (*filter_callback_t)(void *value);
 
 typedef struct
 {
@@ -87,9 +89,7 @@ hash_count(hash_t *hash);
 int
 hash_remove(hash_t *hash, const char *key);
 
-int
+uint32_t
 hash_filter(hash_t *hash, filter_callback_t filter_func);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

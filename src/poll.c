@@ -22,26 +22,26 @@
 
 #include <unistd.h>
 
-static volatile int need_exit = 0;
+static volatile bool need_exit = false;
 
 static void
 on_terminate(UNUSED int signum)
 {
     log_debug("Caught termination signal - exiting polling manager loop");
-    need_exit = 1;
+    need_exit = true;
 }
 
-int
+bool
 poll_loop(nyx_t *nyx, poll_handler_t handler)
 {
-    int interval = MAX(nyx->options.polling_interval, 1);
+    uint32_t interval = MAX(nyx->options.polling_interval, 1);
 
     /* reset exit state in case this is a restart */
-    need_exit = 0;
+    need_exit = false;
 
     setup_signals(nyx, on_terminate);
 
-    log_debug("Starting polling manager loop (interval: %d sec)", interval);
+    log_debug("Starting polling manager loop (interval: %u sec)", interval);
 
     while (!need_exit)
     {
@@ -68,7 +68,7 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
 
             if (pid > 0)
             {
-                int running = check_process_running(pid);
+                bool running = check_process_running(pid);
 
                 log_debug("Poll: watch '%s' process with PID %d is %srunning",
                         state->watch->name, pid,
@@ -88,7 +88,7 @@ poll_loop(nyx_t *nyx, poll_handler_t handler)
         wait_interval_fd(nyx->event, interval);
     }
 
-    return 1;
+    return true;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

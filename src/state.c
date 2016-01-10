@@ -37,7 +37,7 @@
 
 #define NYX_STATE_JOIN_TIMEOUT 30
 
-typedef int (*transition_func_t)(state_t *, state_e, state_e);
+typedef bool (*transition_func_t)(state_t *, state_e, state_e);
 
 #ifndef NDEBUG
 static const char *state_to_str[] =
@@ -97,10 +97,10 @@ set_state(state_t *state, state_e value)
               state_to_string(from),\
               state_to_string(to))
 
-static int
+static bool
 to_unmonitored(state_t *state, state_e from, state_e to)
 {
-    int is_running = 0;
+    bool is_running = false;
     watch_t *watch = state->watch;
     pid_t pid = state->pid;
 
@@ -130,7 +130,7 @@ to_unmonitored(state_t *state, state_e from, state_e to)
         ? STATE_RUNNING
         : STATE_STOPPED);
 
-    return 1;
+    return true;
 }
 
 static void
@@ -351,7 +351,7 @@ spawn_exec(state_t *state, int start)
     log_critical_perror("nyx: execvp %s", executable);
 }
 
-static int
+static bool
 write_pipe(int fd, int value)
 {
     FILE *stream = fdopen(fd, "w");
@@ -361,10 +361,10 @@ write_pipe(int fd, int value)
         fprintf(stream, "%d\n", value);
 
         fclose(stream);
-        return 1;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 static int
@@ -476,7 +476,7 @@ spawn_start(state_t *state)
     return pid;
 }
 
-static int
+static bool
 stop(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
@@ -493,14 +493,14 @@ stop(state_t *state, state_e from, state_e to)
 
     /* nothing to do */
     if (state->state == STATE_STOPPED)
-        return 1;
+        return true;
 
     /* nothing to stop */
     if (pid < 1)
     {
         /* the process is obviously already stopped */
         set_state(state, STATE_STOPPED);
-        return 1;
+        return true;
     }
 
     /* in case a custom stop command is specified we use that one */
@@ -516,10 +516,10 @@ stop(state_t *state, state_e from, state_e to)
             /* process does not exist
              * -> already terminated */
             if (errno == ESRCH)
-                return 1;
+                return true;
 
             log_perror("nyx: kill");
-            return 0;
+            return false;
         }
     }
 
@@ -551,7 +551,7 @@ end:
     if (stop_pid)
         waitpid(stop_pid, NULL, WNOHANG);
 
-    return 1;
+    return true;
 }
 
 
@@ -572,7 +572,7 @@ start_state(state_t *state)
     return pid;
 }
 
-static int
+static bool
 start(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
@@ -580,10 +580,10 @@ start(state_t *state, state_e from, state_e to)
     if (start_state(state) > 0)
         set_state(state, STATE_RUNNING);
 
-    return 1;
+    return true;
 }
 
-static int
+static bool
 stopped(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
@@ -591,10 +591,10 @@ stopped(state_t *state, state_e from, state_e to)
     if (from != STATE_STOPPING && from != STATE_STOPPED)
         set_state(state, STATE_STARTING);
 
-    return 1;
+    return true;
 }
 
-static int
+static bool
 running(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
@@ -602,7 +602,7 @@ running(state_t *state, state_e from, state_e to)
     if (state->nyx->proc && state->pid)
         nyx_proc_add(state->nyx->proc, state->pid, state->watch);
 
-    return 1;
+    return true;
 }
 
 #undef DEBUG_LOG_STATE_FUNC
@@ -652,7 +652,7 @@ find_state_by_pid(list_t *states, pid_t pid)
     return NULL;
 }
 
-int
+bool
 dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
 {
     state_t *state = NULL;
@@ -682,11 +682,11 @@ dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
             break;
     }
 
-    return 1;
+    return true;
 }
 
-int
-dispatch_poll_result(int pid, int is_running, nyx_t *nyx)
+bool
+dispatch_poll_result(int pid, bool is_running, nyx_t *nyx)
 {
     log_debug("Incoming polling data for PID %d: running: %s",
             pid, (is_running ? "true" : "false"));
@@ -710,7 +710,7 @@ dispatch_poll_result(int pid, int is_running, nyx_t *nyx)
             set_state(state, next_state);
     }
 
-    return 1;
+    return true;
 }
 
 state_t *
@@ -730,7 +730,7 @@ state_new(watch_t *watch, nyx_t *nyx)
      * - initially unlocked (= 1) */
     semaphore = xcalloc1(sizeof(sem_t));
 
-    int init = sem_init(semaphore, 0, 1);
+    int32_t init = sem_init(semaphore, 0, 1);
 
     if (init == -1)
         log_critical_perror("nyx: sem_init");
@@ -839,7 +839,7 @@ state_destroy(state_t *state)
     free(state);
 }
 
-static int
+static bool
 process_state(state_t *state, state_e old_state, state_e new_state)
 {
     log_debug("Watch '%s' (PID %d): %s -> %s",
@@ -848,7 +848,6 @@ process_state(state_t *state, state_e old_state, state_e new_state)
             state_to_string(old_state),
             state_to_string(new_state));
 
-    int result = 0;
     transition_func_t func = transition_table[old_state][new_state];
 
     /* no handler for the given state transition
@@ -862,7 +861,7 @@ process_state(state_t *state, state_e old_state, state_e new_state)
         return 0;
     }
 
-    result = func(state, old_state, new_state);
+    bool result = func(state, old_state, new_state);
 
     if (!result)
     {
@@ -942,7 +941,6 @@ state_loop(state_t *state)
      * state semaphore */
     while ((sem_fail = sem_wait(state->sem)) == 0)
     {
-        int result = 0;
         state_e current_state = state->state;
 
         /* QUIT is handled immediately */
@@ -961,7 +959,7 @@ state_loop(state_t *state)
 #endif
         }
 
-        result = process_state(state, last_state, current_state);
+        bool result = process_state(state, last_state, current_state);
 
         if (!result)
         {

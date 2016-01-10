@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_WATCH_H__
-#define __NYX_WATCH_H__
+#pragma once
 
 #include "hash.h"
 #include "socket.h"
@@ -31,12 +30,12 @@ typedef struct watch_t
     const char *log_file;
     const char *error_file;
     const char *http_check;
-    unsigned http_check_port;
+    uint32_t http_check_port;
     http_method_e http_check_method;
-    unsigned port_check;
-    unsigned stop_timeout;
-    unsigned max_cpu;
-    unsigned long max_memory;
+    uint32_t port_check;
+    uint32_t stop_timeout;
+    uint32_t max_cpu;
+    uint64_t max_memory;
     hash_t *env;
 } watch_t;
 
@@ -49,9 +48,7 @@ watch_dump(watch_t *watch);
 void
 watch_destroy(watch_t *watch);
 
-int
+bool
 watch_validate(watch_t *watch);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

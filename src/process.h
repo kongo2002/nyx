@@ -24,7 +24,7 @@ determine_pid(const char *name, nyx_t *nyx);
 int
 write_pid(pid_t pid, const char *name, nyx_t *nyx);
 
-int
+bool
 check_process_running(pid_t pid);
 
 int

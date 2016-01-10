@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_STATE_H__
-#define __NYX_STATE_H__
+#pragma once
 
 #include "event.h"
 #include "nyx.h"
@@ -70,12 +69,10 @@ find_state_by_pid(list_t *states, pid_t pid);
 void
 set_state(state_t *state, state_e value);
 
-int
+bool
 dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx);
 
-int
-dispatch_poll_result(int pid, int running, nyx_t *nyx);
-
-#endif
+bool
+dispatch_poll_result(int pid, bool is_running, nyx_t *nyx);
 
 /* vim: set et sw=4 sts=4 tw=80: */

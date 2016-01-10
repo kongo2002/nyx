@@ -31,19 +31,19 @@
 #include <string.h>
 #include <unistd.h>
 
-static volatile int need_exit = 0;
+#define NYX_MAX_EVENTS 16
+
+static volatile bool need_exit = false;
 
 /**
  * Open netlink socket connection
  */
-static int
+static int32_t
 netlink_connect(void)
 {
-    int rc;
-    int netlink_socket;
     struct sockaddr_nl addr;
 
-    netlink_socket = socket(
+    int32_t netlink_socket = socket(
             PF_NETLINK,         /* kernel user interface device */
             SOCK_DGRAM,         /* datagram */
             NETLINK_CONNECTOR); /* netlink */
@@ -61,7 +61,7 @@ netlink_connect(void)
     addr.nl_groups = CN_IDX_PROC;
     addr.nl_pid = getpid();
 
-    rc = bind(netlink_socket, (struct sockaddr *)&addr, sizeof(addr));
+    int32_t rc = bind(netlink_socket, (struct sockaddr *)&addr, sizeof(addr));
 
     if (rc == -1)
     {
@@ -76,11 +76,9 @@ netlink_connect(void)
 /**
  * Subscribe on process events
  */
-static int
-set_process_event_listen(int sock, int enable)
+static bool
+set_process_event_listen(int32_t sock, bool enable)
 {
-    int rc;
-
     struct __attribute__ ((aligned(NLMSG_ALIGNTO)))
     {
         struct nlmsghdr nl_hdr;
@@ -107,27 +105,27 @@ set_process_event_listen(int sock, int enable)
         ? PROC_CN_MCAST_LISTEN
         : PROC_CN_MCAST_IGNORE;
 
-    rc = send(sock, &nlcn_msg, sizeof(nlcn_msg), 0);
+    int32_t rc = send(sock, &nlcn_msg, sizeof(nlcn_msg), 0);
 
     if (rc == -1)
     {
         log_perror("nyx: send");
-        return -1;
+        return false;
     }
 
-    return 0;
+    return true;
 }
 
-static int
-subscribe_event_listen(int sock)
+static bool
+subscribe_event_listen(int32_t sock)
 {
-    return set_process_event_listen(sock, 1);
+    return set_process_event_listen(sock, true);
 }
 
-static int
-unsubscribe_event_listen(int sock)
+static bool
+unsubscribe_event_listen(int32_t sock)
 {
-    return set_process_event_listen(sock, 0);
+    return set_process_event_listen(sock, false);
 }
 
 static process_event_data_t *
@@ -199,17 +197,16 @@ static void handle_eventfd(struct epoll_event *event, nyx_t *nyx)
     if (err == -1)
         log_perror("nyx: read");
 
-    need_exit = 1;
+    need_exit = true;
 }
 
 /**
  * Handle a single process event
  */
-static int
+static bool
 handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 {
-    static int max_conn = 16;
-    int pid = 0, rc = 0, epfd = 0;
+    bool success = false;
 
     struct epoll_event base_ev, fd_ev;
     struct epoll_event *events = NULL;
@@ -229,7 +226,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
     log_debug("Starting event manager loop");
 
     /* initialize epoll */
-    epfd = epoll_create(max_conn);
+    int32_t epfd = epoll_create(NYX_MAX_EVENTS);
     if (epfd == -1)
     {
         log_perror("nyx: epoll_create");
@@ -252,14 +249,14 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
             goto teardown;
     }
 
-    events = xcalloc(max_conn, sizeof(struct epoll_event));
+    events = xcalloc(NYX_MAX_EVENTS, sizeof(struct epoll_event));
 
     while (!need_exit)
     {
         int i = 0, n = 0;
         struct epoll_event *event = NULL;
 
-        n = epoll_wait(epfd, events, max_conn, -1);
+        n = epoll_wait(epfd, events, NYX_MAX_EVENTS, -1);
 
         for (i = 0, event = events; i < n; event++, i++)
         {
@@ -270,16 +267,17 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
             if (fd == nyx->event)
             {
                 handle_eventfd(event, nyx);
-                rc = 1;
+                success = true;
             }
             else
             {
-                rc = recv(fd, &nlcn_msg, sizeof(nlcn_msg), 0);
+                success = true;
+                int32_t rc = recv(fd, &nlcn_msg, sizeof(nlcn_msg), 0);
 
                 /* socket shutdown */
                 if (rc == 0)
                 {
-                    rc = 1;
+                    success = true;
                     break;
                 }
                 else if (rc == -1)
@@ -287,7 +285,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
                     /* interrupted by a signal */
                     if (errno == EINTR)
                     {
-                        rc = 1;
+                        success = true;
                         continue;
                     }
 
@@ -295,7 +293,7 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
                     break;
                 }
 
-                pid = set_event_data(event_data, &(nlcn_msg.data).proc_ev);
+                int32_t pid = set_event_data(event_data, &(nlcn_msg.data).proc_ev);
 
                 if (pid > 0)
                     handler(pid, event_data, nyx);
@@ -331,7 +329,7 @@ teardown:
     if (epfd > 0)
         close(epfd);
 
-    return rc;
+    return success;
 }
 
 static void
@@ -341,39 +339,30 @@ on_terminate(UNUSED int signum)
 
     /* setting this one won't do the trick until the
      * blocking receive returns */
-    need_exit = 1;
+    need_exit = true;
 }
 
-int
+bool
 event_loop(nyx_t *nyx, process_handler_t handler)
 {
-    int sock;
-    int rc = 1;
-
     /* reset exit state in case this is a restart */
-    need_exit = 0;
+    need_exit = false;
 
-    sock = netlink_connect();
+    int32_t sock = netlink_connect();
     if (sock == -1)
-        return 0;
+        return false;
 
-    rc = subscribe_event_listen(sock);
-    if (rc == -1)
-    {
-        rc = 0;
+    bool success = subscribe_event_listen(sock);
+    if (!success)
         goto out;
-    }
 
     /* register termination handler */
     setup_signals(nyx, on_terminate);
 
     /* start listening on process events */
-    rc = handle_process_event(sock, nyx, handler);
-    if (rc == -1)
-    {
-        rc = 0;
+    success = handle_process_event(sock, nyx, handler);
+    if (!success)
         goto out;
-    }
 
     unsubscribe_event_listen(sock);
 
@@ -381,7 +370,7 @@ out:
     close(sock);
 
     log_debug("Event manager: terminated");
-    return rc;
+    return success;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

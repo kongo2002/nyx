@@ -18,9 +18,9 @@
 
 #include "nyx.h"
 
-typedef int (*poll_handler_t)(int pid, int running, nyx_t *nyx);
+typedef bool (*poll_handler_t)(int pid, bool is_running, nyx_t *nyx);
 
-int
+bool
 poll_loop(nyx_t *nyx, poll_handler_t handler);
 
 #endif

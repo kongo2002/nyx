@@ -64,7 +64,7 @@ parse_info_new(nyx_t *nyx);
 parse_info_t *
 parse_info_new_child(parse_info_t *parent);
 
-int
+bool
 parse_config(nyx_t *nyx);
 
 #endif

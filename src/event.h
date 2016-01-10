@@ -51,9 +51,9 @@ typedef struct process_event_data_t
     } data;
 } process_event_data_t;
 
-typedef int (*process_handler_t)(int pid, process_event_data_t *event_data, nyx_t *nyx);
+typedef bool (*process_handler_t)(int pid, process_event_data_t *event_data, nyx_t *nyx);
 
-int
+bool
 event_loop(nyx_t *nyx, process_handler_t handler);
 
 #endif
