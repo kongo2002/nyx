@@ -90,7 +90,7 @@ watch_info_new(watch_t *watch, struct config_parser_map *map)
     return info;
 }
 
-static int
+static bool
 check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
 {
     if (event->type != event_type)
@@ -98,10 +98,10 @@ check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
         log_debug("Expecting '%s', but found '%s'",
                 yaml_event_names[event_type],
                 yaml_event_names[event->type]);
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 static const char *
@@ -992,13 +992,13 @@ parse_config(nyx_t *nyx)
     fclose(cfg);
 
     /* validate watches */
-    int filtered = 0;
+    uint32_t filtered = 0;
     if ((filtered = hash_filter(nyx->watches, invalid_watch)) > 0)
     {
         log_warn("Found %d invalid watches", filtered);
     }
 
-    int valid_watches = hash_count(nyx->watches);
+    uint32_t valid_watches = hash_count(nyx->watches);
     if (valid_watches < 1)
     {
         log_error("No valid watches configured");

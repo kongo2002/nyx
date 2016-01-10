@@ -19,19 +19,19 @@
 
 typedef struct
 {
-    int socket;
+    int32_t socket;
     SSL *handle;
     SSL_CTX *context;
 } ssl_connection_t;
 
-int
+void
 ssl_init(void);
 
 ssl_connection_t *
-ssl_connect(int port);
+ssl_connect(uint32_t port);
 
-int
-https_check(int port);
+bool
+https_check(uint32_t port);
 
 void
 ssl_free(void);

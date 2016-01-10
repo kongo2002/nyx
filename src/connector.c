@@ -500,7 +500,7 @@ connector_run(nyx_t *nyx)
         goto teardown;
 
     /* add eventfd socket to epoll as well */
-    int event_interface = nyx->event > 0 ? nyx->event : nyx->event_pipe[0];
+    int32_t event_interface = nyx->event > 0 ? nyx->event : nyx->event_pipe[0];
 
     if (!unblock_socket(event_interface))
         goto teardown;

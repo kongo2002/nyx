@@ -13,19 +13,19 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_FS_H__
-#define __NYX_FS_H__
+#pragma once
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <sys/types.h>
 
-int
+bool
 dir_writable(const char *directory);
 
-int
+bool
 dir_exists(const char *directory);
 
-int
+bool
 mkdir_p(const char *directory);
 
 const char *
@@ -37,18 +37,16 @@ get_pid_file(const char *pid_dir, const char *name);
 FILE *
 open_pid_file(const char *pid_dir, const char *name, const char *mode);
 
-int
+bool
 remove_pid_file(const char *pid_dir, const char *name);
 
 const char *
 get_homedir(void);
 
-int
+bool
 get_user(const char *name, uid_t *uid, gid_t *gid);
 
-int
+bool
 get_group(const char *name, gid_t *gid);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

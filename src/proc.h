@@ -13,13 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_PROC_H__
-#define __NYX_PROC_H__
+#pragma once
 
 #include "list.h"
 #include "stack.h"
 #include "watch.h"
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 typedef enum
@@ -32,15 +33,14 @@ typedef enum
 
 typedef struct
 {
-    unsigned long user_time;        /* 14 */
-    unsigned long system_time;      /* 15 */
-    long child_user_time;           /* 16 */
-    long child_system_time;         /* 17 */
-    unsigned long long start_time;  /* 22 */
-    unsigned long virtual_size;     /* 23 */
-    long resident_set_size;         /* 24 */
+    uint64_t user_time;        /* 14 */
+    uint64_t system_time;      /* 15 */
+    int64_t child_user_time;   /* 16 */
+    int64_t child_system_time; /* 17 */
+    uint64_t virtual_size;     /* 23 */
+    int64_t resident_set_size; /* 24 */
 
-    unsigned long long total_time;
+    uint64_t total_time;
 
 } sys_info_t;
 
@@ -65,24 +65,24 @@ typedef struct
 
 typedef struct
 {
-    unsigned long long user_time;
-    unsigned long long nice_time;
-    unsigned long long system_time;
-    unsigned long long idle_time;
-    unsigned long long iowait_time;
+    uint64_t user_time;
+    uint64_t nice_time;
+    uint64_t system_time;
+    uint64_t idle_time;
+    uint64_t iowait_time;
 
-    unsigned long long total;
-    unsigned long long period;
+    uint64_t total;
+    uint64_t period;
 } sys_proc_stat_t;
 
 typedef struct
 {
     /** total system memory (in kB) */
-    unsigned long total_memory;
+    uint64_t total_memory;
     /** system page size (in bytes) */
-    long page_size;
+    int64_t page_size;
     /** number of CPUs */
-    int num_cpus;
+    int32_t num_cpus;
     /** current system statistics */
     sys_proc_stat_t sys_proc;
     /** list of watched processes */
@@ -121,7 +121,7 @@ sys_proc_new(void);
 void
 sys_proc_dump(sys_proc_stat_t *stat);
 
-int
+bool
 sys_proc_read(sys_proc_stat_t *stat);
 
 sys_info_t *
@@ -130,18 +130,16 @@ sys_info_new(void);
 void
 sys_info_dump(sys_info_t *sys);
 
-int
+bool
 sys_info_read_proc(sys_info_t *sys, pid_t pid, long page_size);
 
-unsigned long
+uint64_t
 total_memory_size(void);
 
-long
+int64_t
 get_page_size(void);
 
-int
+int32_t
 num_cpus(void);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

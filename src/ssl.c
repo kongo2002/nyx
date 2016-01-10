@@ -23,8 +23,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
-int
+void
 ssl_init(void)
 {
     log_debug("Initializing OpenSSL");
@@ -32,15 +31,16 @@ ssl_init(void)
     SSL_load_error_strings();
     ERR_load_BIO_strings();
 
-    return SSL_library_init();
+    /* according to manpage 'SSL_library_init' always returns 1 ... */
+    SSL_library_init();
 }
 
-static int
-tcp_connect(int port)
+static int32_t
+tcp_connect(uint32_t port)
 {
     struct sockaddr_in srv;
 
-    int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    int32_t sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (sockfd == -1)
     {
@@ -65,9 +65,9 @@ tcp_connect(int port)
 }
 
 ssl_connection_t *
-ssl_connect(int port)
+ssl_connect(uint32_t port)
 {
-    int sock = tcp_connect(port);
+    int32_t sock = tcp_connect(port);
 
     if (!sock)
         return NULL;
@@ -114,20 +114,19 @@ fail:
     return NULL;
 }
 
-int
-https_check(int port)
+bool
+https_check(uint32_t port)
 {
-    int success = 0;
-    X509 *certificate = NULL;
+    bool success = false;
 
     /* connect to SSL endpoint */
     ssl_connection_t *conn = ssl_connect(port);
 
     if (conn == NULL)
-        return 0;
+        return false;
 
     /* obtain peer certificate */
-    certificate = SSL_get_peer_certificate(conn->handle);
+    X509 *certificate = SSL_get_peer_certificate(conn->handle);
 
     if (certificate == NULL)
     {
@@ -141,7 +140,7 @@ https_check(int port)
         goto end;
     }
 
-    success = 1;
+    success = true;
 
 end:
     /* decrement certificate reference count */

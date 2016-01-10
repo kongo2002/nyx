@@ -48,8 +48,8 @@ typedef struct
     int32_t fd;
     int32_t remote_socket;
     char *buffer;
-    unsigned int pos;
-    unsigned int length;
+    uint32_t pos;
+    uint32_t length;
 } epoll_extra_data_t;
 
 http_method_e
@@ -59,7 +59,7 @@ const char *
 http_method_to_string(http_method_e method);
 
 ssize_t
-send_safe(int sock, const void *buffer, size_t length);
+send_safe(int32_t sock, const void *buffer, size_t length);
 
 bool
 check_port(uint16_t port);

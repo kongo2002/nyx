@@ -28,9 +28,9 @@
 #include <time.h>
 #include <unistd.h>
 
-static volatile int use_syslog = 0;
-static volatile int quiet = 0;
-static volatile int use_color = 0;
+static volatile bool use_syslog = false;
+static volatile bool quiet = false;
+static volatile bool use_color = false;
 
 pthread_mutex_t log_mutex;
 
@@ -95,10 +95,10 @@ get_log_color(log_level_e level, size_t *length)
     return color;
 }
 
-static int
+static int32_t
 get_syslog_level(log_level_e level)
 {
-    int lvl = LOG_INFO;
+    int32_t lvl = LOG_INFO;
 
     if (level & NYX_LOG_INFO)
         lvl = LOG_INFO;
@@ -141,7 +141,7 @@ static void
 log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
 {
     /* safe errno */
-    int error = errno;
+    int32_t error = errno;
 
     time_t now = time(NULL);
     struct tm *ltime = localtime(&now);
@@ -208,9 +208,9 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
 static void
 log_format_msg(FILE *stream, log_level_e level, const char *format, va_list values)
 {
-    char *msg;
+    char *msg = NULL;
 
-    int length = vasprintf(&msg, format, values);
+    int32_t length = vasprintf(&msg, format, values);
 
     if (length > 0)
     {

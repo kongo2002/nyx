@@ -70,9 +70,9 @@ void
 set_state(state_t *state, state_e value);
 
 bool
-dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx);
+dispatch_event(pid_t pid, process_event_data_t *event_data, nyx_t *nyx);
 
 bool
-dispatch_poll_result(int pid, bool is_running, nyx_t *nyx);
+dispatch_poll_result(pid_t pid, bool is_running, nyx_t *nyx);
 
 /* vim: set et sw=4 sts=4 tw=80: */

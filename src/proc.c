@@ -29,7 +29,7 @@
 #define PROC_STAT_STACK_SIZE 10
 #define PROC_STAT_STACK_LIMIT 8
 
-static volatile int need_exit = 0;
+static volatile bool need_exit = false;
 
 static void
 proc_stat_destroy(void *obj)
@@ -80,7 +80,7 @@ proc_stat_new(pid_t pid, const char *name, watch_t *watch)
     return stat;
 }
 
-static unsigned long long
+static uint64_t
 calculate_sys_period(sys_proc_stat_t *stat)
 {
     /* read current statistics */
@@ -98,10 +98,10 @@ calculate_sys_period(sys_proc_stat_t *stat)
     return current.period;
 }
 
-static unsigned long long
-calculate_proc_diff(proc_stat_t *proc, long page_size)
+static uint64_t
+calculate_proc_diff(proc_stat_t *proc, int64_t page_size)
 {
-    unsigned long long diff = 0;
+    uint64_t diff = 0;
 
     /* read current process statistics */
     sys_info_t current;
@@ -122,12 +122,10 @@ calculate_proc_diff(proc_stat_t *proc, long page_size)
 }
 
 static void
-calculate_proc_stats(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long period)
+calculate_proc_stats(proc_stat_t *stat, nyx_proc_t *sys, uint64_t period)
 {
-    unsigned max = sys->num_cpus * 100;
-    unsigned long long diff = 0;
-
-    diff = calculate_proc_diff(stat, sys->page_size);
+    uint32_t max = sys->num_cpus * 100;
+    uint64_t diff = calculate_proc_diff(stat, sys->page_size);
 
     if (period > 0)
     {
@@ -141,7 +139,6 @@ calculate_proc_stats(proc_stat_t *stat, nyx_proc_t *sys, unsigned long long peri
 nyx_proc_t *
 nyx_proc_init(pid_t pid)
 {
-    int success = 0;
     nyx_proc_t *proc = nyx_proc_new();
 
     /* validate some basic values */
@@ -178,7 +175,7 @@ nyx_proc_init(pid_t pid)
         return NULL;
     }
 
-    success = sys_proc_read(&proc->sys_proc);
+    bool success = sys_proc_read(&proc->sys_proc);
 
     if (!success)
     {
@@ -239,7 +236,7 @@ nyx_proc_add(nyx_proc_t *proc, pid_t pid, watch_t *watch)
 void
 nyx_proc_terminate(void)
 {
-    need_exit = 1;
+    need_exit = true;
 }
 
 static bool
@@ -333,11 +330,11 @@ nyx_proc_start(void *state)
     log_debug("Starting proc watch - check interval %us", interval);
 
     /* reset need_exit in case of a restart */
-    need_exit = 0;
+    need_exit = false;
 
     while (!need_exit)
     {
-        unsigned long long period = calculate_sys_period(&sys->sys_proc);
+        uint64_t period = calculate_sys_period(&sys->sys_proc);
         list_node_t *node = sys->processes->head;
 
         while (node)
@@ -382,10 +379,10 @@ nyx_proc_start(void *state)
                     proc->watch->max_memory &&
                     stack_long_satisfy(proc->mem_usage, exceeds_mem, proc) >= PROC_STAT_STACK_LIMIT)
             {
-                unsigned long bytes;
+                uint64_t bytes;
                 char unit = get_size_unit(proc->watch->max_memory, &bytes);
 
-                log_warn("Process '%s' (%d) exceeds its memory usage maximum of %ld%c"
+                log_warn("Process '%s' (%d) exceeds its memory usage maximum of %" PRIu64 "%c"
                          " in at least %d of the last %d tests",
                          proc->name, proc->pid, bytes, unit,
                          PROC_STAT_STACK_LIMIT, PROC_STAT_STACK_SIZE);
@@ -431,16 +428,16 @@ void
 sys_proc_dump(sys_proc_stat_t *stat)
 {
     log_info("System process info:");
-    log_info("  User time:    %llu", stat->user_time);
-    log_info("  Nice time:    %llu", stat->nice_time);
-    log_info("  System time:  %llu", stat->system_time);
-    log_info("  Idle time:    %llu", stat->idle_time);
-    log_info("  IO wait time: %llu", stat->iowait_time);
-    log_info("  Total time:   %llu", stat->total);
+    log_info("  User time:    %" PRIu64, stat->user_time);
+    log_info("  Nice time:    %" PRIu64, stat->nice_time);
+    log_info("  System time:  %" PRIu64, stat->system_time);
+    log_info("  Idle time:    %" PRIu64, stat->idle_time);
+    log_info("  IO wait time: %" PRIu64, stat->iowait_time);
+    log_info("  Total time:   %" PRIu64, stat->total);
 }
 
 #ifndef OSX
-static int
+static bool
 sys_proc_read_proc(sys_proc_stat_t *stat)
 {
     FILE *proc = fopen("/proc/stat", "r");
@@ -448,12 +445,12 @@ sys_proc_read_proc(sys_proc_stat_t *stat)
     if (proc == NULL)
     {
         log_perror("nyx: fopen");
-        return 0;
+        return false;
     }
 
     /* right now we are interested in the first line (cpu ...)
      * only which represents the overall cpu usage */
-    if (fscanf(proc, "%*8s %llu %llu %llu %llu %llu",
+    if (fscanf(proc, "%*8s %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "",
                 &stat->user_time,
                 &stat->nice_time,
                 &stat->system_time,
@@ -463,7 +460,7 @@ sys_proc_read_proc(sys_proc_stat_t *stat)
         log_error("Failed to parse /proc/stat");
         fclose(proc);
 
-        return 0;
+        return false;
     }
 
     /* calculate sum */
@@ -475,33 +472,32 @@ sys_proc_read_proc(sys_proc_stat_t *stat)
         stat->iowait_time;
 
     fclose(proc);
-    return 1;
+    return true;
 }
 #else
-/* #include <sys/proc_info.h> */
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <libproc.h>
 #include <mach/mach.h>
 #include <mach/mach_host.h>
 
-static int
+static bool
 sys_proc_read_osx(sys_proc_stat_t *stat)
 {
-    unsigned i, j, cpu_count;
+    uint32_t cpu_count = 0;
     processor_info_array_t p;
     mach_msg_type_number_t info_size;
 
     if (host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &cpu_count, &p, &info_size) != 0)
-        return 0;
+        return false;
 
     processor_cpu_load_info_data_t *data = (processor_cpu_load_info_data_t *) p;
     stat->total = 0;
 
-    for (i = 0; i < cpu_count; i++)
+    for (uint32_t i = 0; i < cpu_count; i++)
     {
         /* states: 0: user, 1: system, 2: idle, 3: nice */
-        for (j = 0; j < CPU_STATE_MAX; j++)
+        for (uint32_t j = 0; j < CPU_STATE_MAX; j++)
         {
             stat->total += data[i].cpu_ticks[j];
         }
@@ -514,11 +510,11 @@ sys_proc_read_osx(sys_proc_stat_t *stat)
     /* free resources */
     vm_deallocate(mach_task_self(), (vm_address_t)p, sizeof(integer_t) * info_size);
 
-    return 1;
+    return true;
 }
 #endif
 
-int
+bool
 sys_proc_read(sys_proc_stat_t *stat)
 {
 #ifndef OSX
@@ -536,8 +532,8 @@ sys_info_new(void)
     return sys;
 }
 
-int
-sys_info_read_proc(sys_info_t *sys, pid_t pid, long page_size)
+bool
+sys_info_read_proc(sys_info_t *sys, pid_t pid, int64_t page_size)
 {
 #ifndef OSX
     char buffer[64] = {0};
@@ -547,7 +543,7 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid, long page_size)
     if ((proc = fopen(buffer, "r")) == NULL)
     {
         log_perror("nyx: fopen");
-        return 0;
+        return false;
     }
 
     if (fscanf(proc, "%*d %*256s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
@@ -562,7 +558,7 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid, long page_size)
         log_error("Failed to parse %s", buffer);
         fclose(proc);
 
-        return 0;
+        return false;
     }
 
     /* correct RSS from 'number of pages' to 'in kilobytes' unit */
@@ -574,14 +570,14 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid, long page_size)
         sys->child_system_time;
 
     fclose(proc);
-    return 1;
+    return true;
 #else
     struct proc_taskinfo pti;
 
     size_t pti_size = sizeof(pti);
     size_t result = proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &pti, pti_size);
     if (result != pti_size)
-        return 0;
+        return false;
 
     sys->user_time = pti.pti_total_user;
     sys->system_time = pti.pti_total_system;
@@ -590,14 +586,14 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid, long page_size)
     sys->virtual_size = pti.pti_virtual_size;
     sys->resident_set_size = pti.pti_resident_size / 1024;
 
-    return 1;
+    return true;
 #endif
 }
 
-long
+int64_t
 get_page_size(void)
 {
-    long value = 0;
+    int64_t value = 0;
 
     if ((value = sysconf(_SC_PAGESIZE)) == -1)
     {
@@ -608,12 +604,12 @@ get_page_size(void)
     return value;
 }
 
-static unsigned long
+static uint64_t
 total_memory_size_sysconf(void)
 {
 #if defined(_SC_PAGESIZE) && defined(_SC_PHYS_PAGES)
-    long page_size = get_page_size();
-    unsigned long pages = sysconf(_SC_PHYS_PAGES);
+    int64_t page_size = get_page_size();
+    int64_t pages = sysconf(_SC_PHYS_PAGES);
 
     if (page_size > 0L && pages > 0L)
         return page_size * pages / 1024;
@@ -622,10 +618,10 @@ total_memory_size_sysconf(void)
     return 0L;
 }
 
-static unsigned long
+static uint64_t
 total_memory_size_proc(void)
 {
-    unsigned long mem_size = 0;
+    uint64_t mem_size = 0;
 
 #ifndef OSX
     FILE *proc = fopen("/proc/meminfo", "r");
@@ -636,7 +632,7 @@ total_memory_size_proc(void)
         return 0;
     }
 
-    if (fscanf(proc, "MemTotal: %lu kB", &mem_size) != 1)
+    if (fscanf(proc, "MemTotal: %" PRIu64 " kB", &mem_size) != 1)
     {
         log_error("Failed to parse /proc/meminfo");
         mem_size = 0;
@@ -648,10 +644,10 @@ total_memory_size_proc(void)
     return mem_size;
 }
 
-unsigned long
+uint64_t
 total_memory_size(void)
 {
-    unsigned long mem_size = total_memory_size_proc();
+    uint64_t mem_size = total_memory_size_proc();
 
     if (mem_size < 1L)
         return total_memory_size_sysconf();
@@ -659,10 +655,10 @@ total_memory_size(void)
     return mem_size;
 }
 
-static int
+static int32_t
 num_cpus_proc(void)
 {
-    int cpus = -1;
+    int32_t cpus = -1;
 
 #ifndef OSX
     FILE *proc = fopen("/proc/stat", "r");
@@ -687,10 +683,10 @@ num_cpus_proc(void)
     return cpus;
 }
 
-static int
+static int32_t
 num_cpus_sysconf(void)
 {
-    int cpus = 0;
+    int32_t cpus = 0;
 
 #if defined(_SC_NPROCESSORS_ONLN)
     cpus = sysconf(_SC_NPROCESSORS_ONLN);
@@ -705,10 +701,10 @@ num_cpus_sysconf(void)
     return cpus;
 }
 
-int
+int32_t
 num_cpus(void)
 {
-    int cpus = num_cpus_proc();
+    int32_t cpus = num_cpus_proc();
 
     if (cpus < 1)
         return num_cpus_sysconf();
@@ -720,16 +716,16 @@ void
 sys_info_dump(sys_info_t *sys)
 {
     log_info("Process info:");
-    log_info("  User time:         %lu", sys->user_time);
-    log_info("  System time:       %lu", sys->system_time);
-    log_info("  Child user time:   %ld", sys->child_user_time);
-    log_info("  Child system time: %ld", sys->child_system_time);
-    log_info("  Virtual size:      %lu", sys->virtual_size);
-    log_info("  Resident set:      %ld", sys->resident_set_size);
-    log_info("  Total time:        %llu", sys->total_time);
+    log_info("  User time:         %" PRIu64, sys->user_time);
+    log_info("  System time:       %" PRIu64, sys->system_time);
+    log_info("  Child user time:   %" PRId64, sys->child_user_time);
+    log_info("  Child system time: %" PRId64, sys->child_system_time);
+    log_info("  Virtual size:      %" PRIu64, sys->virtual_size);
+    log_info("  Resident set:      %" PRId64, sys->resident_set_size);
+    log_info("  Total time:        %" PRIu64, sys->total_time);
 }
 
-IMPLEMENT_STACK(unsigned long, long)
+IMPLEMENT_STACK(uint64_t, long)
 IMPLEMENT_STACK(double, double)
 
 /* vim: set et sw=4 sts=4 tw=80: */

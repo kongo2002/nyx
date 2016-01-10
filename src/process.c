@@ -20,7 +20,7 @@
 
 #include <signal.h>
 
-int
+bool
 clear_pid(const char *name, nyx_t *nyx)
 {
     return remove_pid_file(nyx->pid_dir, name);
@@ -29,7 +29,7 @@ clear_pid(const char *name, nyx_t *nyx)
 pid_t
 determine_pid(const char *name, nyx_t *nyx)
 {
-    int matched = 0;
+    int32_t matched = 0;
     pid_t pid = 0;
     FILE *file = NULL;
 
@@ -62,14 +62,14 @@ check_process_running(pid_t pid)
     return false;
 }
 
-int
+bool
 write_pid(pid_t pid, const char *name, nyx_t *nyx)
 {
-    int written = 0;
+    int32_t written = 0;
     FILE *file = NULL;
 
     if (name == NULL)
-        return 0;
+        return false;
 
     if ((file = open_pid_file(nyx->pid_dir, name, "w")) != NULL)
     {

@@ -48,31 +48,31 @@ get_homedir(void)
     return homedir;
 }
 
-int
+bool
 get_user(const char *name, uid_t *uid, gid_t *gid)
 {
     struct passwd *pw = getpwnam(name);
 
     if (pw == NULL)
-        return 0;
+        return false;
 
     *uid = pw->pw_uid;
     *gid = pw->pw_gid;
 
-    return 1;
+    return true;
 }
 
-int
+bool
 get_group(const char *name, gid_t *gid)
 {
     struct group *grp = getgrnam(name);
 
     if (grp == NULL)
-        return 0;
+        return false;
 
     *gid = grp->gr_gid;
 
-    return 1;
+    return true;
 }
 
 static const char *
@@ -107,7 +107,6 @@ static const char *pid_dir_defaults[] =
 const char *
 determine_pid_dir(void)
 {
-    int result = 0;
     const char **dir = pid_dir_defaults;
 
     while (*dir)
@@ -116,7 +115,7 @@ determine_pid_dir(void)
         if (mkdir_p(*dir))
         {
             /* now we should be able to access it as well */
-            result = access(prepare_dir(*dir), W_OK);
+            int32_t result = access(prepare_dir(*dir), W_OK);
 
             if (result == 0)
             {
@@ -142,13 +141,13 @@ open_pid_file(const char *pid_dir, const char *name, const char *mode)
     return fopen(get_pid_file(pid_dir, name), mode);
 }
 
-int
+bool
 remove_pid_file(const char *pid_dir, const char *name)
 {
     if (pid_dir == NULL)
-        return 0;
+        return false;
 
-    return remove(get_pid_file(pid_dir, name));
+    return remove(get_pid_file(pid_dir, name)) == 0;
 }
 
 const char *
@@ -162,41 +161,41 @@ get_pid_file(const char *pid_dir, const char *name)
     return buffer;
 }
 
-int
+bool
 dir_exists(const char *directory)
 {
     if (directory == NULL || *directory == '\0')
-        return 0;
+        return false;
 
     DIR *dir = opendir(prepare_dir(directory));
 
     if (dir != NULL)
     {
         closedir(dir);
-        return 1;
+        return true;
     }
 
     /* no need to check errno */
 
-    return 0;
+    return false;
 }
 
-int
+bool
 dir_writable(const char *directory)
 {
-    int writable = 0;
+    bool writable = false;
     char *copy = strdup(prepare_dir(directory));
     const char *dir = dirname(copy);
 
     if (dir_exists(dir))
     {
-        int error = access(dir, W_OK);
+        int32_t error = access(dir, W_OK);
 
         if (error == -1)
             log_perror("nyx: access");
 
         if (error == 0)
-            writable = 1;
+            writable = true;
     }
 
     free(copy);
@@ -204,43 +203,40 @@ dir_writable(const char *directory)
     return writable;
 }
 
-int
+bool
 mkdir_p(const char *directory)
 {
-    size_t length = 0, end = 0;;
-    const char *prepared_dir;
     char buffer[512] = {0};
-    char *p = NULL;
 
     if (directory == NULL || *directory == '\0')
-        return 0;
+        return false;
 
-    prepared_dir = prepare_dir(directory);
+    const char *prepared_dir = prepare_dir(directory);
 
     snprintf(buffer, sizeof(buffer), "%s", prepared_dir);
-    length = strlen(buffer);
-    end = length - 1;
+    size_t length = strlen(buffer);
+    size_t end = length - 1;
 
     /* remove trailing slash if necessary */
     if (buffer[end] == '/')
         buffer[end] = '\0';
 
-    for (p = buffer + 1; *p; p++)
+    for (char *p = buffer + 1; *p; p++)
     {
         if (*p == '/')
         {
             *p = '\0';
 
             if (mkdir(buffer, S_IRWXU) == -1 && errno != EEXIST)
-                return 0;
+                return false;
             *p = '/';
         }
     }
 
     if (mkdir(buffer, S_IRWXU) == -1 && errno != EEXIST)
-        return 0;
+        return false;
 
-    return 1;
+    return true;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

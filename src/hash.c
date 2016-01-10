@@ -149,11 +149,10 @@ get_bucket(hash_t *hash, const char *key)
 static void
 rehash(hash_t* hash)
 {
-    unsigned int i = 0;
-    unsigned int old_bucket_count = hash->bucket_count;
+    uint32_t i = 0;
+    uint32_t old_bucket_count = hash->bucket_count;
     hash->bucket_count = old_bucket_count * 2;
 
-    bucket_t *new_bucket = NULL;
     bucket_t *old_bucket = hash->buckets;
     bucket_t *old_buckets = hash->buckets;
 
@@ -162,13 +161,13 @@ rehash(hash_t* hash)
     /* iterate old buckets */
     while (i < old_bucket_count)
     {
-        unsigned int j = 0, pairs = old_bucket->count;
+        uint32_t j = 0, pairs = old_bucket->count;
         pair_t *pair = old_bucket->pairs;
 
         while (j < pairs)
         {
             /* find new bucket */
-            new_bucket = get_bucket(hash, pair->key);
+            bucket_t *new_bucket = get_bucket(hash, pair->key);
 
             if (new_bucket->count < 1)
             {
@@ -200,9 +199,7 @@ rehash(hash_t* hash)
 bool
 hash_add(hash_t *hash, const char *key, void *data)
 {
-    size_t keylen, len;
-    unsigned int bucket_count, idx;
-    char *key_cpy = NULL;
+    uint32_t idx = 0;
 
     bucket_t *bucket = NULL;
     pair_t *pair = NULL;
@@ -217,7 +214,7 @@ hash_add(hash_t *hash, const char *key, void *data)
     if (pair != NULL)
         return false;
 
-    bucket_count = bucket->count;
+    uint32_t bucket_count = bucket->count;
 
     /* the bucket is empty */
     if (bucket_count < 1)
@@ -234,11 +231,11 @@ hash_add(hash_t *hash, const char *key, void *data)
     }
 
     /* determine maximum key length */
-    keylen = strlen(key);
-    len = keylen > NYX_HASH_KEY_MAXLEN ? NYX_HASH_KEY_MAXLEN : keylen;
+    size_t keylen = strlen(key);
+    size_t len = keylen > NYX_HASH_KEY_MAXLEN ? NYX_HASH_KEY_MAXLEN : keylen;
 
     /* copy and assign key */
-    key_cpy = xcalloc(len+1, sizeof(char));
+    char *key_cpy = xcalloc(len+1, sizeof(char));
     strncpy(key_cpy, key, len);
 
     pair->key = key_cpy;
@@ -258,14 +255,12 @@ void *
 hash_get(hash_t *hash, const char* key)
 {
     uint32_t idx = 0;
-    bucket_t *bucket = NULL;
-    pair_t *pair = NULL;
 
     if (hash == NULL || key == NULL)
         return NULL;
 
-    bucket = get_bucket(hash, key);
-    pair = get_pair(bucket, key, &idx);
+    bucket_t *bucket = get_bucket(hash, key);
+    pair_t *pair = get_pair(bucket, key, &idx);
 
     if (pair == NULL)
         return NULL;
@@ -276,19 +271,16 @@ hash_get(hash_t *hash, const char* key)
 bool
 hash_remove(hash_t *hash, const char *key)
 {
-    unsigned int i = 0, j = 0, idx = 0;
-    bucket_t *bucket = NULL;
-    pair_t *pair = NULL, *new_pairs = NULL;
-
     if (hash == NULL || key == NULL)
         return false;
 
-    bucket = get_bucket(hash, key);
+    bucket_t *bucket = get_bucket(hash, key);
 
     if (bucket == NULL)
         return false;
 
-    pair = get_pair(bucket, key, &idx);
+    uint32_t idx = 0;
+    pair_t *pair = get_pair(bucket, key, &idx);
 
     if (pair == NULL)
         return false;
@@ -296,18 +288,18 @@ hash_remove(hash_t *hash, const char *key)
     hash->count--;
     bucket->count--;
 
-    new_pairs = bucket->count
+    pair_t *new_pairs = bucket->count
         ? xcalloc(bucket->count, sizeof(pair_t))
         : NULL;
 
-    for (i = 0; i<bucket->count+1; i++)
+    for (uint32_t i = 0; i<bucket->count+1; i++)
     {
         if (i == idx)
             continue;
 
         pair = &bucket->pairs[i];
 
-        j = i > idx ? i-1 : i;
+        uint32_t j = i > idx ? i-1 : i;
 
         new_pairs[j].key = pair->key;
         new_pairs[j].data = pair->data;
@@ -336,7 +328,7 @@ hash_iter_init(hash_iter_t *iter, hash_t *hash)
 hash_iter_t *
 hash_iter_start(hash_t *hash)
 {
-    hash_iter_t *iter = xcalloc(1, sizeof(hash_iter_t));
+    hash_iter_t *iter = xcalloc1(sizeof(hash_iter_t));
 
     hash_iter_init(iter, hash);
 
@@ -419,14 +411,14 @@ hash_filter(hash_t *hash, filter_callback_t filter_func)
 void
 hash_foreach(hash_t *hash, void (*func)(void *))
 {
-    unsigned int i = 0;
-    unsigned int bucket_count = hash->bucket_count;
+    uint32_t i = 0;
+    uint32_t bucket_count = hash->bucket_count;
 
     bucket_t *bucket = hash->buckets;
 
     while (i < bucket_count)
     {
-        unsigned int j = 0, pairs = bucket->count;
+        uint32_t j = 0, pairs = bucket->count;
         pair_t *pair = bucket->pairs;
 
         while (j < pairs)

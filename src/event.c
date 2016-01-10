@@ -136,7 +136,7 @@ new_event_data(void)
     return data;
 }
 
-static int
+static int32_t
 set_event_data(process_event_data_t *data, struct proc_event *event)
 {
     switch (event->what)
@@ -186,13 +186,12 @@ set_event_data(process_event_data_t *data, struct proc_event *event)
 
 static void handle_eventfd(struct epoll_event *event, nyx_t *nyx)
 {
-    int err = 0;
-    uint64_t value = 0;
     epoll_extra_data_t *extra = event->data.ptr;
 
     log_debug("Received epoll event on eventfd interface (%d)", nyx->event);
 
-    err = read(extra->fd, &value, sizeof(value));
+    uint64_t value = 0;
+    int32_t err = read(extra->fd, &value, sizeof(value));
 
     if (err == -1)
         log_perror("nyx: read");
@@ -204,7 +203,7 @@ static void handle_eventfd(struct epoll_event *event, nyx_t *nyx)
  * Handle a single process event
  */
 static bool
-handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
+handle_process_event(int32_t nl_sock, nyx_t *nyx, process_handler_t handler)
 {
     bool success = false;
 
@@ -253,15 +252,15 @@ handle_process_event(int nl_sock, nyx_t *nyx, process_handler_t handler)
 
     while (!need_exit)
     {
-        int i = 0, n = 0;
+        int32_t i = 0;
         struct epoll_event *event = NULL;
 
-        n = epoll_wait(epfd, events, NYX_MAX_EVENTS, -1);
+        int32_t n = epoll_wait(epfd, events, NYX_MAX_EVENTS, -1);
 
         for (i = 0, event = events; i < n; event++, i++)
         {
             epoll_extra_data_t *extra = event->data.ptr;
-            int fd = extra->fd;
+            int32_t fd = extra->fd;
 
             /* handle eventfd */
             if (fd == nyx->event)

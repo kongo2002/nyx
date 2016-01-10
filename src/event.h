@@ -27,18 +27,18 @@ typedef enum process_event_t
 
 typedef struct process_event_fork_t
 {
-    int parent_pid;
-    int parent_thread_group_id;
-    int child_pid;
-    int child_thread_group_id;
+    int32_t parent_pid;
+    int32_t parent_thread_group_id;
+    int32_t child_pid;
+    int32_t child_thread_group_id;
 } process_event_fork_t;
 
 typedef struct process_event_exit_t
 {
-    int pid;
-    int exit_code;
-    int exit_signal;
-    int thread_group_id;
+    int32_t pid;
+    int32_t exit_code;
+    int32_t exit_signal;
+    int32_t thread_group_id;
 } process_event_exit_t;
 
 typedef struct process_event_data_t
@@ -51,7 +51,7 @@ typedef struct process_event_data_t
     } data;
 } process_event_data_t;
 
-typedef bool (*process_handler_t)(int pid, process_event_data_t *event_data, nyx_t *nyx);
+typedef bool (*process_handler_t)(pid_t pid, process_event_data_t *event_data, nyx_t *nyx);
 
 bool
 event_loop(nyx_t *nyx, process_handler_t handler);

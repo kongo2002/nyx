@@ -305,12 +305,11 @@ init_event_interface(nyx_t *nyx)
 /**
  * @brief Daemon mode initialization
  * @param nyx nyx instance
- * @return 1 on success, 0 otherwise
+ * @return true on success, false otherwise
  */
-static int
+static nyx_error_e
 initialize_daemon(nyx_t *nyx)
 {
-    int err = 0;
     pid_t pid = 0;
 
     /* set default options */
@@ -368,9 +367,9 @@ initialize_daemon(nyx_t *nyx)
     init_event_interface(nyx);
 
     /* start connector */
-    nyx->connector_thread = xcalloc(1, sizeof(pthread_t));
+    nyx->connector_thread = xcalloc1(sizeof(pthread_t));
 
-    err = pthread_create(nyx->connector_thread, NULL, connector_start, nyx);
+    int32_t err = pthread_create(nyx->connector_thread, NULL, connector_start, nyx);
 
     if (err)
     {
@@ -397,9 +396,9 @@ initialize_daemon(nyx_t *nyx)
  * @return nyx instance
  */
 nyx_t *
-nyx_initialize(int argc, char **args, nyx_error_e *error)
+nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
 {
-    int arg = 0;
+    int32_t arg = 0;
     const char **adhoc_watch = NULL;
 
     nyx_t *nyx = calloc(1, sizeof(nyx_t));
@@ -505,11 +504,9 @@ nyx_initialize(int argc, char **args, nyx_error_e *error)
         /* parse remaining arguments in non-daemon mode only */
         if (optind < argc)
         {
-            int i = 0, j = 0;
-
             nyx->options.commands = xcalloc(argc-optind+1, sizeof(char *));
 
-            for (j = 0, i = optind; i < argc; i++, j++)
+            for (int32_t j = 0, i = optind; i < argc; i++, j++)
             {
                 nyx->options.commands[j] = args[i];
             }
@@ -546,13 +543,13 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
 
             time_t now = time(NULL);
             timestack_elem_t *newest = &state->history->elements[0];
-            int last_state_ago = difftime(now, newest->time);
+            double last_state_ago = difftime(now, newest->time);
 
             /* TODO: configurable */
             if (last_state_ago < 30)
             {
                 log_debug("Ignoring process event %d of process '%s' "
-                    "because the latest state change was just %ds ago",
+                    "because the latest state change was just %.2fs ago",
                     event, proc->name, last_state_ago);
 
                 return true;

@@ -156,9 +156,8 @@ set_environment(const watch_t *watch)
 }
 
 static void
-close_fds(int pid)
+close_fds(pid_t pid)
 {
-    int max;
     char path[256] = {0};
 
     /* first we try to search in /proc/{pid}/fd */
@@ -167,12 +166,12 @@ close_fds(int pid)
     DIR *dir = opendir(path);
     if (dir)
     {
-        unsigned long dir_fd = dirfd(dir);
+        int32_t dir_fd = dirfd(dir);
 
         struct dirent *entry = NULL;
         while ((entry = readdir(dir)) != NULL)
         {
-            unsigned long fd = atol(entry->d_name);
+            int32_t fd = atoi(entry->d_name);
 
             if (fd >= 3 && fd != dir_fd)
                 close(fd);
@@ -184,15 +183,16 @@ close_fds(int pid)
 
     /* otherwise we will close all file descriptors up
      * to the maximum descriptor index */
+    int32_t max;
     if ((max = getdtablesize()) == -1)
         max = 256;
 
-    for (int fd = 3 /* stderr + 1 */; fd < max; fd++)
+    for (int32_t fd = 3 /* stderr + 1 */; fd < max; fd++)
         close(fd);
 }
 
 static void
-spawn_exec(state_t *state, int start)
+spawn_exec(state_t *state, bool start)
 {
     pid_t sid = 0;
     uid_t uid = 0;
@@ -352,7 +352,7 @@ spawn_exec(state_t *state, int start)
 }
 
 static bool
-write_pipe(int fd, int value)
+write_pipe(int32_t fd, int32_t value)
 {
     FILE *stream = fdopen(fd, "w");
 
@@ -367,10 +367,10 @@ write_pipe(int fd, int value)
     return false;
 }
 
-static int
-read_pipe(int fd)
+static int32_t
+read_pipe(int32_t fd)
 {
-    int value = 0;
+    int32_t value = 0;
     FILE *stream = fdopen(fd, "r");
 
     if (stream != NULL)
@@ -396,7 +396,7 @@ spawn_stop(state_t *state)
 
     if (pid == 0)
     {
-        spawn_exec(state, 0);
+        spawn_exec(state, false);
     }
 
     return pid;
@@ -405,8 +405,8 @@ spawn_stop(state_t *state)
 static pid_t
 spawn_start(state_t *state)
 {
-    int pipes[2] = {0};
-    int double_fork = !state->nyx->is_init;
+    int32_t pipes[2] = {0};
+    bool double_fork = !state->nyx->is_init;
 
     /* in case of a 'double-fork' we need some way to retrieve the
      * resulting process' pid */
@@ -430,7 +430,7 @@ spawn_start(state_t *state)
         if (!double_fork)
         {
             /* this call won't return */
-            spawn_exec(state, 1);
+            spawn_exec(state, true);
         }
         /* otherwise we want to 'double fork' */
         else
@@ -443,7 +443,7 @@ spawn_start(state_t *state)
             if (inner_pid == 0)
             {
                 /* this call won't return */
-                spawn_exec(state, 1);
+                spawn_exec(state, true);
             }
 
             /* close the read end before */
@@ -486,7 +486,7 @@ stop(state_t *state, state_e from, state_e to)
     pid_t pid = state->pid;
     pid_t stop_pid = 0;
 
-    unsigned times = nyx->options.def_stop_timeout;
+    uint32_t times = nyx->options.def_stop_timeout;
 
     if (watch->stop_timeout)
         times = watch->stop_timeout;
@@ -653,7 +653,7 @@ find_state_by_pid(list_t *states, pid_t pid)
 }
 
 bool
-dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
+dispatch_event(pid_t pid, process_event_data_t *event_data, nyx_t *nyx)
 {
     state_t *state = NULL;
 
@@ -686,7 +686,7 @@ dispatch_event(int pid, process_event_data_t *event_data, nyx_t *nyx)
 }
 
 bool
-dispatch_poll_result(int pid, bool is_running, nyx_t *nyx)
+dispatch_poll_result(pid_t pid, bool is_running, nyx_t *nyx)
 {
     log_debug("Incoming polling data for PID %d: running: %s",
             pid, (is_running ? "true" : "false"));
@@ -749,7 +749,7 @@ state_new(watch_t *watch, nyx_t *nyx)
 
         /* the semaphore should not exist beforehand ->
          * try to remove and retry -> then fail */
-        int err = sem_unlink(watch->name);
+        int32_t err = sem_unlink(watch->name);
         if (err == 0)
         {
             log_debug("Try to create semaphore (%s) again", watch->name);
@@ -784,7 +784,7 @@ state_destroy(state_t *state)
 
     if (state->thread != NULL)
     {
-        int join = 0, join_timeout = MAX(NYX_STATE_JOIN_TIMEOUT, state->watch->stop_timeout);
+        int32_t join = 0, join_timeout = MAX(NYX_STATE_JOIN_TIMEOUT, state->watch->stop_timeout);
         time_t now = time(NULL);
         const char *name = state->watch->name;
 
@@ -879,15 +879,15 @@ process_state(state_t *state, state_e old_state, state_e new_state)
     return result;
 }
 
-static int
-is_flapping(state_t *state, unsigned int changes, int within)
+static bool
+is_flapping(state_t *state, uint32_t changes, int32_t within)
 {
-    unsigned int i = 0, is_stopped = 0, started = 0;
+    uint32_t i = 0, is_stopped = 0, started = 0;
     timestack_t *hist = state->history;
     timestack_elem_t *elem = hist->elements;
 
     if (hist->count < (changes * 2))
-        return 0;
+        return false;
 
     time_t start_time = time(NULL);
 
@@ -904,7 +904,7 @@ is_flapping(state_t *state, unsigned int changes, int within)
         time_t diff = start_time - elem->time;
 
         if (diff > within)
-            return 0;
+            return false;
 
         if (value == STATE_STARTING)
             started++;
@@ -912,16 +912,16 @@ is_flapping(state_t *state, unsigned int changes, int within)
             is_stopped++;
 
         if (started > changes && is_stopped > changes)
-            return 1;
+            return true;
 
         elem++;
     }
 
-    return 0;
+    return false;
 }
 
 static void
-safe_sleep(state_t *state, unsigned int seconds)
+safe_sleep(state_t *state, uint32_t seconds)
 {
     while (seconds-- > 0 && state->state != STATE_QUIT)
         sleep(1);
@@ -930,7 +930,7 @@ safe_sleep(state_t *state, unsigned int seconds)
 void
 state_loop(state_t *state)
 {
-    int sem_fail = 0;
+    int32_t sem_fail = 0;
 
     watch_t *watch = state->watch;
     state_e last_state = STATE_INIT;
