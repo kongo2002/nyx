@@ -13,37 +13,37 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_TIMESTACK_H__
-#define __NYX_TIMESTACK_H__
+#pragma once
 
+#include <stdint.h>
 #include <time.h>
 
 typedef struct
 {
     time_t time;
-    int value;
+    int32_t value;
 } timestack_elem_t;
 
 typedef struct
 {
-    unsigned count;
-    unsigned max;
+    uint32_t count;
+    uint32_t max;
     timestack_elem_t *elements;
 } timestack_t;
 
 timestack_t *
-timestack_new(unsigned max);
+timestack_new(uint32_t max);
 
 void
-timestack_add(timestack_t *timestack, int value);
+timestack_add(timestack_t *timestack, int32_t value);
 
 void
 timestack_clear(timestack_t *timestack);
 
-int
+int32_t
 timestack_oldest(timestack_t *timestack);
 
-int
+int32_t
 timestack_newest(timestack_t *timestack);
 
 void
@@ -51,7 +51,5 @@ timestack_dump(timestack_t *timestack);
 
 void
 timestack_destroy(timestack_t *timestack);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

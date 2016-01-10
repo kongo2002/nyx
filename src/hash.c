@@ -25,11 +25,11 @@
 #define NYX_HASH_INITIAL_SIZE 8
 #define NYX_HASH_KEY_MAXLEN 100
 
-static unsigned long
+static uint64_t
 hash_string(const char *str)
 {
-    int c;
-    unsigned long hash = 5381;
+    int32_t c;
+    uint64_t hash = 5381;
 
     while ((c = *str++)) {
         hash = ((hash << 5) + hash) + c;
@@ -38,7 +38,7 @@ hash_string(const char *str)
 }
 
 hash_t *
-hash_new_initial(unsigned int initial_size, callback_t free_value)
+hash_new_initial(uint32_t initial_size, callback_t free_value)
 {
     hash_t *hash = xcalloc1(sizeof(hash_t));
 
@@ -58,10 +58,10 @@ hash_new(callback_t free_value)
 }
 
 static pair_t *
-get_pair(bucket_t *bucket, const char *key, unsigned int *idx)
+get_pair(bucket_t *bucket, const char *key, uint32_t *idx)
 {
     *idx = 0;
-    unsigned int count = bucket->count;
+    uint32_t count = bucket->count;
     pair_t *pair = NULL;
 
     if (count < 1)
@@ -84,8 +84,8 @@ get_pair(bucket_t *bucket, const char *key, unsigned int *idx)
 static void
 bucket_destroy(bucket_t *bucket, callback_t free_func)
 {
-    unsigned int i = 0;
-    unsigned int count = bucket->count;
+    uint32_t i = 0;
+    uint32_t count = bucket->count;
     pair_t *pair = NULL;
 
     if (count < 1)
@@ -109,7 +109,7 @@ bucket_destroy(bucket_t *bucket, callback_t free_func)
 void
 hash_destroy(hash_t *hash)
 {
-    unsigned int i = 0, count = 0;
+    uint32_t i = 0, count = 0;
     bucket_t *bucket = NULL;
 
     if (hash == NULL)
@@ -129,7 +129,7 @@ hash_destroy(hash_t *hash)
     free(hash);
 }
 
-unsigned int
+uint32_t
 hash_count(hash_t *hash)
 {
     if (hash == NULL)
@@ -141,7 +141,7 @@ hash_count(hash_t *hash)
 static bucket_t *
 get_bucket(hash_t *hash, const char *key)
 {
-    unsigned long keyhash = hash_string(key);
+    uint64_t keyhash = hash_string(key);
 
     return &(hash->buckets[keyhash % hash->bucket_count]);
 }
@@ -197,7 +197,7 @@ rehash(hash_t* hash)
     free(old_buckets);
 }
 
-int
+bool
 hash_add(hash_t *hash, const char *key, void *data)
 {
     size_t keylen, len;
@@ -208,14 +208,14 @@ hash_add(hash_t *hash, const char *key, void *data)
     pair_t *pair = NULL;
 
     if (hash == NULL || key == NULL)
-        return 0;
+        return false;
 
     bucket = get_bucket(hash, key);
     pair = get_pair(bucket, key, &idx);
 
     /* there is already a matching pair in the current bucket */
     if (pair != NULL)
-        return 0;
+        return false;
 
     bucket_count = bucket->count;
 
@@ -251,13 +251,13 @@ hash_add(hash_t *hash, const char *key, void *data)
     if (factor >= NYX_HASH_MAX_FACTOR)
         rehash(hash);
 
-    return 1;
+    return true;
 }
 
 void *
 hash_get(hash_t *hash, const char* key)
 {
-    unsigned int idx = 0;
+    uint32_t idx = 0;
     bucket_t *bucket = NULL;
     pair_t *pair = NULL;
 
@@ -273,7 +273,7 @@ hash_get(hash_t *hash, const char* key)
     return pair->data;
 }
 
-int
+bool
 hash_remove(hash_t *hash, const char *key)
 {
     unsigned int i = 0, j = 0, idx = 0;
@@ -281,17 +281,17 @@ hash_remove(hash_t *hash, const char *key)
     pair_t *pair = NULL, *new_pairs = NULL;
 
     if (hash == NULL || key == NULL)
-        return 0;
+        return false;
 
     bucket = get_bucket(hash, key);
 
     if (bucket == NULL)
-        return 0;
+        return false;
 
     pair = get_pair(bucket, key, &idx);
 
     if (pair == NULL)
-        return 0;
+        return false;
 
     hash->count--;
     bucket->count--;
@@ -316,7 +316,7 @@ hash_remove(hash_t *hash, const char *key)
     free(bucket->pairs);
     bucket->pairs = new_pairs;
 
-    return 1;
+    return true;
 }
 
 static void
@@ -349,22 +349,22 @@ hash_iter_rewind(hash_iter_t *iter)
     hash_iter_init(iter, iter->_hash);
 }
 
-int
+bool
 hash_iter(hash_iter_t *iter, const char **key, void **data)
 {
     if (iter == NULL || iter->_hash == NULL)
-        return 0;
+        return false;
 
     const hash_t *hash = iter->_hash;
 
     if (hash->bucket_count <= iter->_bucket)
-        return 0;
+        return false;
 
     const bucket_t *bucket = hash->buckets + iter->_bucket;
 
     if (bucket == NULL ||
             (bucket->count <= iter->_pair && hash->bucket_count <= iter->_bucket))
-        return 0;
+        return false;
 
     *key = bucket->pairs[iter->_pair].key;
     *data = bucket->pairs[iter->_pair].data;
@@ -384,7 +384,7 @@ hash_iter(hash_iter_t *iter, const char **key, void **data)
     else
         iter->_pair += 1;
 
-    return 1;
+    return true;
 }
 
 uint32_t

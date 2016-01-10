@@ -30,14 +30,14 @@ typedef struct
 
 typedef struct
 {
-    unsigned int count;
+    uint32_t count;
     pair_t *pairs;
 } bucket_t;
 
 typedef struct
 {
-    unsigned int count;
-    unsigned int bucket_count;
+    uint32_t count;
+    uint32_t bucket_count;
     bucket_t *buckets;
     callback_t free_value;
 
@@ -52,20 +52,20 @@ typedef struct
 typedef struct
 {
     hash_t *_hash;
-    unsigned int _bucket;
-    unsigned int _pair;
+    uint32_t _bucket;
+    uint32_t _pair;
 } hash_iter_t;
 
 hash_t *
 hash_new(callback_t free_value);
 
 hash_t *
-hash_new_initial(unsigned int initial_size, callback_t free_value);
+hash_new_initial(uint32_t initial_size, callback_t free_value);
 
 void
 hash_destroy(hash_t *hash);
 
-int
+bool
 hash_add(hash_t *hash, const char *key, void *data);
 
 void *
@@ -77,16 +77,16 @@ hash_iter_start(hash_t *hash);
 void
 hash_iter_rewind(hash_iter_t *iter);
 
-int
+bool
 hash_iter(hash_iter_t *iter, const char **key, void **data);
 
 void
 hash_foreach(hash_t *hash, void (*func)(void *));
 
-unsigned int
+uint32_t
 hash_count(hash_t *hash);
 
-int
+bool
 hash_remove(hash_t *hash, const char *key);
 
 uint32_t

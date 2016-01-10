@@ -279,10 +279,10 @@ handle_stream(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
     return info;
 }
 
-static unsigned int
+static uint32_t
 uatoi(const char *str)
 {
-    int value = atoi(str);
+    int32_t value = atoi(str);
 
     if (value < 0)
     {

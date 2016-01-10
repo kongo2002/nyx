@@ -21,7 +21,7 @@
 #include <string.h>
 
 timestack_t *
-timestack_new(unsigned max)
+timestack_new(uint32_t max)
 {
     timestack_t *stack = xcalloc1(sizeof(timestack_t));
 
@@ -32,14 +32,14 @@ timestack_new(unsigned max)
 }
 
 void
-timestack_add(timestack_t *timestack, int value)
+timestack_add(timestack_t *timestack, int32_t value)
 {
     time_t now = time(NULL);
 
     /* move all elements except the last one
      * a position further */
-    unsigned size = timestack->max;
-    unsigned count = timestack->count + 1;
+    uint32_t size = timestack->max;
+    uint32_t count = timestack->count + 1;
 
     timestack->count = MIN(size, count);
     timestack_elem_t *start = timestack->elements;
@@ -54,7 +54,7 @@ timestack_add(timestack_t *timestack, int value)
 void
 timestack_clear(timestack_t *timestack)
 {
-    unsigned size = timestack->max;
+    uint32_t size = timestack->max;
 
     timestack->count = 0;
     memset(timestack->elements, 0, sizeof(timestack_elem_t) * size);
@@ -67,7 +67,7 @@ timestack_destroy(timestack_t *timestack)
     free(timestack);
 }
 
-int
+int32_t
 timestack_newest(timestack_t *timestack)
 {
     if (timestack->count < 1)
@@ -76,10 +76,10 @@ timestack_newest(timestack_t *timestack)
     return timestack->elements[0].value;
 }
 
-int
+int32_t
 timestack_oldest(timestack_t *timestack)
 {
-    unsigned idx = timestack->count;
+    uint32_t idx = timestack->count;
 
     if (idx < 1)
         return 0;
@@ -90,8 +90,8 @@ timestack_oldest(timestack_t *timestack)
 void
 timestack_dump(timestack_t *timestack)
 {
-    unsigned i = 0;
-    unsigned count = timestack->count;
+    uint32_t i = 0;
+    uint32_t count = timestack->count;
     timestack_elem_t *elem = timestack->elements;
 
     if (count < 1)
