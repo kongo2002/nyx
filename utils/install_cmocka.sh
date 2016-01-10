@@ -5,14 +5,8 @@ tar xf cmocka-1.0.0.tar.xz
 cd cmocka-1.0.0
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=/usr ..
-make
-
-if which sudo >/dev/null 2>&1; then
-    sudo make install
-else
-    make install
-fi
+cmake ..
+make cmocka_shared
 
 cd ../..
-rm -rf cmocka-1.0.0 cmocka-1.0.0.tar.xz
+rm -f cmocka-1.0.0.tar.xz
