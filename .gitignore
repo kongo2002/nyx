@@ -2,6 +2,7 @@
 *.o
 *.pyc
 *.so
+/cmocka*
 /config.yaml
 /nyx.1.gz
 nyx
