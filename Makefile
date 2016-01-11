@@ -43,6 +43,9 @@ ifeq ($(shell uname -s), Darwin)
     OBJECTS := $(filter-out src/event.o, $(OBJECTS))
     TDEPS   := $(filter-out src/event.o, $(TDEPS))
 
+    # no OpenSSL on OSX
+    SSL := 0
+
     IS_OSX := yes
 else
     IS_OSX := no
