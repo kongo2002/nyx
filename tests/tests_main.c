@@ -14,6 +14,7 @@
  */
 
 #include "tests.h"
+#include "tests_config.h"
 #include "tests_hash.h"
 #include "tests_list.h"
 #include "tests_proc.h"
@@ -27,6 +28,7 @@ main(UNUSED int argc, UNUSED char **argv)
 {
     const struct CMUnitTest tests[] =
     {
+        cmocka_unit_test(test_config_parse_files),
         cmocka_unit_test(test_list_create),
         cmocka_unit_test(test_list_add),
         cmocka_unit_test(test_hash_create),
