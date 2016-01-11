@@ -18,6 +18,9 @@
 #include "hash.h"
 #include "list.h"
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #define NYX_PLUGIN_INIT_FUNC "plugin_init"
 
 typedef struct
@@ -41,7 +44,7 @@ typedef struct
     list_t *plugins;
 } plugin_repository_t;
 
-typedef void (*plugin_state_callback)(const char *, int, pid_t, void *);
+typedef void (*plugin_state_callback)(const char *, int32_t, pid_t, void *);
 
 typedef void (*plugin_destroy_callback)(void *);
 
@@ -57,7 +60,7 @@ typedef struct
     plugin_destroy_callback destroy_callback;
 } plugin_destroy_callback_info_t;
 
-typedef int (*plugin_init_func)(plugin_manager_t *manager);
+typedef bool (*plugin_init_func)(plugin_manager_t *manager);
 
 plugin_repository_t *
 discover_plugins(const char *directory, hash_t *config);
@@ -76,6 +79,6 @@ void
 plugin_repository_destroy(plugin_repository_t *repository);
 
 void
-notify_state_change(plugin_repository_t *repo, const char *name, pid_t pid, int new_state);
+notify_state_change(plugin_repository_t *repo, const char *name, pid_t pid, int32_t new_state);
 
 /* vim: set et sw=4 sts=4 tw=80: */

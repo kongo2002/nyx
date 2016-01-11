@@ -78,9 +78,9 @@ init_plugin(const char *path, const char *name, plugin_manager_t *manager)
     }
 
     /* invoke the plugin's initialization function */
-    int retval = init_func(manager);
+    bool retval = init_func(manager);
 
-    if (retval < 1)
+    if (!retval)
     {
         log_error("Plugin '%s': initialization failed to return with success: %d",
                 name, retval);
@@ -211,7 +211,7 @@ plugin_register_destroy_callback(plugin_manager_t *manager,
 }
 
 void
-notify_state_change(plugin_repository_t *repo, const char *name, pid_t pid, int new_state)
+notify_state_change(plugin_repository_t *repo, const char *name, pid_t pid, int32_t new_state)
 {
     if (!repo || !repo->manager || !repo->manager->state_callbacks)
         return;

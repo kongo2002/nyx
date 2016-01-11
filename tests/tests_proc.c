@@ -23,12 +23,11 @@
 void
 test_proc_system_info(UNUSED void **state)
 {
-    int success = 0;
     sys_info_t *info = sys_info_new();
 
-    success = sys_info_read_proc(info, getpid(), get_page_size());
+    bool success = sys_info_read_proc(info, getpid(), get_page_size());
 
-    assert_int_not_equal(0, success);
+    assert_int_not_equal(false, success);
 
     sys_info_dump(info);
 
@@ -38,7 +37,7 @@ test_proc_system_info(UNUSED void **state)
 void
 test_proc_total_memory_size(UNUSED void **state)
 {
-    unsigned long mem_size = total_memory_size();
+    uint64_t mem_size = total_memory_size();
 
     assert_int_not_equal(0, mem_size);
 
@@ -48,7 +47,7 @@ test_proc_total_memory_size(UNUSED void **state)
 void
 test_proc_page_size(UNUSED void **state)
 {
-    long page_size = get_page_size();
+    int64_t page_size = get_page_size();
 
     assert_int_not_equal(0, page_size);
 
@@ -58,7 +57,7 @@ test_proc_page_size(UNUSED void **state)
 void
 test_proc_num_cpus(UNUSED void **state)
 {
-    int cpus = num_cpus();
+    int32_t cpus = num_cpus();
 
     assert_true(cpus > 0);
 
@@ -68,12 +67,11 @@ test_proc_num_cpus(UNUSED void **state)
 void
 test_proc_stat(UNUSED void **state)
 {
-    int success = 0;
     sys_proc_stat_t *stat = sys_proc_new();
 
-    success = sys_proc_read(stat);
+    bool success = sys_proc_read(stat);
 
-    assert_int_not_equal(0, success);
+    assert_int_not_equal(false, success);
 
     sys_proc_dump(stat);
 

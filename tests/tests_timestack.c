@@ -32,13 +32,13 @@ test_timestack_create(UNUSED void **state)
 void
 test_timestack_add(UNUSED void **state)
 {
-    unsigned i = 0, count = 100;
+    uint32_t count = 100;
 
     timestack_t *timestack = timestack_new(4);
 
     assert_int_equal(0, timestack->count);
 
-    for (i = 0; i < count; i++)
+    for (uint32_t i = 0; i < count; i++)
     {
         timestack_add(timestack, i);
     }
