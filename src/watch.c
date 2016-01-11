@@ -20,6 +20,7 @@
 #include "utils.h"
 #include "watch.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -190,7 +191,7 @@ watch_dump(watch_t *watch)
     }
 
     if (watch->max_memory)
-        log_info("  max_memory: %lu", watch->max_memory);
+        log_info("  max_memory: %" PRId64, watch->max_memory);
 
     if (watch->max_cpu)
         log_info("  max_cpu: %u%%", watch->max_cpu);

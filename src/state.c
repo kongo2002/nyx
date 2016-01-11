@@ -785,14 +785,17 @@ state_destroy(state_t *state)
     if (state->thread != NULL)
     {
         int32_t join = 0, join_timeout = MAX(NYX_STATE_JOIN_TIMEOUT, state->watch->stop_timeout);
-        time_t now = time(NULL);
         const char *name = state->watch->name;
+
+#ifndef OSX
+        time_t now = time(NULL);
 
         const struct timespec timeout =
         {
             .tv_sec = now + join_timeout,
             .tv_nsec = 0
         };
+#endif
 
         log_debug("Waiting for state thread of watch '%s' to terminate", name);
 

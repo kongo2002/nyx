@@ -24,6 +24,7 @@
 #include "utils.h"
 
 #include <errno.h>
+#include <inttypes.h>
 #include <netdb.h>
 #include <stdarg.h>
 #include <sys/types.h>
@@ -151,7 +152,7 @@ handle_command(command_t *cmd, const char **input, epoll_extra_data_t *extra, ny
     success = cmd->handler(cb, input, nyx);
 
     strbuf_append(response, NYX_RESPONSE_HEADER);
-    strbuf_append(response, "Content-Length: %lu" CRLF CRLF, str->length);
+    strbuf_append(response, "Content-Length: %" PRIu64 CRLF CRLF, str->length);
     strbuf_append(response, "%s", str->buf);
 
     send_safe(fd, response->buf, response->length);

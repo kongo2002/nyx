@@ -151,7 +151,7 @@ nyx_proc_init(pid_t pid)
     }
     else
     {
-        log_debug("Total memory: %lu MB", proc->total_memory / 1024);
+        log_debug("Total memory: %" PRIu64 " MB", proc->total_memory / 1024);
     }
 
     if (proc->num_cpus < 1)
@@ -532,10 +532,10 @@ sys_info_new(void)
     return sys;
 }
 
+#ifndef OSX
 bool
 sys_info_read_proc(sys_info_t *sys, pid_t pid, int64_t page_size)
 {
-#ifndef OSX
     char buffer[64] = {0};
     sprintf(buffer, "/proc/%d/stat", pid);
     FILE *proc = NULL;
@@ -571,7 +571,11 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid, int64_t page_size)
 
     fclose(proc);
     return true;
+}
 #else
+bool
+sys_info_read_proc(sys_info_t *sys, pid_t pid, UNUSED int64_t page_size)
+{
     struct proc_taskinfo pti;
 
     size_t pti_size = sizeof(pti);
@@ -587,8 +591,8 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid, int64_t page_size)
     sys->resident_set_size = pti.pti_resident_size / 1024;
 
     return true;
-#endif
 }
+#endif
 
 int64_t
 get_page_size(void)
