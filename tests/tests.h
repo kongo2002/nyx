@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_TESTS_H__
-#define __NYX_TESTS_H__
+#pragma once
 
 #include "../src/def.h"
 
@@ -22,7 +21,5 @@
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

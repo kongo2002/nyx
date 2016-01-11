@@ -13,12 +13,9 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_TESTS_UTILS_H__
-#define __NYX_TESTS_UTILS_H__
+#pragma once
 
 void
 test_parse_size_unit(void **state);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

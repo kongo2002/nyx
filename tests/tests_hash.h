@@ -13,15 +13,12 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_TESTS_HASH_H__
-#define __NYX_TESTS_HASH_H__
+#pragma once
 
 void
 test_hash_create(void **state);
 
 void
 test_hash_add(void **state);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */

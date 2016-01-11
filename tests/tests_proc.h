@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#ifndef __NYX_TESTS_PROC_H__
-#define __NYX_TESTS_PROC_H__
+#pragma once
 
 void
 test_proc_system_info(void **state);
@@ -30,7 +29,5 @@ test_proc_page_size(void **state);
 
 void
 test_proc_num_cpus(void **state);
-
-#endif
 
 /* vim: set et sw=4 sts=4 tw=80: */
