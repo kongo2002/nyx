@@ -693,6 +693,10 @@ signal_eventfd(uint64_t signum, nyx_t *nyx)
     /* no event interface -> use pipes instead */
     if (nyx->event < 1)
     {
+        /* no pipes opened as well */
+        if (!nyx->event_pipe[1])
+            return false;
+
         rc = write(nyx->event_pipe[1], &signum, sizeof(signum));
     }
     else
