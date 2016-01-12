@@ -31,6 +31,7 @@
 static volatile bool use_syslog = false;
 static volatile bool quiet = false;
 static volatile bool use_color = false;
+static volatile bool initialized = false;
 
 pthread_mutex_t log_mutex;
 
@@ -55,11 +56,16 @@ log_init(nyx_t *nyx)
         fprintf(stderr, "failed to initialize log mutex");
         abort();
     }
+
+    initialized = true;
 }
 
 void
 log_shutdown(void)
 {
+    if (!initialized)
+        return;
+
     if (use_syslog)
         closelog();
 
@@ -68,6 +74,8 @@ log_shutdown(void)
         fprintf(stderr, "failed to dispose log mutex");
         abort();
     }
+
+    initialized = false;
 }
 
 static const char *
@@ -146,10 +154,13 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
     time_t now = time(NULL);
     struct tm *ltime = localtime(&now);
 
-    if (pthread_mutex_lock(&log_mutex) != 0)
+    if (initialized)
     {
-        fprintf(stderr, "failed to lock log mutex");
-        abort();
+        if (pthread_mutex_lock(&log_mutex) != 0)
+        {
+            fprintf(stderr, "failed to lock log mutex");
+            abort();
+        }
     }
 
     if (use_color)
@@ -196,10 +207,13 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
 
     fputc('\n', stream);
 
-    if (pthread_mutex_unlock(&log_mutex) != 0)
+    if (initialized)
     {
-        fprintf(stderr, "failed to unlock log mutex");
-        abort();
+        if (pthread_mutex_unlock(&log_mutex) != 0)
+        {
+            fprintf(stderr, "failed to unlock log mutex");
+            abort();
+        }
     }
 
     errno = error;
