@@ -30,7 +30,7 @@ TDEPS    := $(filter-out src/main.o, $(OBJECTS))
 
 CMOCKA_HEADER="$(shell find . -name cmocka.h)"
 ifneq ($(CMOCKA_HEADER), "")
-    CMOCKA_LIB="$(shell find . -name libcmocka.so | grep -v obj32)"
+    CMOCKA_LIB="$(shell find . -name libcmocka.so -or -name libcmocka.dylib | grep -v obj32)"
 
     TINCLUDES+= -I"$(shell dirname $(CMOCKA_HEADER))"
     TLIBS+= -L"$(shell dirname $(CMOCKA_LIB))"
