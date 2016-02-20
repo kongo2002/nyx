@@ -87,6 +87,27 @@ timestack_oldest(timestack_t *timestack)
     return timestack->elements[idx-1].value;
 }
 
+time_t
+timestack_find_latest(timestack_t *timestack, timestack_predicate_t predicate)
+{
+    uint32_t i = 0;
+    uint32_t count = timestack->count;
+    timestack_elem_t *elem = timestack->elements;
+
+    if (count < 1)
+        return 0;
+
+    while (i++ < count)
+    {
+        if (predicate(elem->value))
+            return elem->time;
+
+        elem++;
+    }
+
+    return 0;
+}
+
 void
 timestack_dump(timestack_t *timestack, const char* (*writer)(int32_t))
 {

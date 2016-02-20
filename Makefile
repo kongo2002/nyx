@@ -2,7 +2,7 @@ CC       ?= gcc
 CXXFLAGS := -std=c99 -pedantic -Wall -Wextra
 
 INCLUDES := -I.
-LIBS     := -lyaml -lpthread
+LIBS     := -lyaml -lpthread -lm
 
 # DEBUG/RELEASE BUILD
 

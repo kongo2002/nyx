@@ -25,6 +25,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <math.h>
 #include <pthread.h>
 #include <pwd.h>
 #include <signal.h>
@@ -36,6 +37,9 @@
 #include <unistd.h>
 
 #define NYX_STATE_JOIN_TIMEOUT 30
+#define NYX_MAX_FLAPPING_DELAY 600
+#define NYX_FLAPPING_INTERVAL  60
+#define NYX_FLAPPING_COUNT     5
 
 typedef bool (*transition_func_t)(state_t *, state_e, state_e);
 
@@ -590,12 +594,41 @@ start(state_t *state, state_e from, state_e to)
 }
 
 static bool
+is_running(int32_t state)
+{
+    return state == STATE_RUNNING;
+}
+
+static uint32_t
+was_running_for(state_t *state)
+{
+    /* search for the latest 'RUNNING' event */
+    time_t last_running = timestack_find_latest(state->history, is_running);
+
+    if (last_running > 0)
+    {
+        time_t now_time = time(NULL);
+        time_t running_for = now_time - last_running;
+
+        return running_for;
+    }
+
+    return 0;
+}
+
+static bool
 stopped(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
 
+    /* restart if the stop wasn't requested via 'STOPPING' */
     if (from != STATE_STOPPING && from != STATE_STOPPED)
         set_state(state, STATE_STARTING);
+
+    /* reset failed counter in case the watch was running
+     * for the maximum flapping time */
+    if (was_running_for(state) > (NYX_FLAPPING_INTERVAL / NYX_FLAPPING_COUNT))
+        state->failed_counter = 0;
 
     return true;
 }
@@ -898,21 +931,25 @@ is_flapping(state_t *state, uint32_t changes, int32_t within)
     if (hist->count < (changes * 2))
         return false;
 
-    time_t start_time = time(NULL);
+    time_t now_time = time(NULL);
 
     while (i++ < hist->count)
     {
         state_e value = elem->value;
 
+        /* we are interested in counting 'starting' and 'stopped'
+         * events only */
         if (value != STATE_STARTING && value != STATE_STOPPED)
         {
             elem++;
             continue;
         }
 
-        time_t diff = start_time - elem->time;
+        time_t seconds_ago = now_time - elem->time;
 
-        if (diff > within)
+        /* we are interested in events that happened in the
+         * last 'within' seconds only */
+        if (seconds_ago > within)
             return false;
 
         if (value == STATE_STARTING)
@@ -982,15 +1019,22 @@ state_loop(state_t *state)
         /* check for flapping processes
          * meaning 5 start/stop events within 60 seconds
          * TODO: configurable */
-        if (current_state == STATE_STOPPED && is_flapping(state, 5, 60))
+        if (current_state == STATE_STOPPED &&
+                is_flapping(state, NYX_FLAPPING_COUNT, NYX_FLAPPING_INTERVAL))
         {
-            log_warn("Watch '%s' appears to be flapping - delay for 5 minutes. "
+            /* increase the delayed time from 5 seconds to 10 minutes at max */
+            uint32_t to_delay_max = 5.0 * pow(2.0, state->failed_counter);
+            uint32_t to_delay = MIN(to_delay_max, NYX_MAX_FLAPPING_DELAY);
+
+            state->failed_counter = MIN(state->failed_counter + 1, 10);
+
+            log_warn("Watch '%s' appears to be flapping - delay for %u seconds. "
                      "Probably the start command is not executable or does "
                      "not exist at all.",
-                     watch->name);
+                     watch->name, to_delay);
 
             /* TODO: use select instead */
-            safe_sleep(state, 5 * 60);
+            safe_sleep(state, to_delay);
         }
 
         if (result)

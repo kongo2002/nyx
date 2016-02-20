@@ -41,6 +41,7 @@ typedef struct
 {
     pid_t pid;
     state_e state;
+    uint32_t failed_counter;
     sem_t *sem;
     pthread_t *thread;
     watch_t *watch;

@@ -15,6 +15,7 @@
 
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -31,6 +32,8 @@ typedef struct
     timestack_elem_t *elements;
 } timestack_t;
 
+typedef bool (*timestack_predicate_t)(int32_t value);
+
 timestack_t *
 timestack_new(uint32_t max);
 
@@ -45,6 +48,9 @@ timestack_oldest(timestack_t *timestack);
 
 int32_t
 timestack_newest(timestack_t *timestack);
+
+time_t
+timestack_find_latest(timestack_t *timestack, timestack_predicate_t predicate);
 
 void
 timestack_dump(timestack_t *timestack, const char* (*writer)(int32_t));
