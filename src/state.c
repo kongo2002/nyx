@@ -58,6 +58,12 @@ state_to_string(state_e state)
 {
     return state_to_str[state];
 }
+
+static const char *
+state_idx_to_string(int32_t state)
+{
+    return state_to_str[state];
+}
 #endif
 
 static const char *state_to_human_str[] =
@@ -958,7 +964,7 @@ state_loop(state_t *state)
             timestack_add(state->history, current_state);
 
 #ifndef NDEBUG
-            timestack_dump(state->history);
+            timestack_dump(state->history, state_idx_to_string);
 #endif
         }
 
@@ -976,7 +982,7 @@ state_loop(state_t *state)
         /* check for flapping processes
          * meaning 5 start/stop events within 60 seconds
          * TODO: configurable */
-        if (is_flapping(state, 5, 60))
+        if (current_state == STATE_STOPPED && is_flapping(state, 5, 60))
         {
             log_warn("Watch '%s' appears to be flapping - delay for 5 minutes. "
                      "Probably the start command is not executable or does "

@@ -88,7 +88,7 @@ timestack_oldest(timestack_t *timestack)
 }
 
 void
-timestack_dump(timestack_t *timestack)
+timestack_dump(timestack_t *timestack, const char* (*writer)(int32_t))
 {
     uint32_t i = 0;
     uint32_t count = timestack->count;
@@ -100,15 +100,16 @@ timestack_dump(timestack_t *timestack)
     while (i++ < count)
     {
         struct tm *ltime = localtime(&elem->time);
+        const char *value = writer(elem->value);
 
-        log_info("%04d-%02d-%02dT%02d:%02d:%02d: %d",
+        log_info("%04d-%02d-%02dT%02d:%02d:%02d: %s",
                 ltime->tm_year + 1900,
                 ltime->tm_mon + 1,
                 ltime->tm_mday,
                 ltime->tm_hour,
                 ltime->tm_min,
                 ltime->tm_sec,
-                elem->value);
+                value);
 
         elem++;
     }

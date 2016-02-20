@@ -48,7 +48,6 @@ test_timestack_add(UNUSED void **state)
     assert_int_equal(96, timestack_oldest(timestack));
     assert_int_equal(99, timestack_newest(timestack));
 
-    timestack_dump(timestack);
     timestack_destroy(timestack);
 }
 

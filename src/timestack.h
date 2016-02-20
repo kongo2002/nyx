@@ -47,7 +47,7 @@ int32_t
 timestack_newest(timestack_t *timestack);
 
 void
-timestack_dump(timestack_t *timestack);
+timestack_dump(timestack_t *timestack, const char* (*writer)(int32_t));
 
 void
 timestack_destroy(timestack_t *timestack);
