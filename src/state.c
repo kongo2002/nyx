@@ -607,7 +607,7 @@ start(state_t *state, state_e from, state_e to)
 }
 
 static bool
-is_running(int32_t state)
+state_is_running(int32_t state)
 {
     return state == STATE_RUNNING;
 }
@@ -616,7 +616,7 @@ static uint32_t
 was_running_for(state_t *state)
 {
     /* search for the latest 'RUNNING' event */
-    time_t last_running = timestack_find_latest(state->history, is_running);
+    time_t last_running = timestack_find_latest(state->history, state_is_running);
 
     if (last_running > 0)
     {
