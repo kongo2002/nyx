@@ -573,6 +573,17 @@ start_state(state_t *state)
 
     if (pid)
     {
+        /* let's check if the process is running at all
+         * we will delay a little bit to give the process some
+         * time to launch 'execvp' */
+        usleep(500000);
+
+        if (!check_process_running(pid))
+        {
+            log_debug("Watch '%s' failed to start", state->watch->name);
+            return 0;
+        }
+
         state->pid = pid;
         write_pid(pid, state->watch->name, state->nyx);
 
@@ -589,6 +600,8 @@ start(state_t *state, state_e from, state_e to)
 
     if (start_state(state) > 0)
         set_state(state, STATE_RUNNING);
+    else
+        set_state(state, STATE_STOPPED);
 
     return true;
 }
