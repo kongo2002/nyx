@@ -643,6 +643,9 @@ stopped(state_t *state, state_e from, state_e to)
     if (was_running_for(state) > (NYX_FLAPPING_INTERVAL / NYX_FLAPPING_COUNT))
         state->failed_counter = 0;
 
+    if (from != STATE_UNMONITORED)
+        log_info("Watch '%s' just stopped", state->watch->name);
+
     return true;
 }
 
@@ -653,6 +656,9 @@ running(state_t *state, state_e from, state_e to)
 
     if (state->nyx->proc && state->pid)
         nyx_proc_add(state->nyx->proc, state->pid, state->watch);
+
+    log_info("Watch '%s' is now running (PID %d)",
+            state->watch->name, state->pid);
 
     return true;
 }
@@ -1020,7 +1026,7 @@ state_loop(state_t *state)
 
         bool result = process_state(state, last_state, current_state);
 
-        if (!result)
+        if (!result && state->state != last_state)
         {
             /* the state transition failed
              * so we have to restore the old state */
