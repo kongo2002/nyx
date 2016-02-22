@@ -564,6 +564,14 @@ end:
     return true;
 }
 
+static bool
+restart(state_t *state, state_e from, state_e to)
+{
+    log_info("Watch '%s' is restarting (PID %d)", state->watch->name, state->pid);
+
+    return stop(state, from, to);
+}
+
 
 static pid_t
 start_state(state_t *state)
@@ -657,8 +665,10 @@ running(state_t *state, state_e from, state_e to)
     if (state->nyx->proc && state->pid)
         nyx_proc_add(state->nyx->proc, state->pid, state->watch);
 
-    log_info("Watch '%s' is now running (PID %d)",
-            state->watch->name, state->pid);
+    log_info("Watch '%s' is %s running (PID %d)",
+            state->watch->name,
+            (from == STATE_UNMONITORED ? "still" : "now"),
+            state->pid);
 
     return true;
 }
@@ -677,7 +687,7 @@ static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
     /* STARTING to ... */
     { NULL, to_unmonitored, NULL,     running, stop,     stopped, NULL },
     /* RUNNING to ... */
-    { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, stop },
+    { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, restart },
     /* STOPPING to ... */
     { NULL, to_unmonitored, NULL,     NULL,    stop,     stopped, NULL },
     /* STOPPED to ... */
