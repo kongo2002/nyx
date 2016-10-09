@@ -38,7 +38,7 @@ determine_pid(const char *name, nyx_t *nyx)
 
     if ((file = open_pid_file(nyx->pid_dir, name, "r")) != NULL)
     {
-        matched = fscanf(file, "%dd", &pid);
+        matched = fscanf(file, "%d", &pid);
         fclose(file);
     }
 
@@ -73,7 +73,7 @@ write_pid(pid_t pid, const char *name, nyx_t *nyx)
 
     if ((file = open_pid_file(nyx->pid_dir, name, "w")) != NULL)
     {
-        written = fprintf(file, "%ud", pid);
+        written = fprintf(file, "%u", pid);
         fclose(file);
     }
 
