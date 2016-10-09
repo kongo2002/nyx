@@ -25,6 +25,9 @@ strings_to_null_terminated(list_t *list);
 char
 get_size_unit(uint64_t kbytes, uint64_t *out_bytes);
 
+uint32_t
+parse_time_unit(const char *input);
+
 uint64_t
 parse_size_unit(const char *input);
 

@@ -73,6 +73,43 @@ get_size_unit(uint64_t kbytes, uint64_t *out_bytes)
     return 'K';
 }
 
+uint32_t
+parse_time_unit(const char *input)
+{
+    char unit;
+    int32_t matched = 0;
+    uint32_t seconds = 0;
+
+    if ((matched = sscanf(input, "%u %c", &seconds, &unit)) >= 1)
+    {
+        /* no unit specified -> default to seconds */
+        if (matched == 1)
+            return seconds;
+
+        switch (unit)
+        {
+            case 's':
+            case 'S':
+                return seconds;
+            case 'm':
+            case 'M':
+                return seconds * 60;
+            case 'h':
+            case 'H':
+                return seconds * 3600;
+            default:
+                log_error("Invalid time unit specified: %c", unit);
+                return 0;
+        }
+    }
+    else if (matched == -1)
+    {
+        log_perror("nyx: sscanf");
+    }
+
+    return 0;
+}
+
 uint64_t
 parse_size_unit(const char *input)
 {
@@ -82,8 +119,7 @@ parse_size_unit(const char *input)
 
     if ((matched = sscanf(input, "%" PRIu64 " %c", &size, &unit)) >= 1)
     {
-        /* no unit specified
-         * -> default to kilobytes */
+        /* no unit specified -> default to kilobytes */
         if (matched == 1)
             return size;
 
