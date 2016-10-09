@@ -114,6 +114,9 @@ options:
 nyx: $(OBJECTS)
 	$(CC) $(OBJECTS) -o nyx $(LIBS)
 
+nyx-static: $(OBJECTS)
+	$(CC) $(OBJECTS) -s -static -o nyx-static $(LIBS)
+
 check: test
 ifneq ("$(CMOCKA_LIB)", "")
 	@LD_LIBRARY_PATH=$(shell dirname $(CMOCKA_LIB)) ./test
