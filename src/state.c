@@ -665,9 +665,11 @@ running(state_t *state, state_e from, state_e to)
     if (state->nyx->proc && state->pid)
         nyx_proc_add(state->nyx->proc, state->pid, state->watch);
 
+    bool is_init = from == STATE_UNMONITORED || from == STATE_INIT;
+
     log_info("Watch '%s' is %s running (PID %d)",
             state->watch->name,
-            (from == STATE_UNMONITORED ? "still" : "now"),
+            (is_init ? "still" : "now"),
             state->pid);
 
     return true;
