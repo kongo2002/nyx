@@ -158,8 +158,7 @@ set_environment(const watch_t *watch)
     {
         char *value = data;
 
-        if (setenv(key, value, 1) == -1)
-            log_perror("nyx: setenv");
+        setenv(key, value, 1);
     }
 
     free(iter);
@@ -204,7 +203,6 @@ close_fds(pid_t pid)
 static void
 spawn_exec(state_t *state, bool start)
 {
-    pid_t sid = 0;
     uid_t uid = 0;
     gid_t gid = 0;
 
@@ -224,40 +222,25 @@ spawn_exec(state_t *state, bool start)
     umask(0);
 
     /* create session */
-    if ((sid = setsid()) == -1)
-        log_perror("nyx: setsid");
-    else
-    {
-        log_debug("Created new session group: %d", sid);
-    }
+    setsid();
 
     /* set user/group */
     if (gid)
     {
         gid_t groups[] = { gid };
 
-        if (setgroups(1, groups) == -1)
-            log_perror("nyx: setgroups");
-
-        if (setgid(gid) == -1)
-            log_perror("nyx: setgid");
+        setgroups(1, groups);
+        setgid(gid);
     }
 
     if (uid && gid)
-    {
-        if (initgroups(watch->uid, gid) == -1)
-            log_perror("nyx: initgroups");
-    }
+        initgroups(watch->uid, gid);
 
     if (uid)
     {
-        if (setuid(uid) == -1)
-        {
-            log_perror("nyx: setuid");
-        }
         /* in case the uid was modified we adjust the $USER and $HOME
          * environment variables appropriately */
-        else
+        if (setuid(uid) != -1)
         {
             if (!watch->env)
                 watch->env = hash_new(free);
@@ -277,11 +260,7 @@ spawn_exec(state_t *state, bool start)
         }
     }
 
-    /* set current directory */
-    log_debug("Changing current directory to '%s'", dir);
-
-    if (chdir(dir) == -1)
-        log_perror("nyx: chdir");
+    chdir(dir);
 
     /* stdin */
     close(STDIN_FILENO);
@@ -345,18 +324,7 @@ spawn_exec(state_t *state, bool start)
     execvp(executable, (char * const *)args);
 
     if (errno == ENOENT)
-    {
-        log_message(state->nyx, NYX_LOG_ERROR,
-                "%s command '%s' of watch '%s' is not "
-                "executable or does not exist at all",
-                (start ? "Start" : "Stop"),
-                executable,
-                watch->name);
-
-        /* TODO: remove watch? */
-
         exit(EXIT_SUCCESS);
-    }
 
     log_critical_perror("nyx: execvp %s", executable);
 }
@@ -390,8 +358,6 @@ read_pipe(int32_t fd)
 
         fclose(stream);
     }
-    else
-        log_warn("Failed to read of pipe (%d)", fd);
 
     return value;
 }
@@ -422,7 +388,7 @@ spawn_start(state_t *state)
      * resulting process' pid */
     if (double_fork)
     {
-        if (pipe(pipes) == -1)
+        if (pipe2(pipes, 0) == -1)
             log_critical_perror("nyx: pipe");
     }
 
@@ -460,10 +426,7 @@ spawn_start(state_t *state)
             close(pipes[0]);
 
             /* now we write the child pid into the pipe */
-            if (!write_pipe(pipes[1], inner_pid))
-            {
-                log_warn("Failed to write double-forked PID %d into pipe", inner_pid);
-            }
+            write_pipe(pipes[1], inner_pid);
 
             exit(EXIT_SUCCESS);
         }
