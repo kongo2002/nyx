@@ -44,9 +44,9 @@ netlink_connect(void)
     struct sockaddr_nl addr;
 
     int32_t netlink_socket = socket(
-            PF_NETLINK,         /* kernel user interface device */
-            SOCK_DGRAM,         /* datagram */
-            NETLINK_CONNECTOR); /* netlink */
+            PF_NETLINK,                /* kernel user interface device */
+            SOCK_DGRAM | SOCK_CLOEXEC, /* datagram */
+            NETLINK_CONNECTOR);        /* netlink */
 
     if (netlink_socket == -1)
     {
