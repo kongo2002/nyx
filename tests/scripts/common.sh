@@ -16,7 +16,7 @@ function run() {
     log "Starting configuration '$1'"
 
     $NYX -c "$1.yaml" >/dev/null || die nyx is already running
-    sleep 0.1
+    sleep 0.5
 }
 
 function check_nyx() {
