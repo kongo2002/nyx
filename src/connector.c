@@ -434,7 +434,12 @@ connector_run(nyx_t *nyx)
     mode_t old_mask = umask(0);
 
     /* create a UNIX domain, connection based socket */
-    int32_t sock = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    int32_t sock =
+#if defined(SOCK_CLOEXEC)
+        socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+#else
+        socket(AF_UNIX, SOCK_STREAM, 0);
+#endif
 
     if (sock == -1)
     {

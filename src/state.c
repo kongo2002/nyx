@@ -388,7 +388,7 @@ spawn_start(state_t *state)
      * resulting process' pid */
     if (double_fork)
     {
-        if (pipe2(pipes, 0) == -1)
+        if (pipe(pipes) == -1)
             log_critical_perror("nyx: pipe");
     }
 
