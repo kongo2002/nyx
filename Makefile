@@ -1,3 +1,9 @@
+# VERSION
+
+VERSION := 1.4.0
+
+# BUILD FLAGS
+
 CC       ?= gcc
 CXXFLAGS := -std=c99 -pedantic -Wall -Wextra
 
@@ -81,6 +87,7 @@ endif
 
 GITVERSION ?= $(shell ./utils/git-version.sh)
 CXXFLAGS   += $(GITVERSION)
+CXXFLAGS   += -DNYX_VERSION_NUMBER=\"$(VERSION)\"
 
 # INSTALL DIRECTORIES
 
@@ -92,7 +99,7 @@ INSTALLDIR := $(DESTDIR)$(PREFIX)
 MANPREFIX  := $(DESTDIR)$(MANPREFIX)
 DOCDIR     := $(DESTDIR)$(DOCDIR)
 
-.PHONY: all options clean rebuild check install uninstall
+.PHONY: all options clean dist rebuild check install uninstall
 
 all: options nyx nyx.1.gz
 
@@ -140,6 +147,9 @@ src/%.o: src/%.c
 nyx.1.gz: nyx.1
 	@gzip -c $< > $@
 
+dist:
+	@git archive --output nyx-$(VERSION).tar.gz --prefix nyx-$(VERSION)/ HEAD
+
 tags: $(SRCS)
 	ctags -R --c-kinds=+lp --fields=+iaS --extra=+q --language-force=C .
 
@@ -163,5 +173,6 @@ clean:
 	@rm -f nyx
 	@rm -f test
 	@rm -f nyx.1.gz
+	@rm -f nyx-$(VERSION).tar.gz
 
 rebuild: clean all
