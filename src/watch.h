@@ -39,6 +39,9 @@ typedef struct watch_t
     hash_t *env;
 } watch_t;
 
+bool
+is_all(const char* name);
+
 watch_t *
 watch_new(const char *name);
 

@@ -18,11 +18,39 @@
 #include "log.h"
 #include "state.h"
 #include "utils.h"
+#include "watch.h"
+
+static bool
+handle_status_all(sender_callback_t *cb, nyx_t *nyx, state_e new_state)
+{
+    if (!nyx->states)
+        return false;
+
+    list_node_t *node = nyx->states->head;
+
+    while (node)
+    {
+        state_t *state = node->data;
+
+        set_state(state, new_state);
+        cb->sender(cb, "requested %s for watch '%s'",
+                state_to_human_string(new_state),
+                state->watch->name);
+
+        node = node->next;
+    }
+
+    return true;
+}
 
 static bool
 handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, state_e new_state)
 {
     const char *name = input[1];
+
+    if (is_all(name))
+        return handle_status_all(cb, nyx, new_state);
+
     state_t *state = hash_get(nyx->state_map, name);
 
     if (state == NULL)

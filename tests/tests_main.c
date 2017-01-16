@@ -22,6 +22,7 @@
 #include "tests_socket.h"
 #include "tests_strbuf.h"
 #include "tests_timestack.h"
+#include "tests_watch.h"
 
 int
 main(UNUSED int argc, UNUSED char **argv)
@@ -42,7 +43,8 @@ main(UNUSED int argc, UNUSED char **argv)
         cmocka_unit_test(test_proc_page_size),
         cmocka_unit_test(test_parse_size_unit),
         cmocka_unit_test(test_check_http),
-        cmocka_unit_test(test_strbuf_append)
+        cmocka_unit_test(test_strbuf_append),
+        cmocka_unit_test(test_is_all)
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

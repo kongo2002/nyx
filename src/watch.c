@@ -23,6 +23,15 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
+
+bool
+is_all(const char *name)
+{
+    return name != NULL &&
+        strlen(name) == 3 &&
+        strncasecmp(name, "all", 3) == 0;
+}
 
 watch_t *
 watch_new(const char *name)
@@ -96,6 +105,12 @@ watch_validate(watch_t *watch)
     gid_t gid = 0;
 
     result &= watch->name && *watch->name;
+
+    if (is_all(watch->name))
+    {
+        log_error("Reserved name 'all' used");
+        result = false;
+    }
 
     valid = watch->start != NULL && *watch->start != NULL;
 
