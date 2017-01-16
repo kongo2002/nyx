@@ -671,7 +671,11 @@ nyx_watches_init(nyx_t *nyx)
         if (rc != 0)
             log_critical_perror("Failed to create thread, error: %d", rc);
 
-        init++;
+        if (init++)
+        {
+            /* introduce a minor delay to reduce contention */
+            usleep(100000);
+        }
     }
 
     free(iter);
