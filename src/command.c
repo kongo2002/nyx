@@ -1,4 +1,4 @@
-/* Copyright 2014-2016 Gregor Uhlenheuer
+/* Copyright 2014-2017 Gregor Uhlenheuer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,6 +109,12 @@ handle_config(sender_callback_t *cb, const char **input, nyx_t *nyx)
 
     if (watch->gid)
         cb->sender(cb, "gid: %s", watch->gid);
+
+    if (watch->log_file)
+        cb->sender(cb, "log_file: %s", watch->log_file);
+
+    if (watch->error_file)
+        cb->sender(cb, "error_file: %s", watch->error_file);
 
     if (watch->max_memory)
         cb->sender(cb, "max_memory: %lu", watch->max_memory);
