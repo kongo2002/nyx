@@ -337,7 +337,9 @@ initialize_daemon(nyx_t *nyx)
         return NYX_INSTANCE_RUNNING;
     }
 
-    nyx->watches = hash_new(_watch_destroy);
+    if (nyx->watches == NULL)
+        nyx->watches = hash_new(_watch_destroy);
+
     nyx->states = list_new(_state_destroy);
     nyx->state_map = hash_new(NULL);
 
@@ -492,12 +494,6 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
 
     if (nyx->is_daemon)
     {
-        if ((*error = initialize_daemon(nyx)) != NYX_SUCCESS)
-        {
-            nyx_destroy(nyx);
-            return NULL;
-        }
-
         /* add adhoc watch if specified */
         if (adhoc_watch)
         {
@@ -505,7 +501,14 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
             watch_t *adhoc = watch_new(adhoc_name, 1);
             adhoc->start = adhoc_watch;
 
+            nyx->watches = hash_new(_watch_destroy);
             hash_add(nyx->watches, adhoc_name, adhoc);
+        }
+
+        if ((*error = initialize_daemon(nyx)) != NYX_SUCCESS)
+        {
+            nyx_destroy(nyx);
+            return NULL;
         }
     }
     else
