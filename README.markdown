@@ -27,6 +27,32 @@ sane default configuration values.
 The project is inspired by [god][god] - the great ruby process monitor.
 
 
+### Why?
+
+You might think, 'why would you build another process manager when there are
+numerous working ones already?'
+
+Yes, you are right - there are several ones out there but none of it fits
+exactly what I am looking for:
+
+* [god][god]: this is the closest one. Sadly you need to have ruby installed on
+  your machine and the configuration quickly gets complicated when you just want
+  to say: 'this is my service - just keep it running!'
+
+* [supervisor][supervisor]: also a nice one! This time you need to have a
+  working python installation in place. Moreover it has become rather
+  *huge* with *a lot* of functionality that has to be incorporated in a messy
+  configuration format: like *INI*
+
+* *init systems like systemd*: obviously too much! Often a full blown init
+  system is just too much although some functionalties do overlap.
+
+I wanted to have an application I can simply put on a machine that just works
+without much dependency or configuration hassle to keep a couple of services up
+and running. If really necessary I can get notified on status changes via some
+plugin's functionality like XMPP.
+
+
 ### Event interface
 
 On linux a *nyx* daemon running with root privileges may utilize the kernel
@@ -397,3 +423,4 @@ The project is written by Gregor Uhlenheuer. You can reach me at
 [apache]: http://www.apache.org/licenses/LICENSE-2.0
 [yaml]: http://www.yaml.org/
 [docker]: https://www.docker.com/
+[supervisor]: http://supervisord.org/
