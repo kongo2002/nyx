@@ -15,6 +15,7 @@
 
 #define _GNU_SOURCE
 
+#include "def.h"
 #include "fs.h"
 #include "log.h"
 
@@ -132,13 +133,28 @@ determine_pid_dir(void)
     return NULL;
 }
 
+static char *
+get_pid_file(const char *pid_dir, const char *name)
+{
+    char *buffer = xcalloc(512, sizeof(char));
+    const char *dir = prepare_dir(pid_dir);
+
+    snprintf(buffer, 511, "%s/%s", dir, name);
+
+    return buffer;
+}
+
 FILE *
 open_pid_file(const char *pid_dir, const char *name, const char *mode)
 {
     if (pid_dir == NULL)
         return NULL;
 
-    return fopen(get_pid_file(pid_dir, name), mode);
+    char *location = get_pid_file(pid_dir, name);
+    FILE *pid_file = fopen(location, mode);
+
+    free(location);
+    return pid_file;
 }
 
 bool
@@ -147,18 +163,11 @@ remove_pid_file(const char *pid_dir, const char *name)
     if (pid_dir == NULL)
         return false;
 
-    return remove(get_pid_file(pid_dir, name)) == 0;
-}
+    char *location = get_pid_file(pid_dir, name);
+    bool success = remove(location) == 0;
 
-const char *
-get_pid_file(const char *pid_dir, const char *name)
-{
-    static char buffer[512] = {0};
-    const char *dir = prepare_dir(pid_dir);
-
-    snprintf(buffer, sizeof(buffer), "%s/%s", dir, name);
-
-    return buffer;
+    free(location);
+    return success;
 }
 
 bool

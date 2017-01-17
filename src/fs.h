@@ -31,9 +31,6 @@ mkdir_p(const char *directory);
 const char *
 determine_pid_dir(void);
 
-const char *
-get_pid_file(const char *pid_dir, const char *name);
-
 FILE *
 open_pid_file(const char *pid_dir, const char *name, const char *mode);
 
