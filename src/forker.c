@@ -371,11 +371,11 @@ spawn_start(nyx_t *nyx, watch_t *watch)
 }
 
 static void
-forker(nyx_t *nyx, int32_t read_pipe)
+forker(nyx_t *nyx, int32_t pipe_fd)
 {
     fork_info_t info = {0, 0};
 
-    while (read(read_pipe, &info, sizeof(fork_info_t)) != 0)
+    while (read(pipe_fd, &info, sizeof(fork_info_t)) != 0)
     {
         log_debug("forker: received watch id %d", info.id);
 
@@ -394,7 +394,7 @@ forker(nyx_t *nyx, int32_t read_pipe)
         write_pid(pid, watch->name, nyx);
     }
 
-    close(read_pipe);
+    close(pipe_fd);
 
     log_debug("forker: terminated");
 }
