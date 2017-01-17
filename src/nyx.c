@@ -19,6 +19,7 @@
 #include "connector.h"
 #include "command.h"
 #include "def.h"
+#include "forker.h"
 #include "fs.h"
 #include "log.h"
 #include "nyx.h"
@@ -363,6 +364,14 @@ initialize_daemon(nyx_t *nyx)
         }
     }
 
+    /* start the forker thread as soon as possible */
+    nyx->forker_pipe = forker_init(nyx);
+    if (nyx->forker_pipe < 1)
+    {
+        log_error("Failed to initialize forker thread");
+        return NYX_FAILED_DAEMONIZE;
+    }
+
     /* initialize eventfd with an initial value of '0' */
     init_event_interface(nyx);
 
@@ -493,7 +502,7 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
         if (adhoc_watch)
         {
             const char *adhoc_name = strdup("__run__");
-            watch_t *adhoc = watch_new(adhoc_name);
+            watch_t *adhoc = watch_new(adhoc_name, 1);
             adhoc->start = adhoc_watch;
 
             hash_add(nyx->watches, adhoc_name, adhoc);
@@ -671,11 +680,7 @@ nyx_watches_init(nyx_t *nyx)
         if (rc != 0)
             log_critical_perror("Failed to create thread, error: %d", rc);
 
-        if (init++)
-        {
-            /* introduce a minor delay to reduce contention */
-            usleep(100000);
-        }
+        init++;
     }
 
     free(iter);
@@ -847,6 +852,10 @@ nyx_destroy(nyx_t *nyx)
 {
     if (nyx == NULL)
         return;
+
+    /* close forker pipe end */
+    if (nyx->forker_pipe)
+        close(nyx->forker_pipe);
 
     /* signal termination via eventfd (if existing) */
     bool signal_sent = signal_eventfd(4, nyx);

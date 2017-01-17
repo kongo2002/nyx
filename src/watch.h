@@ -20,6 +20,7 @@
 
 typedef struct watch_t
 {
+    int32_t id;
     const char *name;
     const char *uid;
     const char *gid;
@@ -43,7 +44,7 @@ bool
 is_all(const char* name);
 
 watch_t *
-watch_new(const char *name);
+watch_new(const char *name, int32_t id);
 
 void
 watch_dump(watch_t *watch);

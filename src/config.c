@@ -331,6 +331,7 @@ DECLARE_WATCH_STR_FUNC(port_check, uatoi)
 #undef DECLARE_WATCH_STR_LIST_VALUE
 #undef DECLARE_WATCH_STR_FUNC
 
+static int32_t watch_idx = 1;
 static const char *env_key = NULL;
 
 static parse_info_t *
@@ -630,7 +631,7 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
     }
 
     const char *w_name = strdup(name);
-    watch_t *watch = watch_new(w_name);
+    watch_t *watch = watch_new(w_name, watch_idx++);
 
     hash_add(info->nyx->watches, w_name, watch);
 
@@ -937,6 +938,9 @@ parse_config(nyx_t *nyx)
 
     parse_info_t *info = parse_info_new(nyx);
     parse_info_t *new_info = NULL;
+
+    /* reset watch counter (not necessary though) */
+    watch_idx = 1;
 
     yaml_parser_set_input_file(&parser, cfg);
 
