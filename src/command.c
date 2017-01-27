@@ -20,8 +20,30 @@
 #include "utils.h"
 #include "watch.h"
 
+typedef void (* status_handler_t)(sender_callback_t *, nyx_t *, state_t *);
+
 static bool
-handle_status_all(sender_callback_t *cb, nyx_t *nyx, state_e new_state)
+handle_all_by_handler(sender_callback_t *cb, nyx_t *nyx, status_handler_t handler)
+{
+    if (!nyx->states)
+        return false;
+
+    list_node_t *node = nyx->states->head;
+
+    while (node)
+    {
+        state_t *state = node->data;
+
+        handler(cb, nyx, state);
+
+        node = node->next;
+    }
+
+    return true;
+}
+
+static bool
+handle_status_change_all(sender_callback_t *cb, nyx_t *nyx, state_e new_state)
 {
     if (!nyx->states)
         return false;
@@ -49,7 +71,7 @@ handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, stat
     const char *name = input[1];
 
     if (is_all(name))
-        return handle_status_all(cb, nyx, new_state);
+        return handle_status_change_all(cb, nyx, new_state);
 
     state_t *state = hash_get(nyx->state_map, name);
 
@@ -310,17 +332,10 @@ handle_reload(sender_callback_t *cb, UNUSED const char **input, nyx_t *nyx)
     return true;
 }
 
-static bool
-handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
+static void
+print_status(sender_callback_t *cb, UNUSED nyx_t *nyx, state_t *state)
 {
-    const char *name = input[1];
-    state_t *state = hash_get(nyx->state_map, name);
-
-    if (state == NULL)
-    {
-        cb->sender(cb, "unknown watch '%s'", name);
-        return false;
-    }
+    const char *name = state->watch->name;
 
     /* print pid if running */
     if (state->state == STATE_RUNNING && state->pid)
@@ -332,6 +347,25 @@ handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
     }
     else
         cb->sender(cb, "%s: %s", name, state_to_human_string(state->state));
+}
+
+static bool
+handle_status(sender_callback_t *cb, const char **input, nyx_t *nyx)
+{
+    const char *name = input[1];
+
+    if (is_all(name))
+        return handle_all_by_handler(cb, nyx, print_status);
+
+    state_t *state = hash_get(nyx->state_map, name);
+
+    if (state == NULL)
+    {
+        cb->sender(cb, "unknown watch '%s'", name);
+        return false;
+    }
+
+    print_status(cb, nyx, state);
 
     return true;
 }
