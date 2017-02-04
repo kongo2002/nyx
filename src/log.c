@@ -162,19 +162,7 @@ log_msg(FILE *stream, log_level_e level, const char *msg, size_t length)
 
     /* errno specific handling */
     if (level & NYX_LOG_PERROR)
-    {
-        char buffer[512];
-#ifndef OSX
-        char *error_msg = strerror_r(error, buffer, 511);
-#else
-        char *error_msg = buffer;
-        strerror_r(error, buffer, 511);
-#endif
-
-        fputc(':', stream);
-        fputc(' ', stream);
-        fwrite(error_msg, strlen(error_msg), 1, stream);
-    }
+        fprintf(stream, ": error %d", error);
 
     if (use_color)
     {
