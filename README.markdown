@@ -154,6 +154,12 @@ nyx:
     # domain socket
     # (optional)
     http_port: 8080
+
+    # processes might require some startup time until ports
+    # or http endpoints are spawned
+    # the additional process checks will respect this delay (in sec)
+    # (optional)
+    startup_delay: 30
 ```
 
 
@@ -229,7 +235,9 @@ watches:
         port_check: 27017
 ```
 
-A process restart will be triggered if the port is not opened.
+A process restart will be triggered if the port is not opened. This check will
+be active after `startup_delay` seconds only (`30` by default) in order to
+account for application initialization.
 
 
 ##### Check HTTP endpoint
@@ -255,6 +263,9 @@ watches:
         start: /usr/bin/app2
         http_check: /status
 ```
+
+This check respects the `startup_delay` configuration value as well (see
+[above](#observe-opened-ports)).
 
 
 #### Ad-hoc usage

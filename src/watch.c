@@ -218,6 +218,8 @@ watch_dump(watch_t *watch)
     if (watch->port_check)
         log_info("  port_check: %u", watch->port_check);
 
+    log_info("  startup_delay: %u", watch->startup_delay);
+
     if (watch->env)
     {
         log_info("  env: [");

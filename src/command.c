@@ -184,6 +184,8 @@ handle_config(sender_callback_t *cb, const char **input, nyx_t *nyx)
                 watch->http_check_port ? watch->http_check_port : 80);
     }
 
+    cb->sender(cb, "startup_delay: %u", watch->startup_delay);
+
     send_keys(cb, "env", watch->env);
 
     return true;

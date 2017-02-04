@@ -326,6 +326,7 @@ DECLARE_WATCH_STR_FUNC(max_memory, parse_size_unit)
 DECLARE_WATCH_STR_FUNC(max_cpu, uatoi)
 DECLARE_WATCH_STR_FUNC(stop_timeout, uatoi)
 DECLARE_WATCH_STR_FUNC(port_check, uatoi)
+DECLARE_WATCH_STR_FUNC(startup_delay, uatoi)
 
 #undef DECLARE_WATCH_STR_VALUE
 #undef DECLARE_WATCH_STR_LIST_VALUE
@@ -537,6 +538,7 @@ static struct config_parser_map watch_value_map[] =
     SCALAR_HANDLER("max_cpu", handle_watch_map_value_max_cpu),
     SCALAR_HANDLER("stop_timeout", handle_watch_map_value_stop_timeout),
     SCALAR_HANDLER("port_check", handle_watch_map_value_port_check),
+    SCALAR_HANDLER("startup_delay", handle_watch_map_value_startup_delay),
     MAP_HANDLER("env", handle_watch_env),
     HANDLERS("http_check", handle_watch_map_value_http_check, NULL, handle_watch_http_check_map),
     HANDLERS("start", handle_watch_map_value_start, handle_watch_strings_start, NULL),
@@ -675,6 +677,7 @@ DECLARE_NYX_FUNC_VALUE(uatoi, polling_interval)
 DECLARE_NYX_FUNC_VALUE(uatoi, check_interval)
 DECLARE_NYX_FUNC_VALUE(uatoi, history_size)
 DECLARE_NYX_FUNC_VALUE(uatoi, http_port)
+DECLARE_NYX_FUNC_VALUE(uatoi, startup_delay)
 DECLARE_NYX_FUNC_VALUE(strdup, log_file)
 
 #ifdef USE_PLUGINS
@@ -687,6 +690,7 @@ static struct config_parser_map nyx_value_map[] =
 {
     SCALAR_HANDLER("polling_interval", handle_nyx_value_polling_interval),
     SCALAR_HANDLER("check_interval", handle_nyx_value_check_interval),
+    SCALAR_HANDLER("startup_delay", handle_nyx_value_startup_delay),
     SCALAR_HANDLER("history_size", handle_nyx_value_history_size),
     SCALAR_HANDLER("http_port", handle_nyx_value_http_port),
     SCALAR_HANDLER("log_file", handle_nyx_value_log_file),
@@ -1013,7 +1017,22 @@ parse_config(nyx_t *nyx)
     {
         log_info("Found %d watch definitions", valid_watches);
 
-        hash_foreach(nyx->watches, dump_watch);
+        const char *key = NULL;
+        void *data = NULL;
+        hash_iter_t *iter = hash_iter_start(nyx->watches);
+
+        while (hash_iter(iter, &key, &data))
+        {
+            watch_t *watch = data;
+
+            /* use the global startup_delay if not specified */
+            if (watch->startup_delay < 1)
+                watch->startup_delay = nyx->options.startup_delay;
+
+            dump_watch(watch);
+        }
+
+        free(iter);
     }
 
     return success;

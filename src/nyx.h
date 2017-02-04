@@ -39,6 +39,7 @@ typedef struct
     uint32_t def_stop_timeout;
     uint32_t polling_interval;
     uint32_t check_interval;
+    uint32_t startup_delay;
     uint32_t history_size;
     const char *config_file;
     const char *log_file;

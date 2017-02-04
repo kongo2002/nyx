@@ -37,6 +37,7 @@ typedef struct watch_t
     uint32_t stop_timeout;
     uint32_t max_cpu;
     uint64_t max_memory;
+    uint32_t startup_delay;
     hash_t *env;
 } watch_t;
 

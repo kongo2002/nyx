@@ -318,6 +318,7 @@ initialize_daemon(nyx_t *nyx)
     nyx->options.def_stop_timeout = 5;
     nyx->options.polling_interval = 5;
     nyx->options.check_interval = 30;
+    nyx->options.startup_delay = 30;
     nyx->options.history_size = 20;
     nyx->options.http_port = 0;
 
@@ -532,13 +533,14 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
  * @brief Callback to any proc system event
  * @param event event type
  * @param proc  proc system instance
- * @param nyx   nyx instance
+ * @param data  nyx instance
  * @return false if no further events should be handled, true otherwise
  */
 static bool
-handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
+handle_proc_event(proc_event_e event, proc_stat_t *proc, void *data)
 {
-    hash_t *states = ((nyx_t *)nyx)->state_map;
+    nyx_t *nyx = data;
+    hash_t *states = nyx->state_map;
 
     log_debug("Got process event %d of process '%s'", event, proc->name);
 
@@ -557,8 +559,9 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *nyx)
             timestack_elem_t *newest = &state->history->elements[0];
             double last_state_ago = difftime(now, newest->time);
 
-            /* TODO: configurable */
-            if (last_state_ago < 30)
+            uint32_t startup_delay = state->watch->startup_delay;
+
+            if (last_state_ago < startup_delay)
             {
                 log_debug("Ignoring process event %d of process '%s' "
                     "because the latest state change was just %.2fs ago",
