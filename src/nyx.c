@@ -49,16 +49,6 @@
 #endif
 
 /**
- * @brief Watch destroy callback function
- * @param watch watch to destroy
- */
-static void
-_watch_destroy(void *watch)
-{
-    watch_destroy((watch_t *)watch);
-}
-
-/**
  * @brief State destroy callback function
  * @param state state to destroy
  */
@@ -749,7 +739,7 @@ shutdown_proc(nyx_t *nyx)
     }
 }
 
-static void
+void
 clear_watches(nyx_t *nyx)
 {
     if (nyx->state_map)
@@ -800,7 +790,7 @@ static void
 destroy_plugins(UNUSED nyx_t *unused) { }
 #endif
 
-static void
+void
 destroy_options(nyx_t *nyx)
 {
     if (nyx->options.log_file)
@@ -831,6 +821,17 @@ nyx_reload(nyx_t *nyx)
 
     if (parse_config(nyx))
     {
+        /* at this point we have to notify the forker thread
+         * to reload its config as well otherwise it will still
+         * launch the watches with its old run config */
+
+        fork_info_t *reload_info = forker_reload();
+
+        if (write(nyx->forker_pipe, reload_info, sizeof(fork_info_t)) == -1)
+            log_perror("nyx: write");
+
+        free(reload_info);
+
         if (nyx_watches_init(nyx))
         {
 #ifdef USE_PLUGINS

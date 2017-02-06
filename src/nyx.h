@@ -103,6 +103,12 @@ nyx_initialize(int argc, char **args, nyx_error_e *error);
 bool
 nyx_watches_init(nyx_t *nyx);
 
+void
+clear_watches(nyx_t *nyx);
+
+void
+destroy_options(nyx_t *nyx);
+
 bool
 nyx_reload(nyx_t *nyx);
 

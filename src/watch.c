@@ -98,6 +98,16 @@ watch_destroy(watch_t *watch)
     free(watch);
 }
 
+/**
+ * @brief Watch destroy callback function
+ * @param watch watch to destroy
+ */
+void
+_watch_destroy(void *watch)
+{
+    watch_destroy((watch_t *)watch);
+}
+
 bool
 watch_validate(watch_t *watch)
 {

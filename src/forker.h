@@ -20,6 +20,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/** magic number to trigger forker thread reload */
+#define NYX_FORKER_RELOAD -101
+
 typedef struct
 {
     int32_t id;
@@ -28,6 +31,9 @@ typedef struct
 
 int32_t
 forker_init(nyx_t *nyx);
+
+fork_info_t *
+forker_reload(void);
 
 fork_info_t *
 forker_start(int32_t id);

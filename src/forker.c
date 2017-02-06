@@ -15,6 +15,7 @@
 
 #define _GNU_SOURCE
 
+#include "config.h"
 #include "def.h"
 #include "forker.h"
 #include "fs.h"
@@ -377,6 +378,26 @@ forker(nyx_t *nyx, int32_t pipe_fd)
 
     while (read(pipe_fd, &info, sizeof(fork_info_t)) != 0)
     {
+        if (info.id == NYX_FORKER_RELOAD)
+        {
+            log_debug("forker: received reload command");
+
+            clear_watches(nyx);
+            destroy_options(nyx);
+            nyx->watches = hash_new(_watch_destroy);
+
+            if (parse_config(nyx))
+            {
+                log_debug("forker: successfully reloaded config");
+            }
+            else
+            {
+                log_warn("forker: failed to reload config");
+            }
+
+            continue;
+        }
+
         log_debug("forker: received watch id %d", info.id);
 
         watch_t *watch = find_watch(nyx, info.id);
@@ -395,6 +416,8 @@ forker(nyx_t *nyx, int32_t pipe_fd)
     }
 
     close(pipe_fd);
+
+    nyx_destroy(nyx);
 
     log_debug("forker: terminated");
 }
@@ -420,6 +443,12 @@ fork_info_t *
 forker_start(int32_t idx)
 {
     return forker_new(idx, true);
+}
+
+fork_info_t *
+forker_reload(void)
+{
+    return forker_new(NYX_FORKER_RELOAD, true);
 }
 
 int32_t

@@ -53,6 +53,9 @@ watch_dump(watch_t *watch);
 void
 watch_destroy(watch_t *watch);
 
+void
+_watch_destroy(void *watch);
+
 bool
 watch_validate(watch_t *watch);
 
