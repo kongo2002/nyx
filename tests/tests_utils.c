@@ -42,4 +42,74 @@ test_parse_size_unit(UNUSED void **state)
     assert_int_equal(0, parse_size_unit("x 226"));
 }
 
+static void
+test_parse(const char *input, const char **expected)
+{
+    printf("parsing command: >%s<\n", input);
+
+    uint32_t idx = 1;
+    const char **strings = parse_command_string(input);
+    const char **ptr = strings;
+
+    while (*ptr)
+    {
+        assert_non_null(*expected);
+
+        printf(" %u: '%s'\n", idx++, *ptr);
+        assert_string_equal(*ptr, *expected);
+
+        free((void *)*ptr);
+
+        ptr++;
+        expected++;
+    }
+
+    assert_null(*ptr);
+    assert_null(*expected);
+
+    free(strings);
+}
+
+void
+test_parse_command_string(UNUSED void **state)
+{
+    assert_null(parse_command_string(NULL));
+    assert_null(parse_command_string(""));
+
+    const char * array1[] = { "one", "two", "three", NULL };
+    test_parse("one two three", array1);
+    test_parse(" one two   three ", array1);
+    test_parse(" \t one\ttwo   three ", array1);
+
+    const char * array2[] = { "one", NULL };
+    test_parse("'one'", array2);
+
+    const char * array3[] = { "one two", NULL };
+    test_parse("'one two'", array3);
+    test_parse("\"one two\"", array3);
+
+    const char * array4[] = { " one two ", NULL };
+    test_parse(" ' one two ' ", array4);
+
+    const char * array5[] = { " one two ", "three", NULL };
+    test_parse(" ' one two '  three ", array5);
+
+    const char * array6[] = { "one ' two", NULL };
+    test_parse("\"one ' two\"", array6);
+
+    const char * array7[] = { "one \" two", NULL };
+    test_parse("\"one \\\" two\"", array7);
+
+    const char * array8[] = { "one\"", NULL };
+    test_parse("\"one\\\"\"", array8);
+
+    const char * array9[] = { "\"\"", NULL };
+    test_parse("\"\\\"\\\"\"", array9);
+
+    const char * array10[] = { "one\\two", NULL };
+    test_parse("one\\\\two", array10);
+
+    const char * array11[] = { "onetwo ", "three", NULL };
+    test_parse("one\"two \" three", array11);
+}
 /* vim: set et sw=4 sts=4 tw=80: */

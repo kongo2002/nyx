@@ -42,6 +42,7 @@ main(UNUSED int argc, UNUSED char **argv)
         cmocka_unit_test(test_proc_num_cpus),
         cmocka_unit_test(test_proc_page_size),
         cmocka_unit_test(test_parse_size_unit),
+        cmocka_unit_test(test_parse_command_string),
         cmocka_unit_test(test_check_http),
         cmocka_unit_test(test_strbuf_append),
         cmocka_unit_test(test_is_all)

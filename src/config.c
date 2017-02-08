@@ -310,7 +310,7 @@ uatoi(const char *str)
     DECLARE_WATCH_STR_FUNC(name_, strdup)
 
 #define DECLARE_WATCH_STR_LIST_VALUE(name_) \
-    DECLARE_WATCH_STR_FUNC(name_, split_string_whitespace)
+    DECLARE_WATCH_STR_FUNC(name_, parse_command_string)
 
 DECLARE_WATCH_STR_VALUE(name)
 DECLARE_WATCH_STR_VALUE(uid)

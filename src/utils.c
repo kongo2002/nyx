@@ -236,6 +236,100 @@ split_string(const char *str, const char *chars)
     return output;
 }
 
+const char **
+parse_command_string(const char *str)
+{
+    if (str == NULL || *str == '\0')
+        return NULL;
+
+    char *string = strdup(str);
+    size_t length = strlen(string);
+    uint32_t idx = 0;
+    char *chr = string, *part = string;
+    list_t *parts = list_new(NULL);
+    char str_delim = '\0';
+    bool found_special = false;
+
+    while (*chr)
+    {
+        idx++;
+
+        /* whitespace */
+        if (*chr == ' ' || *chr == '\t')
+        {
+            /* start of the string */
+            if (part == chr)
+            {
+                if (str_delim == '\0')
+                    part++;
+            }
+            /* end of the string and *not* in-string */
+            else if (str_delim == '\0')
+            {
+                *chr = '\0';
+                list_add(parts, strdup(part));
+                part = chr + 1;
+            }
+
+            chr++;
+            continue;
+        }
+
+        /* check escape */
+        if (*chr == '\\')
+        {
+            found_special = true;
+
+            /* shift the whole string one byte to the left */
+            memmove(chr, chr+1, length - idx + 1);
+            chr++;
+            continue;
+        }
+
+        /* check string delimiters */
+        if (*chr == '"' || *chr == '\'')
+        {
+            found_special = true;
+
+            if (str_delim == *chr)
+            {
+                *chr = '\0';
+                str_delim = '\0';
+                list_add(parts, strdup(part));
+                chr++;
+                part = chr;
+                continue;
+            }
+            /* not in string already */
+            else if (str_delim == '\0')
+            {
+                str_delim = *chr;
+
+                /* start of the 'part' */
+                if (chr == part)
+                    part++;
+                else
+                    memmove(chr, chr+1, length - idx + 1);
+            }
+        }
+
+        chr++;
+    }
+
+    if (!empty_or_whitespace(part))
+        list_add(parts, strdup(part));
+
+    free(string);
+
+    if (found_special)
+    {
+        log_warn("nyx tries hard to parse your command - however consider using"
+                 " YAML's list syntax for more complicated command strings");
+    }
+
+    return strings_to_null_terminated(parts);
+}
+
 uint32_t
 count_args(const char **args)
 {

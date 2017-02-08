@@ -18,4 +18,7 @@
 void
 test_parse_size_unit(void **state);
 
+void
+test_parse_command_string(UNUSED void **state);
+
 /* vim: set et sw=4 sts=4 tw=80: */

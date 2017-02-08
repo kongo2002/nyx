@@ -37,6 +37,9 @@ split_string(const char *str, const char *chars);
 const char **
 split_string_whitespace(const char *str);
 
+const char **
+parse_command_string(const char *str);
+
 uint32_t
 count_args(const char **args);
 
