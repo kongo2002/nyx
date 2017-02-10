@@ -77,6 +77,9 @@ binaries for 64-bit Linux:
 - 64-bit Linux RPM: [nyx-1.6.1-1.x86_64.rpm](http://uhlenheuer.net/files/nyx/rpms/nyx-1.6.1-1.x86_64.rpm)
   (SHA1: `d3667aaf3ff17053b51e5bf6ea672a0eeb289bdc`)
 
+- 64-bit static binary (built using musl libc): [nyx-1.6.1.tar.gz](http://uhlenheuer.net/files/nyx/static/nyx-1.6.1.tar.gz)
+  (SHA1: `1c23bd10b3f5fe71476d527158f498cc0e294f7b`)
+
 
 ## Usage
 
