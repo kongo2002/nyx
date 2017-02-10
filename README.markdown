@@ -66,6 +66,18 @@ the `polling_interval` setting to modify the interval which defaults to 5
 seconds).
 
 
+## Get it!
+
+Instead of [building](#building) nyx by yourself you can download ready-to-use
+binaries for 64-bit Linux:
+
+
+#### 1.6.1
+
+- 64-bit Linux RPM: [nyx-1.6.1-1.x86_64.rpm](http://uhlenheuer.net/files/nyx/rpms/nyx-1.6.1-1.x86_64.rpm)
+  (SHA1: `d3667aaf3ff17053b51e5bf6ea672a0eeb289bdc`)
+
+
 ## Usage
 
 
