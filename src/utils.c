@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/select.h>
+#include <wordexp.h>
 
 static bool
 empty_or_whitespace(const char *str)
@@ -328,6 +329,51 @@ parse_command_string(const char *str)
     }
 
     return strings_to_null_terminated(parts);
+}
+
+bool
+substitute_env_string(const char *input, char **output)
+{
+    bool success = false;
+    wordexp_t subst;
+
+    *output = NULL;
+
+    if (input == NULL || *input == '\0')
+        return false;
+
+    switch (wordexp(input, &subst, WRDE_NOCMD | WRDE_UNDEF))
+    {
+        // success
+        case 0:
+            if (subst.we_wordc > 0)
+                *output = strdup(subst.we_wordv[0]);
+            wordfree(&subst);
+            success = true;
+            break;
+
+        case WRDE_BADCHAR:
+            log_warn("environment contains illegal characters");
+            break;
+        case WRDE_BADVAL:
+            log_warn("environment contains an undefined variable");
+            break;
+        case WRDE_CMDSUB:
+            log_warn("commands in environments are not supported");
+            break;
+        case WRDE_NOSPACE:
+            log_warn("out of memory");
+            wordfree(&subst);
+            break;
+        case WRDE_SYNTAX:
+            log_warn("invalid environment given");
+            break;
+
+        default:
+            break;
+    }
+
+    return success;
 }
 
 uint32_t

@@ -112,4 +112,36 @@ test_parse_command_string(UNUSED void **state)
     const char * array11[] = { "onetwo ", "three", NULL };
     test_parse("one\"two \" three", array11);
 }
+
+static void
+test_env(const char *input)
+{
+    char *output = NULL;
+    assert_true(substitute_env_string(input, &output));
+
+    if (output && *output)
+    {
+        printf("substitute_env_string: '%s' -> '%s'\n", input, output);
+        free(output);
+    }
+}
+
+void
+test_substitute_env_string(UNUSED void **state)
+{
+    char *output = NULL;
+
+    assert_false(substitute_env_string(NULL, &output));
+    assert_false(substitute_env_string("", &output));
+    assert_false(substitute_env_string(" $DOES_NOT_EXIST", &output));
+    assert_false(substitute_env_string(" `hostname`/bar", &output));
+    assert_false(substitute_env_string(" $(echo foo)/bar", &output));
+
+    test_env("/foo/bar:/bar/foo");
+    test_env("$PATH:/foo/bar");
+    test_env("${PATH}:/foo/bar");
+    test_env("$HOME/some/where");
+    test_env("~/some/where");
+}
+
 /* vim: set et sw=4 sts=4 tw=80: */

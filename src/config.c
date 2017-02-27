@@ -346,7 +346,16 @@ handle_watch_env_value(parse_info_t *info, yaml_event_t *event, void *data)
 
     if (watch != NULL && watch->env && env_key)
     {
-        hash_add(watch->env, env_key, strdup(env_value));
+        char *parsed_env = NULL;
+
+        /* try to parse the environment value (i.e. replace variables) */
+        if (!substitute_env_string(env_value, &parsed_env))
+        {
+            /* if substitution failed use the unparsed string instead */
+            parsed_env = strdup(env_value);
+        }
+
+        hash_add(watch->env, env_key, parsed_env);
 
         /* dispose key */
         free((void *)env_key);

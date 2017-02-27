@@ -40,6 +40,9 @@ split_string_whitespace(const char *str);
 const char **
 parse_command_string(const char *str);
 
+bool
+substitute_env_string(const char *input, char **output);
+
 uint32_t
 count_args(const char **args);
 
