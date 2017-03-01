@@ -173,9 +173,10 @@ send_command(int32_t sock, const char **commands, bool quiet)
     return sent;
 }
 
-static void
-print_response(char *buffer, size_t len, bool quiet)
+static bool
+handle_response(char *buffer, size_t len, bool quiet)
 {
+    bool success = true;
     size_t idx = 0;
     char *msg = buffer, *ptr = buffer;
 
@@ -192,11 +193,22 @@ print_response(char *buffer, size_t len, bool quiet)
 
             if (idx < len)
                 msg = ptr + 1;
+
+            /* look for a trailing status code at the end of the message:
+             * the (optional) status code is sent in 3 bytes <0, status, 0> */
+            if (*msg == '\0' && len == idx + 3)
+            {
+                char status = *(msg + 1);
+                success = status == '0';
+                break;
+            }
         }
 
         if (idx < len)
             ptr++;
     }
+
+    return success;
 }
 
 nyx_error_e
@@ -269,7 +281,10 @@ connector_call(const char **commands, bool quiet)
     close(sock);
 
     if (retcode == NYX_SUCCESS)
-        print_response(buffer, total, quiet);
+    {
+        if (!handle_response(buffer, total, quiet))
+            retcode = NYX_COMMAND_FAILED;
+    }
 
     return retcode;
 }
@@ -368,12 +383,15 @@ handle_request(NYX_EV_TYPE *event, nyx_t *nyx)
         {
             log_warn("Failed to process command '%s' (%d)",
                     cmd->name, cmd->type);
+
+            send_status_safe(fd, 1);
         }
     }
     else
     {
         const char error[] = "unknown command\n";
         send_safe(fd, error, LEN(error));
+        send_status_safe(fd, 1);
     }
 
     strings_free((char **)commands);

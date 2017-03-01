@@ -59,6 +59,9 @@ const char *
 http_method_to_string(http_method_e method);
 
 ssize_t
+send_status_safe(int32_t sock, int32_t status);
+
+ssize_t
 send_safe(int32_t sock, const void *buffer, size_t length);
 
 bool

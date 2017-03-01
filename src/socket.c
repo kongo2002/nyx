@@ -69,6 +69,13 @@ http_method_to_string(http_method_e method)
     }
 }
 
+ssize_t
+send_status_safe(int32_t sock, int32_t status)
+{
+    char buffer[] = { 0, '0' + status, 0 };
+    return send_safe(sock, buffer, 3);
+}
+
 /* OS agnostic send() method wrapper */
 ssize_t
 send_safe(int32_t sock, const void *buffer, size_t length)
