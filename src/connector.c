@@ -216,8 +216,8 @@ connector_call(const char **commands, bool quiet)
 {
     nyx_error_e retcode = NYX_COMMAND_FAILED;
     int32_t sock = 0, res = 0;
-    char buffer[1024] = {0};
-    size_t total = 0, size = LEN(buffer);
+    char *response = NULL;
+    size_t total = 0;
     struct sockaddr_un addr;
 
     /* create a UNIX domain, connection based socket */
@@ -260,8 +260,23 @@ connector_call(const char **commands, bool quiet)
 
         do
         {
-            if ((res = recv(sock, buffer+total, size-total-1, 0)) > 0)
+            char buffer[1024] = {0};
+
+            if ((res = recv(sock, buffer, LEN(buffer), 0)) > 0)
             {
+                char *updated = xcalloc(total + res, sizeof(char));
+
+                /* copy old buffer contents (if existing) */
+                if (response != NULL)
+                {
+                    memcpy(updated, response, total);
+                    free(response);
+                }
+
+                /* copy new buffer contents after that */
+                memcpy(updated+total, buffer, res);
+                response = updated;
+
                 total += res;
             }
             else if (res == 0)
@@ -274,7 +289,7 @@ connector_call(const char **commands, bool quiet)
                 log_perror("nyx: recv");
                 done = true;
             }
-        } while (!done && total + 1 < size);
+        } while (!done);
 
     }
 
@@ -282,9 +297,12 @@ connector_call(const char **commands, bool quiet)
 
     if (retcode == NYX_SUCCESS)
     {
-        if (!handle_response(buffer, total, quiet))
+        if (!handle_response(response, total, quiet))
             retcode = NYX_COMMAND_FAILED;
     }
+
+    if (response != NULL)
+        free(response);
 
     return retcode;
 }
