@@ -142,6 +142,9 @@ test_substitute_env_string(UNUSED void **state)
     test_env("${PATH}:/foo/bar");
     test_env("$HOME/some/where");
     test_env("~/some/where");
+
+    test_env("foo bar test");
+    test_env("$HOME bar '$HOME' $USER");
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

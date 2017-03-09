@@ -18,6 +18,7 @@
 #include "def.h"
 #include "list.h"
 #include "log.h"
+#include "strbuf.h"
 #include "utils.h"
 
 #include <ctype.h>
@@ -331,6 +332,35 @@ parse_command_string(const char *str)
     return strings_to_null_terminated(parts);
 }
 
+static char *
+join_strings(char **parts)
+{
+    char **part = parts;
+
+    if (!part)
+        return NULL;
+
+    strbuf_t *buffer = strbuf_new();
+
+    while (*part)
+    {
+        /* prepend space if necessary */
+        if (part != parts)
+            strbuf_append(buffer, " %s", *part);
+        else
+            strbuf_append(buffer, "%s", *part);
+
+        part++;
+    }
+
+    char *result = buffer->length > 0
+        ? strdup(buffer->buf)
+        : NULL;
+
+    strbuf_free(buffer);
+    return result;
+}
+
 bool
 substitute_env_string(const char *input, char **output)
 {
@@ -347,7 +377,7 @@ substitute_env_string(const char *input, char **output)
         // success
         case 0:
             if (subst.we_wordc > 0)
-                *output = strdup(subst.we_wordv[0]);
+                *output = join_strings(subst.we_wordv);
             wordfree(&subst);
             success = true;
             break;
