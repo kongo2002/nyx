@@ -225,12 +225,36 @@ nyx_proc_remove(nyx_proc_t *proc, pid_t pid)
     }
 }
 
+static bool
+nyx_proc_exists(nyx_proc_t *proc, pid_t pid)
+{
+    if (!proc->processes)
+        return false;
+
+    list_node_t *node = proc->processes->head;
+
+    while (node)
+    {
+        proc_stat_t *stat = node->data;
+
+        if (stat->pid == pid)
+            return true;
+
+        node = node->next;
+    }
+
+    return false;
+}
+
 void
 nyx_proc_add(nyx_proc_t *proc, pid_t pid, watch_t *watch)
 {
-    proc_stat_t *stat = proc_stat_new(pid, watch->name, watch);
+    if (!nyx_proc_exists(proc, pid))
+    {
+        proc_stat_t *stat = proc_stat_new(pid, watch->name, watch);
 
-    list_add(proc->processes, stat);
+        list_add(proc->processes, stat);
+    }
 }
 
 void

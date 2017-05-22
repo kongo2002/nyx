@@ -559,6 +559,17 @@ handle_proc_event(proc_event_e event, proc_stat_t *proc, void *data)
 
                 return true;
             }
+
+            /* if the watch's state is STOPPED there is not need to
+             * interfere with proc check reactions */
+            if (newest->value == STATE_STOPPED)
+            {
+                log_debug("Ignoring process event %d of process '%s' "
+                    "because the latest state is stopped anyways",
+                    event, proc->name);
+
+                return true;
+            }
         }
 
         set_state(state, STATE_RESTARTING);
