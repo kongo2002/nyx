@@ -44,8 +44,8 @@ exactly what I am looking for:
   *huge* with *a lot* of functionality that has to be incorporated in a messy
   configuration format: like *INI*
 
-* *init systems like systemd*: obviously too much! Often a full blown init
-  system is just too much although some functionalties do overlap.
+* [systemd][systemd] (and other init systems): obviously too much! Often a full
+  blown init system is just too much although some functionalities do overlap.
 
 I wanted to have an application I can simply put on a machine that just works
 without much dependency or configuration hassle to keep a couple of services up
@@ -456,3 +456,4 @@ The project is written by Gregor Uhlenheuer. You can reach me at
 [yaml]: http://www.yaml.org/
 [docker]: https://www.docker.com/
 [supervisor]: http://supervisord.org/
+[systemd]: https://github.com/systemd/systemd/
