@@ -359,7 +359,7 @@ static transition_func_t transition_table[STATE_SIZE][STATE_SIZE] =
     { NULL }
 };
 
-state_t*
+static state_t*
 find_state_by_pid(list_t *states, pid_t pid)
 {
     if (states == NULL)

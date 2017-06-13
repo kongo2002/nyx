@@ -753,23 +753,29 @@ shutdown_proc(nyx_t *nyx)
 void
 clear_watches(nyx_t *nyx)
 {
-    if (nyx->state_map)
-    {
-        hash_destroy(nyx->state_map);
-        nyx->state_map = NULL;
-    }
+    /* these are the watches and states we are about to destroy */
+    hash_t *state_map = nyx->state_map;
+    hash_t *watches = nyx->watches;
+    list_t *states = nyx->states;
 
-    if (nyx->states)
-    {
-        list_destroy(nyx->states);
-        nyx->states = NULL;
-    }
+    /* nyx's internal structures are immediately reset
+     * so that the poll or event loops don't work on
+     * old state that is about to be cleared any moment */
+    nyx->state_map = NULL;
+    nyx->watches = NULL;
+    nyx->states = NULL;
 
-    if (nyx->watches)
-    {
-        hash_destroy(nyx->watches);
-        nyx->watches = NULL;
-    }
+    /* this is especially important because the state destruction
+     * might take a while to complete due to the
+     * graceful state thread termination */
+    if (state_map)
+        hash_destroy(state_map);
+
+    if (states)
+        list_destroy(states);
+
+    if (watches)
+        hash_destroy(watches);
 }
 
 #ifdef USE_PLUGINS
