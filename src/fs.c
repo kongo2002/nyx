@@ -190,10 +190,33 @@ dir_exists(const char *directory)
 }
 
 bool
+is_directory(const char *path)
+{
+    bool is_dir = false;
+    char *copy = strdup(prepare_dir(path));
+
+    if (copy == NULL)
+        log_critical_perror("nyx: strdup");
+
+    struct stat path_stat;
+    if (stat(copy, &path_stat) == 0)
+    {
+        is_dir = S_ISDIR(path_stat.st_mode);
+    }
+
+    free(copy);
+    return is_dir;
+}
+
+bool
 dir_writable(const char *directory)
 {
     bool writable = false;
     char *copy = strdup(prepare_dir(directory));
+
+    if (copy == NULL)
+        log_critical_perror("nyx: strdup");
+
     const char *dir = dirname(copy);
 
     if (dir_exists(dir))

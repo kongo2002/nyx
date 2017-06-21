@@ -20,6 +20,9 @@
 #include <sys/types.h>
 
 bool
+is_directory(const char *path);
+
+bool
 dir_writable(const char *directory);
 
 bool
