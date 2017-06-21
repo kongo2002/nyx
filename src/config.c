@@ -17,12 +17,14 @@
 
 #include "config.h"
 #include "def.h"
+#include "fs.h"
 #include "log.h"
 #include "hash.h"
 #include "nyx.h"
 #include "utils.h"
 #include "watch.h"
 
+#include <dirent.h>
 #include <string.h>
 
 #define SCALAR_HANDLER(name_, func_) \
@@ -299,9 +301,8 @@ uatoi(const char *str)
     { \
         watch_t *watch = data; \
         const char *value = get_scalar_value(event); \
-        if (value == NULL || watch == NULL) \
-            return NULL; \
-        watch->name_ = func_(value); \
+        if (value != NULL && watch != NULL) \
+            watch->name_ = func_(value); \
         info->handler[YAML_SCALAR_EVENT] = handle_watch_map_key; \
         return info; \
     }
@@ -574,10 +575,10 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
     key = get_scalar_value(event);
 
     /* empty key or not a scalar at all */
-    if (key == NULL || watch == NULL)
-        return NULL;
-
-    handler = get_handler_from_map(watch_value_map, key);
+    if (key != NULL && watch != NULL)
+    {
+        handler = get_handler_from_map(watch_value_map, key);
+    }
 
     if (handler == NULL)
     {
@@ -638,6 +639,12 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
     if (hash_get(info->nyx->watches, name) != NULL)
     {
         log_warn("Watch '%s' already exists", name);
+
+        reset_handlers(info);
+        info->handler[YAML_MAPPING_START_EVENT] = handle_watch_map;
+        info->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
+
+        info->data = NULL;
         return info;
     }
 
@@ -919,41 +926,23 @@ invalid_watch(void *watch)
     return !watch_validate((watch_t *)watch);
 }
 
-bool
-parse_config(nyx_t *nyx)
+static bool
+parse_config_file(nyx_t *nyx, FILE *cfg, const char *filename)
 {
     bool success = true;
-    FILE *cfg = NULL;
-    handler_func_t handler = NULL;
-    const char *config_file = nyx->options.config_file;
-
-    if (config_file == NULL)
-        return false;
-
     yaml_parser_t parser;
     yaml_event_t event;
-
-    /* read input file */
-    cfg = fopen(config_file, "r");
-    if (cfg == NULL)
-    {
-        log_perror("nyx: fopen");
-        return false;
-    }
+    handler_func_t handler = NULL;
 
     /* initialize yaml parser */
     if (!yaml_parser_initialize(&parser))
     {
-        log_warn("Failed to parse config file %s", config_file);
-        fclose(cfg);
+        log_warn("Failed to parse config file %s", filename);
         return false;
     }
 
     parse_info_t *info = parse_info_new(nyx);
     parse_info_t *new_info = NULL;
-
-    /* reset watch counter (not necessary though) */
-    watch_idx = 1;
 
     yaml_parser_set_input_file(&parser, cfg);
 
@@ -973,7 +962,7 @@ parse_config(nyx_t *nyx)
             new_info = handler(info, &event, info->data);
             if (new_info == NULL)
             {
-                log_warn("Invalid configuration '%s'", config_file);
+                log_warn("Invalid configuration '%s'", filename);
                 success = false;
                 break;
             }
@@ -991,6 +980,97 @@ parse_config(nyx_t *nyx)
     /* cleanup */
     yaml_parser_delete(&parser);
 
+    parse_info_destroy(info);
+    return success;
+}
+
+static bool
+is_yaml_file(const char *filename)
+{
+    if (filename == NULL || *filename == '\0')
+        return false;
+
+    char *last_dot = strrchr(filename, '.');
+
+    return last_dot &&
+        (!strncmp(last_dot, ".yml", 4) || !strncmp(last_dot, ".yaml", 5));
+}
+
+bool
+parse_config(nyx_t *nyx)
+{
+    bool success = false;
+    FILE *cfg = NULL;
+    const char *config_file = nyx->options.config_file;
+
+    if (config_file == NULL)
+        return false;
+
+    /* reset watch counter (not necessary though) */
+    watch_idx = 1;
+
+    /* let's determine if we got a single config file or
+     * a directory with multiple config files */
+    bool is_config_dir = is_directory(config_file);
+
+    if (is_config_dir)
+    {
+        /* TODO: prepare_dir */
+        size_t path_len = strlen(config_file);
+        DIR *config_dir = opendir(config_file);
+        if (config_dir == NULL)
+        {
+            log_perror("nyx: opendir");
+            return false;
+        }
+
+        struct dirent *entry = NULL;
+        while ((entry = readdir(config_dir)) != NULL)
+        {
+            const char *file_name = entry->d_name;
+
+            /* skip un-regular files */
+            if (entry->d_type != DT_REG)
+                continue;
+
+            /* skip non-yaml files */
+            if (!is_yaml_file(file_name))
+                continue;
+
+            size_t full_path_len = path_len + strlen(file_name) + 2;
+            char *file_path = xcalloc(full_path_len, sizeof(char));
+            snprintf(file_path, full_path_len, "%s/%s", config_file, file_name);
+
+            cfg = fopen(file_path, "r");
+            if (cfg == NULL)
+            {
+                log_warn("failed to load config file %s", file_path);
+            }
+            else
+            {
+                success = parse_config_file(nyx, cfg, file_path) || success;
+                fclose(cfg);
+            }
+
+            free(file_path);
+        }
+
+        closedir(config_dir);
+    }
+    else
+    {
+        /* read input file */
+        cfg = fopen(config_file, "r");
+        if (cfg == NULL)
+        {
+            log_perror("nyx: fopen");
+            return false;
+        }
+
+        success = parse_config_file(nyx, cfg, config_file);
+        fclose(cfg);
+    }
+
     if (env_key)
     {
         free((void *)env_key);
@@ -1005,8 +1085,6 @@ parse_config(nyx_t *nyx)
     }
 #endif
 
-    parse_info_destroy(info);
-    fclose(cfg);
 
     /* validate watches */
     uint32_t filtered = 0;
