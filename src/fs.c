@@ -105,6 +105,40 @@ static const char *pid_dir_defaults[] =
     NULL
 };
 
+static bool
+mkdir_p(const char *directory)
+{
+    char buffer[512] = {0};
+
+    if (directory == NULL || *directory == '\0')
+        return false;
+
+    snprintf(buffer, sizeof(buffer), "%s", directory);
+    size_t length = strlen(buffer);
+    size_t end = length - 1;
+
+    /* remove trailing slash if necessary */
+    if (buffer[end] == '/')
+        buffer[end] = '\0';
+
+    for (char *p = buffer + 1; *p; p++)
+    {
+        if (*p == '/')
+        {
+            *p = '\0';
+
+            if (mkdir(buffer, S_IRWXU) == -1 && errno != EEXIST)
+                return false;
+            *p = '/';
+        }
+    }
+
+    if (mkdir(buffer, S_IRWXU) == -1 && errno != EEXIST)
+        return false;
+
+    return true;
+}
+
 const char *
 determine_pid_dir(void)
 {
@@ -112,18 +146,27 @@ determine_pid_dir(void)
 
     while (*dir)
     {
+        const char *prepared = strdup(prepare_dir(*dir));
+
+        if (prepared == NULL)
+        {
+            log_critical_perror("nyx: strdup");
+        }
+
         /* check if the directory exists or can be created */
-        if (mkdir_p(*dir))
+        if (mkdir_p(prepared))
         {
             /* now we should be able to access it as well */
-            int32_t result = access(prepare_dir(*dir), W_OK);
+            int32_t result = access(prepared, W_OK);
 
             if (result == 0)
             {
-                log_debug("Using '%s' as nyx PID directory", *dir);
-                return *dir;
+                log_debug("Using '%s' as nyx PID directory", prepared);
+                return prepared;
             }
         }
+
+        free((void *)prepared);
 
         dir++;
     }
@@ -137,9 +180,8 @@ static char *
 get_pid_file(const char *pid_dir, const char *name)
 {
     char *buffer = xcalloc(512, sizeof(char));
-    const char *dir = prepare_dir(pid_dir);
 
-    snprintf(buffer, 511, "%s/%s", dir, name);
+    snprintf(buffer, 511, "%s/%s", pid_dir, name);
 
     return buffer;
 }
@@ -233,42 +275,6 @@ dir_writable(const char *directory)
     free(copy);
 
     return writable;
-}
-
-bool
-mkdir_p(const char *directory)
-{
-    char buffer[512] = {0};
-
-    if (directory == NULL || *directory == '\0')
-        return false;
-
-    const char *prepared_dir = prepare_dir(directory);
-
-    snprintf(buffer, sizeof(buffer), "%s", prepared_dir);
-    size_t length = strlen(buffer);
-    size_t end = length - 1;
-
-    /* remove trailing slash if necessary */
-    if (buffer[end] == '/')
-        buffer[end] = '\0';
-
-    for (char *p = buffer + 1; *p; p++)
-    {
-        if (*p == '/')
-        {
-            *p = '\0';
-
-            if (mkdir(buffer, S_IRWXU) == -1 && errno != EEXIST)
-                return false;
-            *p = '/';
-        }
-    }
-
-    if (mkdir(buffer, S_IRWXU) == -1 && errno != EEXIST)
-        return false;
-
-    return true;
 }
 
 /* vim: set et sw=4 sts=4 tw=80: */

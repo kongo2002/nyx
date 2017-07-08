@@ -28,9 +28,6 @@ dir_writable(const char *directory);
 bool
 dir_exists(const char *directory);
 
-bool
-mkdir_p(const char *directory);
-
 const char *
 determine_pid_dir(void);
 

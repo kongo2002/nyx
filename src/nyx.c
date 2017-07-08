@@ -926,6 +926,12 @@ nyx_destroy(nyx_t *nyx)
     if (nyx->is_daemon)
         clear_pid("nyx", nyx);
 
+    if (nyx->pid_dir)
+    {
+        free((void *)nyx->pid_dir);
+        nyx->pid_dir = NULL;
+    }
+
     free(nyx);
 }
 

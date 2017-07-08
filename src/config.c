@@ -1015,7 +1015,6 @@ parse_config(nyx_t *nyx)
 
     if (is_config_dir)
     {
-        /* TODO: prepare_dir */
         size_t path_len = strlen(config_file);
         DIR *config_dir = opendir(config_file);
         if (config_dir == NULL)

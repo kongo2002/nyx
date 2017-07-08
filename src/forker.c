@@ -161,7 +161,7 @@ spawn_exec(watch_t *watch, bool start)
 
     const char **args = start ? watch->start : watch->stop;
     const char *executable = *args;
-    const char *dir = dir_exists(watch->dir) ? watch->dir : "/";
+    const char *dir = (watch->dir == NULL || *watch->dir == '\0') ? "/" : watch->dir;
 
     /* determine user and group */
     if (watch->uid)
