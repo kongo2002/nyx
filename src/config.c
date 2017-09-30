@@ -993,7 +993,7 @@ is_yaml_file(const char *filename)
     char *last_dot = strrchr(filename, '.');
 
     return last_dot &&
-        (!strncmp(last_dot, ".yml", 4) || !strncmp(last_dot, ".yaml", 5));
+        (!strncasecmp(last_dot, ".yml", 4) || !strncasecmp(last_dot, ".yaml", 5));
 }
 
 bool
