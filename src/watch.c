@@ -193,7 +193,11 @@ watch_validate(watch_t *watch)
 void
 watch_dump(watch_t *watch)
 {
+#ifndef NDEBUG
     log_info("Watch '%s' [%d]", watch->name, watch->id);
+#else
+    log_info("Watch '%s'", watch->name);
+#endif
 
     dump_strings("start", watch->start);
     dump_strings("stop", watch->stop);
