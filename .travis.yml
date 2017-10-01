@@ -2,8 +2,7 @@ language: c
 
 compiler:
     - gcc
-# TODO: cmocka install fails with latest clang
-#   - clang
+    - clang
 
 env:
     - DEBUG=1 PLUGINS=1 SSL=1
