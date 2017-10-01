@@ -34,11 +34,10 @@ is_all(const char *name)
 }
 
 watch_t *
-watch_new(const char *name, int32_t id)
+watch_new(const char *name)
 {
     watch_t *watch = xcalloc(1, sizeof(watch_t));
 
-    watch->id = id;
     watch->name = name;
 
     /* default to port 80 for HTTP check */
@@ -194,7 +193,7 @@ watch_validate(watch_t *watch)
 void
 watch_dump(watch_t *watch)
 {
-    log_info("Watch '%s'", watch->name);
+    log_info("Watch '%s' [%d]", watch->name, watch->id);
 
     dump_strings("start", watch->start);
     dump_strings("stop", watch->stop);

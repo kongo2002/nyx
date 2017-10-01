@@ -489,7 +489,7 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
         if (adhoc_watch)
         {
             const char *adhoc_name = strdup("__run__");
-            watch_t *adhoc = watch_new(adhoc_name, 1);
+            watch_t *adhoc = watch_new(adhoc_name);
             adhoc->start = adhoc_watch;
 
             nyx->watches = hash_new(_watch_destroy);

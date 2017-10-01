@@ -45,7 +45,7 @@ bool
 is_all(const char* name);
 
 watch_t *
-watch_new(const char *name, int32_t id);
+watch_new(const char *name);
 
 void
 watch_dump(watch_t *watch);

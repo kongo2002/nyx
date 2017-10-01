@@ -333,7 +333,6 @@ DECLARE_WATCH_STR_FUNC(startup_delay, uatoi)
 #undef DECLARE_WATCH_STR_LIST_VALUE
 #undef DECLARE_WATCH_STR_FUNC
 
-static int32_t watch_idx = 1;
 static const char *env_key = NULL;
 
 static parse_info_t *
@@ -649,7 +648,7 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
     }
 
     const char *w_name = strdup(name);
-    watch_t *watch = watch_new(w_name, watch_idx++);
+    watch_t *watch = watch_new(w_name);
 
     hash_add(info->nyx->watches, w_name, watch);
 
@@ -996,6 +995,50 @@ is_yaml_file(const char *filename)
         (!strncasecmp(last_dot, ".yml", 4) || !strncasecmp(last_dot, ".yaml", 5));
 }
 
+static int32_t
+compare_watch_name(const void *p1, const void *p2)
+{
+    watch_t *watch1 = *(watch_t **) p1;
+    watch_t *watch2 = *(watch_t **) p2;
+
+    return strcmp(watch1->name, watch2->name);
+}
+
+static void
+reindex_watches(hash_t *watches)
+{
+    uint32_t num_watches = hash_count(watches);
+
+    /* create array of watches to sort */
+    watch_t **ordered_watches = xcalloc(num_watches, sizeof(watch_t *));
+
+    uint32_t idx = 0;
+    const char *key = NULL;
+    void *data = NULL;
+    hash_iter_t *iter = hash_iter_start(watches);
+
+    /* fill watch array with actual pointers */
+    while (hash_iter(iter, &key, &data))
+    {
+        watch_t *watch = data;
+        ordered_watches[idx++] = watch;
+    }
+
+    free(iter);
+
+    /* sort watch array by watches' names */
+    qsort(ordered_watches, num_watches, sizeof(watch_t *), compare_watch_name);
+
+    /* now that we sorted the array we can assign the watches' ids
+     * relative to their respective position in the sorted array */
+    for (idx = 0; idx < num_watches; idx++)
+    {
+        ordered_watches[idx]->id = idx + 1;
+    }
+
+    free(ordered_watches);
+}
+
 bool
 parse_config(nyx_t *nyx)
 {
@@ -1005,9 +1048,6 @@ parse_config(nyx_t *nyx)
 
     if (config_file == NULL)
         return false;
-
-    /* reset watch counter (not necessary though) */
-    watch_idx = 1;
 
     /* let's determine if we got a single config file or
      * a directory with multiple config files */
@@ -1102,6 +1142,8 @@ parse_config(nyx_t *nyx)
     if (success)
     {
         log_info("Found %d watch definitions", valid_watches);
+
+        reindex_watches(nyx->watches);
 
         const char *key = NULL;
         void *data = NULL;
