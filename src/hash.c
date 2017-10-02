@@ -285,6 +285,10 @@ hash_remove(hash_t *hash, const char *key)
     if (pair == NULL)
         return false;
 
+    /* free key and value memory */
+    free((char *)pair->key);
+    hash->free_value(pair->data);
+
     hash->count--;
     bucket->count--;
 
