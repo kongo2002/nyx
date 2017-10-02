@@ -67,6 +67,12 @@ static parse_info_t *
 handle_scalar_value(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 
 static parse_info_t *
+handle_unknown_sequence(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data);
+
+static parse_info_t *
+handle_sequence_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data);
+
+static parse_info_t *
 handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data);
 
 static parse_info_t *
@@ -191,6 +197,13 @@ handle_scalar_value(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 }
 
 static parse_info_t *
+noop(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    /* no op */
+    return info;
+}
+
+static parse_info_t *
 handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 {
     const char *key;
@@ -214,6 +227,8 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 
         info->handler[YAML_SCALAR_EVENT] = handle_scalar_value;
         info->handler[YAML_MAPPING_START_EVENT] = handle_mapping;
+        info->handler[YAML_SEQUENCE_START_EVENT] = handle_unknown_sequence;
+        info->handler[YAML_SEQUENCE_END_EVENT] = handle_sequence_end;
     }
     else
     {
@@ -231,17 +246,31 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 }
 
 static parse_info_t *
+apply_jumpback_handlers(parse_info_t *parent)
+{
+    /* as soon as any mapping/sequence (known or unknown) ends
+     * the next scalar value has to be a key */
+    parent->handler[YAML_SCALAR_EVENT] = handle_scalar_key;
+
+    /* if given we populate the handlers with the functions
+     * specified in the jumpback table */
+    for (int32_t i = 0; i < PARSE_HANDLER_SIZE; i++)
+    {
+        if (parent->jumpback[i])
+            parent->handler[i] = parent->jumpback[i];
+    }
+
+    return parent;
+}
+
+static parse_info_t *
 handle_mapping_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
     log_debug("handle_mapping: end");
 
     parse_info_t *parent = parser_up(info, event, data);
 
-    /* as soon as any mapping (known or unknown) ends
-     * the next scalar value has to be a key */
-    parent->handler[YAML_SCALAR_EVENT] = handle_scalar_key;
-
-    return parent;
+    return apply_jumpback_handlers(parent);
 }
 
 static parse_info_t *
@@ -556,11 +585,61 @@ static struct config_parser_map watch_value_map[] =
 };
 
 static parse_info_t *
-unknown_watch_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+handle_unknown_watch_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    /* no op */
+    log_debug("handle_unknown_watch_key");
+
+    info->handler[YAML_SCALAR_EVENT] = handle_watch_map_key;
+
     return info;
 }
+
+static parse_info_t *
+handle_sequence_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    log_debug("handle_sequence_end");
+
+    parse_info_t *parent = parser_up(info, event, data);
+
+    return apply_jumpback_handlers(parent);
+}
+
+static parse_info_t *
+handle_unknown_map(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    log_debug("handle_unknown_map");
+
+    parse_info_t *new = parse_info_new_child(info);
+
+    new->handler[YAML_MAPPING_START_EVENT] = handle_unknown_map;
+    new->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
+
+    new->handler[YAML_SEQUENCE_START_EVENT] = handle_unknown_sequence;
+    new->handler[YAML_SEQUENCE_END_EVENT] = handle_sequence_end;
+
+    new->handler[YAML_SCALAR_EVENT] = noop;
+
+    return new;
+}
+
+static parse_info_t *
+handle_unknown_sequence(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
+{
+    log_debug("handle_unknown_sequence");
+
+    parse_info_t *new = parse_info_new_child(info);
+
+    new->handler[YAML_MAPPING_START_EVENT] = handle_unknown_map;
+    new->handler[YAML_MAPPING_END_EVENT] = handle_mapping_end;
+
+    new->handler[YAML_SEQUENCE_START_EVENT] = handle_unknown_sequence;
+    new->handler[YAML_SEQUENCE_END_EVENT] = handle_sequence_end;
+
+    new->handler[YAML_SCALAR_EVENT] = noop;
+
+    return new;
+}
+
 
 static parse_info_t *
 handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
@@ -581,9 +660,14 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
 
     if (handler == NULL)
     {
-        info->handler[YAML_SCALAR_EVENT] = unknown_watch_key;
-        info->handler[YAML_MAPPING_START_EVENT] = unknown_watch_key;
-        info->handler[YAML_SEQUENCE_START_EVENT] = unknown_watch_key;
+        log_warn("unknown watch key: %s", key);
+
+        info->handler[YAML_SCALAR_EVENT] = handle_unknown_watch_key;
+        info->handler[YAML_MAPPING_START_EVENT] = handle_unknown_map;
+        info->handler[YAML_SEQUENCE_START_EVENT] = handle_unknown_sequence;
+        info->handler[YAML_SEQUENCE_END_EVENT] = handle_sequence_end;
+
+        info->jumpback[YAML_SCALAR_EVENT] = handle_watch_map_key;
     }
     else
     {
@@ -741,7 +825,7 @@ handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 
     if (handler == NULL)
     {
-        log_warn("Unknown nyx config key: '%s'", key);
+        log_warn("unknown nyx config key: '%s'", key);
 
         info->handler[YAML_SCALAR_EVENT] = unknown_nyx_key;
         info->handler[YAML_MAPPING_START_EVENT] = unknown_nyx_key;

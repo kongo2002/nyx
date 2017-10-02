@@ -32,6 +32,9 @@ struct parse_info_t
     /** array of handler functions */
     handler_func_t handler[PARSE_HANDLER_SIZE];
 
+    /** array of optional jumpback functions */
+    handler_func_t jumpback[PARSE_HANDLER_SIZE];
+
     /** main application data */
     nyx_t *nyx;
 
