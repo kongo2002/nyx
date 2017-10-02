@@ -335,7 +335,7 @@ initialize_daemon(nyx_t *nyx)
     nyx->state_map = hash_new(NULL);
 
     /* parse config (if specified) */
-    if (nyx->options.config_file && !parse_config(nyx))
+    if (nyx->options.config_file && !parse_config(nyx, false))
         return NYX_INVALID_CONFIG;
 
     /* nyx should run as a daemon process */
@@ -836,7 +836,7 @@ nyx_reload(nyx_t *nyx)
     nyx->states = list_new(_state_destroy);
     nyx->state_map = hash_new(NULL);
 
-    if (parse_config(nyx))
+    if (parse_config(nyx, false))
     {
         /* at this point we have to notify the forker thread
          * to reload its config as well otherwise it will still

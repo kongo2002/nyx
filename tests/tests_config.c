@@ -39,7 +39,7 @@ parse_config_file(const char *name)
 
     snprintf(path, LEN(path)-1, "./tests/scripts/configs/%s.yaml", name);
 
-    bool success = parse_config(nyx);
+    bool success = parse_config(nyx, false);
 
     nyx_destroy(nyx);
 

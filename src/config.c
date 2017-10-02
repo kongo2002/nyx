@@ -87,6 +87,14 @@ handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data);
 static parse_info_t *
 handle_watch_http_check_key(parse_info_t *info, yaml_event_t *event, void *data);
 
+/* logging wrapper functions */
+
+#define clog_debug(info, ...) \
+    if (info && !info->silent) { log_debug(__VA_ARGS__); }
+
+#define clog_warn(info, ...) \
+    if (info && !info->silent) { log_warn(__VA_ARGS__); }
+
 static struct watch_info *
 watch_info_new(watch_t *watch, struct config_parser_map *map)
 {
@@ -99,11 +107,11 @@ watch_info_new(watch_t *watch, struct config_parser_map *map)
 }
 
 static bool
-check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
+check_event_type(parse_info_t *info, yaml_event_t *event, yaml_event_type_t event_type)
 {
     if (event->type != event_type)
     {
-        log_debug("Expecting '%s', but found '%s'",
+        clog_debug(info, "Expecting '%s', but found '%s'",
                 yaml_event_names[event_type],
                 yaml_event_names[event->type]);
         return false;
@@ -113,9 +121,9 @@ check_event_type(yaml_event_t *event, yaml_event_type_t event_type)
 }
 
 static const char *
-get_scalar_value(yaml_event_t *event)
+get_scalar_value(parse_info_t *info, yaml_event_t *event)
 {
-    if (!check_event_type(event, YAML_SCALAR_EVENT))
+    if (!check_event_type(info, event, YAML_SCALAR_EVENT))
         return NULL;
 
     return (char *)event->data.scalar.value;
@@ -149,7 +157,7 @@ parser_up(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
     if (info->parent == NULL)
     {
-        log_debug("topmost parser without parent - invalid config [%s]",
+        clog_debug(info, "topmost parser without parent - invalid config [%s]",
                 yaml_event_names[event->type]);
         return NULL;
     }
@@ -163,7 +171,7 @@ parser_up(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 static parse_info_t *
 handle_stream_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_stream: end");
+    clog_debug(info, "handle_stream: end");
 
     return info;
 }
@@ -171,7 +179,7 @@ handle_stream_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *d
 static parse_info_t *
 handle_document_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_document: end");
+    clog_debug(info, "handle_document: end");
 
     reset_handlers(info);
     info->handler[YAML_STREAM_END_EVENT] = handle_stream_end;
@@ -184,12 +192,12 @@ handle_scalar_value(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
     if (event->type != YAML_SCALAR_EVENT)
     {
-        log_debug("Expecting scalar value, but found '%s'",
+        clog_debug(info, "Expecting scalar value, but found '%s'",
                 yaml_event_names[event->type]);
         return NULL;
     }
 
-    log_debug("handle_scalar_value: '%s'", event->data.scalar.value);
+    clog_debug(info, "handle_scalar_value: '%s'", event->data.scalar.value);
 
     info->handler[YAML_SCALAR_EVENT] = handle_scalar_key;
 
@@ -209,7 +217,7 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
     const char *key;
     handler_func_t *handler = NULL;
 
-    key = get_scalar_value(event);
+    key = get_scalar_value(info, event);
 
     if (key == NULL)
         return NULL;
@@ -223,7 +231,7 @@ handle_scalar_key(parse_info_t *info, yaml_event_t *event, void *data)
 
     if (handler == NULL)
     {
-        log_warn("Unknown config key '%s'", key);
+        clog_warn(info, "unknown config key '%s'", key);
 
         info->handler[YAML_SCALAR_EVENT] = handle_scalar_value;
         info->handler[YAML_MAPPING_START_EVENT] = handle_mapping;
@@ -266,7 +274,7 @@ apply_jumpback_handlers(parse_info_t *parent)
 static parse_info_t *
 handle_mapping_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    log_debug("handle_mapping: end");
+    clog_debug(info, "handle_mapping: end");
 
     parse_info_t *parent = parser_up(info, event, data);
 
@@ -276,7 +284,7 @@ handle_mapping_end(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_mapping(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_mapping: start");
+    clog_debug(info, "handle_mapping: start");
 
     parse_info_t *new = parse_info_new_child(info);
 
@@ -289,7 +297,7 @@ handle_mapping(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
 static parse_info_t *
 handle_document(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_document: start");
+    clog_debug(info, "handle_document: start");
 
     reset_handlers(info);
     info->handler[YAML_MAPPING_START_EVENT] = handle_mapping;
@@ -301,7 +309,7 @@ handle_document(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *dat
 static parse_info_t *
 handle_stream(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_stream: start");
+    clog_debug(info, "handle_stream: start");
 
     reset_handlers(info);
     info->handler[YAML_DOCUMENT_START_EVENT] = handle_document;
@@ -329,7 +337,7 @@ uatoi(const char *str)
     handle_watch_map_value_##name_(parse_info_t *info, yaml_event_t *event, void *data) \
     { \
         watch_t *watch = data; \
-        const char *value = get_scalar_value(event); \
+        const char *value = get_scalar_value(info, event); \
         if (value != NULL && watch != NULL) \
             watch->name_ = func_(value); \
         info->handler[YAML_SCALAR_EVENT] = handle_watch_map_key; \
@@ -367,9 +375,9 @@ static const char *env_key = NULL;
 static parse_info_t *
 handle_watch_env_value(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    const char *env_value = get_scalar_value(event);
+    const char *env_value = get_scalar_value(info, event);
 
-    log_debug("Environment variable value: %s", env_value);
+    clog_debug(info, "Environment variable value: %s", env_value);
 
     watch_t *watch = data;
 
@@ -399,9 +407,9 @@ handle_watch_env_value(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_watch_env_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
-    const char *new_env_key = get_scalar_value(event);
+    const char *new_env_key = get_scalar_value(info, event);
 
-    log_debug("Environment variable key: %s", new_env_key);
+    clog_debug(info, "Environment variable key: %s", new_env_key);
 
     env_key = strdup(new_env_key);
 
@@ -423,7 +431,7 @@ handle_watch_env_end(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
 {
-    log_debug("handle_watch_env");
+    clog_debug(info, "handle_watch_env");
 
     parse_info_t *new_info = parse_info_new_child(info);
     watch_t *watch = data;
@@ -440,9 +448,9 @@ handle_watch_env(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
 static parse_info_t *
 handle_watch_http_check_key(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    const char *key = get_scalar_value(event);
+    const char *key = get_scalar_value(info, event);
 
-    log_debug("handle_watch_http_check_key: '%s'", key);
+    clog_debug(info, "handle_watch_http_check_key: '%s'", key);
 
     struct watch_info *winfo = data;
 
@@ -459,7 +467,7 @@ handle_watch_http_check_key(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_watch_http_check_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    log_debug("handle_watch_http_check_end");
+    clog_debug(info, "handle_watch_http_check_end");
 
     struct watch_info *winfo = data;
 
@@ -481,7 +489,7 @@ handle_watch_http_check_end(parse_info_t *info, yaml_event_t *event, void *data)
     handle_watch_##name_(parse_info_t *info, yaml_event_t *event, void *data) \
     { \
         struct watch_info *winfo = data; \
-        const char *value = get_scalar_value(event); \
+        const char *value = get_scalar_value(info, event); \
         if (value == NULL) \
             return NULL; \
         winfo->watch->name_ = func_(value); \
@@ -506,7 +514,7 @@ static struct config_parser_map http_check_map[] =
 static parse_info_t *
 handle_watch_http_check_map(parse_info_t *info, UNUSED yaml_event_t *event, void *data)
 {
-    log_debug("handle_watch_http_check_map");
+    clog_debug(info, "handle_watch_http_check_map");
 
     parse_info_t *new_info = parse_info_new_child(info);
 
@@ -521,9 +529,9 @@ handle_watch_http_check_map(parse_info_t *info, UNUSED yaml_event_t *event, void
 static parse_info_t *
 handle_watch_string(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    log_debug("handle_watch_string");
+    clog_debug(info, "handle_watch_string");
 
-    const char *value = get_scalar_value(event);
+    const char *value = get_scalar_value(info, event);
     list_t *list = data;
 
     if (list == NULL || value == NULL)
@@ -587,7 +595,7 @@ static struct config_parser_map watch_value_map[] =
 static parse_info_t *
 handle_unknown_watch_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_unknown_watch_key");
+    clog_debug(info, "handle_unknown_watch_key");
 
     info->handler[YAML_SCALAR_EVENT] = handle_watch_map_key;
 
@@ -597,7 +605,7 @@ handle_unknown_watch_key(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED 
 static parse_info_t *
 handle_sequence_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_sequence_end");
+    clog_debug(info, "handle_sequence_end");
 
     parse_info_t *parent = parser_up(info, event, data);
 
@@ -607,7 +615,7 @@ handle_sequence_end(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void 
 static parse_info_t *
 handle_unknown_map(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_unknown_map");
+    clog_debug(info, "handle_unknown_map");
 
     parse_info_t *new = parse_info_new_child(info);
 
@@ -625,7 +633,7 @@ handle_unknown_map(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *
 static parse_info_t *
 handle_unknown_sequence(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_unknown_sequence");
+    clog_debug(info, "handle_unknown_sequence");
 
     parse_info_t *new = parse_info_new_child(info);
 
@@ -648,9 +656,9 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
     watch_t *watch = data;
     handler_func_t *handler = NULL;
 
-    log_debug("handle_watch_map_key");
+    clog_debug(info, "handle_watch_map_key");
 
-    key = get_scalar_value(event);
+    key = get_scalar_value(info, event);
 
     /* empty key or not a scalar at all */
     if (key != NULL && watch != NULL)
@@ -660,7 +668,7 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
 
     if (handler == NULL)
     {
-        log_warn("unknown watch key: %s", key);
+        clog_warn(info, "unknown watch key: %s", key);
 
         info->handler[YAML_SCALAR_EVENT] = handle_unknown_watch_key;
         info->handler[YAML_MAPPING_START_EVENT] = handle_unknown_map;
@@ -682,7 +690,7 @@ handle_watch_map_key(parse_info_t *info, yaml_event_t *event, void *data)
 static parse_info_t *
 handle_watch_map_end(parse_info_t *info, yaml_event_t *event, void *data)
 {
-    log_debug("handle_watch_map_end");
+    clog_debug(info, "handle_watch_map_end");
 
     parse_info_t *parent = parser_up(info, event, data);
 
@@ -698,7 +706,7 @@ handle_watch_map(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *da
 {
     parse_info_t *new = NULL;
 
-    log_debug("handle_watch_map");
+    clog_debug(info, "handle_watch_map");
 
     new = parse_info_new_child(info);
 
@@ -711,9 +719,9 @@ handle_watch_map(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *da
 static parse_info_t *
 handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle watch");
+    clog_debug(info, "handle watch");
 
-    const char *name = get_scalar_value(event);
+    const char *name = get_scalar_value(info, event);
 
     if (name == NULL)
         return NULL;
@@ -721,7 +729,7 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
     /* does this watch already exist? */
     if (hash_get(info->nyx->watches, name) != NULL)
     {
-        log_warn("Watch '%s' already exists", name);
+        clog_warn(info, "Watch '%s' already exists", name);
 
         reset_handlers(info);
         info->handler[YAML_MAPPING_START_EVENT] = handle_watch_map;
@@ -748,7 +756,7 @@ handle_watch(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 static parse_info_t *
 handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle watches");
+    clog_debug(info, "handle watches");
 
     parse_info_t *new_info = parse_info_new_child(info);
 
@@ -764,7 +772,7 @@ handle_watches(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data
     handle_nyx_value_##name_(parse_info_t *info, yaml_event_t *event, UNUSED void *data) \
     { \
         nyx_t *nyx = info->nyx; \
-        const char *value = get_scalar_value(event); \
+        const char *value = get_scalar_value(info, event); \
         if (value == NULL) \
             return NULL; \
         nyx->options.name_ = func_(value); \
@@ -813,9 +821,9 @@ handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
     const char *key;
     handler_func_t *handler = NULL;
 
-    log_debug("handle_nyx_key");
+    clog_debug(info, "handle_nyx_key");
 
-    key = get_scalar_value(event);
+    key = get_scalar_value(info, event);
 
     /* empty key or not a scalar at all */
     if (key == NULL)
@@ -825,7 +833,7 @@ handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 
     if (handler == NULL)
     {
-        log_warn("unknown nyx config key: '%s'", key);
+        clog_warn(info, "unknown nyx config key: '%s'", key);
 
         info->handler[YAML_SCALAR_EVENT] = unknown_nyx_key;
         info->handler[YAML_MAPPING_START_EVENT] = unknown_nyx_key;
@@ -844,7 +852,7 @@ handle_nyx_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 static parse_info_t *
 handle_nyx(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_nyx");
+    clog_debug(info, "handle_nyx");
 
     parse_info_t *new_info = parse_info_new_child(info);
 
@@ -867,9 +875,9 @@ handle_plugins_value(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
     const char *value = NULL;
 
-    log_debug("handle_plugins_value");
+    clog_debug(info, "handle_plugins_value");
 
-    value = get_scalar_value(event);
+    value = get_scalar_value(info, event);
 
     if (value && plugin_key)
     {
@@ -891,9 +899,9 @@ handle_plugins_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 {
     const char *key;
 
-    log_debug("handle_plugins_key");
+    clog_debug(info, "handle_plugins_key");
 
-    key = get_scalar_value(event);
+    key = get_scalar_value(info, event);
 
     if (key == NULL)
         return NULL;
@@ -908,7 +916,7 @@ handle_plugins_key(parse_info_t *info, yaml_event_t *event, UNUSED void *data)
 static parse_info_t *
 handle_plugins(parse_info_t *info, UNUSED yaml_event_t *event, UNUSED void *data)
 {
-    log_debug("handle_plugins");
+    clog_debug(info, "handle_plugins");
 
     if (info->nyx->options.plugin_config == NULL)
         info->nyx->options.plugin_config = hash_new(free);
@@ -938,13 +946,14 @@ static struct config_parser_map root_map[] =
 #undef HANDLERS
 
 parse_info_t *
-parse_info_new(nyx_t *nyx)
+parse_info_new(nyx_t *nyx, bool silent)
 {
     parse_info_t *info = xcalloc(1, sizeof(parse_info_t));
 
     info->nyx = nyx;
     info->handler[YAML_STREAM_START_EVENT] = handle_stream;
     info->data = &root_map;
+    info->silent = silent;
 
     return info;
 }
@@ -956,6 +965,7 @@ parse_info_new_child(parse_info_t *parent)
 
     info->nyx = parent->nyx;
     info->parent = parent;
+    info->silent = parent->silent;
 
     /* migrate data to child if given */
     info->data = parent->data;
@@ -978,20 +988,20 @@ parse_info_destroy(parse_info_t *info)
 }
 
 static void
-unexpected_element(yaml_event_t *event)
+unexpected_element(parse_info_t *info, yaml_event_t *event)
 {
     const char *type = yaml_event_names[event->type];
 
     if (event->start_mark.column > 0)
     {
-        log_warn("Unexpected element '%s' [line %zu, col %zu]",
+        clog_warn(info, "Unexpected element '%s' [line %zu, col %zu]",
                 type,
                 event->start_mark.line,
                 event->start_mark.column);
     }
     else
     {
-        log_warn("Unexpected element '%s' [line %zu]",
+        clog_warn(info, "Unexpected element '%s' [line %zu]",
                 type,
                 event->start_mark.line);
     }
@@ -1010,7 +1020,7 @@ invalid_watch(void *watch)
 }
 
 static bool
-parse_config_file(nyx_t *nyx, FILE *cfg, const char *filename)
+parse_config_file(nyx_t *nyx, FILE *cfg, const char *filename, bool silent)
 {
     bool success = true;
     yaml_parser_t parser;
@@ -1020,11 +1030,12 @@ parse_config_file(nyx_t *nyx, FILE *cfg, const char *filename)
     /* initialize yaml parser */
     if (!yaml_parser_initialize(&parser))
     {
-        log_warn("Failed to parse config file %s", filename);
+        if (!silent)
+            log_warn("Failed to parse config file %s", filename);
         return false;
     }
 
-    parse_info_t *info = parse_info_new(nyx);
+    parse_info_t *info = parse_info_new(nyx, silent);
     parse_info_t *new_info = NULL;
 
     yaml_parser_set_input_file(&parser, cfg);
@@ -1034,9 +1045,10 @@ parse_config_file(nyx_t *nyx, FILE *cfg, const char *filename)
     {
         if (!yaml_parser_parse(&parser, &event))
         {
-           log_error("Parser error: %d", parser.error);
-           success = false;
-           break;
+            if (!silent)
+                log_error("Parser error: %d", parser.error);
+            success = false;
+            break;
         }
 
         handler = info->handler[event.type];
@@ -1045,7 +1057,8 @@ parse_config_file(nyx_t *nyx, FILE *cfg, const char *filename)
             new_info = handler(info, &event, info->data);
             if (new_info == NULL)
             {
-                log_warn("Invalid configuration '%s'", filename);
+                if (!silent)
+                    log_warn("Invalid configuration '%s'", filename);
                 success = false;
                 break;
             }
@@ -1053,7 +1066,7 @@ parse_config_file(nyx_t *nyx, FILE *cfg, const char *filename)
             info = new_info;
         }
         else
-            unexpected_element(&event);
+            unexpected_element(info, &event);
 
         if (event.type != YAML_STREAM_END_EVENT)
             yaml_event_delete(&event);
@@ -1124,7 +1137,7 @@ reindex_watches(hash_t *watches)
 }
 
 bool
-parse_config(nyx_t *nyx)
+parse_config(nyx_t *nyx, bool silent)
 {
     bool success = false;
     FILE *cfg = NULL;
@@ -1171,7 +1184,7 @@ parse_config(nyx_t *nyx)
             }
             else
             {
-                success = parse_config_file(nyx, cfg, file_path) || success;
+                success = parse_config_file(nyx, cfg, file_path, silent) || success;
                 fclose(cfg);
             }
 
@@ -1190,7 +1203,7 @@ parse_config(nyx_t *nyx)
             return false;
         }
 
-        success = parse_config_file(nyx, cfg, config_file);
+        success = parse_config_file(nyx, cfg, config_file, silent);
         fclose(cfg);
     }
 
@@ -1211,7 +1224,7 @@ parse_config(nyx_t *nyx)
 
     /* validate watches */
     uint32_t filtered = 0;
-    if ((filtered = hash_filter(nyx->watches, invalid_watch)) > 0)
+    if ((filtered = hash_filter(nyx->watches, invalid_watch)) > 0 && !silent)
     {
         log_warn("Found %d invalid watches", filtered);
     }
@@ -1219,13 +1232,15 @@ parse_config(nyx_t *nyx)
     uint32_t valid_watches = hash_count(nyx->watches);
     if (valid_watches < 1)
     {
-        log_error("No valid watches configured");
+        if (!silent)
+            log_error("No valid watches configured");
         return false;
     }
 
     if (success)
     {
-        log_info("Found %d watch definitions", valid_watches);
+        if (!silent)
+            log_info("Found %d watch definitions", valid_watches);
 
         reindex_watches(nyx->watches);
 

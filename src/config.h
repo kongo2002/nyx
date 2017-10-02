@@ -43,6 +43,9 @@ struct parse_info_t
 
     /** arbitrary data */
     void *data;
+
+    /** toggle silent parsing operation/output */
+    bool silent;
 };
 
 typedef enum
@@ -61,12 +64,12 @@ struct config_parser_map
 };
 
 parse_info_t *
-parse_info_new(nyx_t *nyx);
+parse_info_new(nyx_t *nyx, bool silent);
 
 parse_info_t *
 parse_info_new_child(parse_info_t *parent);
 
 bool
-parse_config(nyx_t *nyx);
+parse_config(nyx_t *nyx, bool silent);
 
 /* vim: set et sw=4 sts=4 tw=80: */

@@ -386,7 +386,7 @@ forker(nyx_t *nyx, int32_t pipe_fd)
             destroy_options(nyx);
             nyx->watches = hash_new(_watch_destroy);
 
-            if (parse_config(nyx))
+            if (parse_config(nyx, true))
             {
                 log_debug("forker: successfully reloaded config");
             }
