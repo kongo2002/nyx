@@ -1,0 +1,12 @@
+wrong:
+  tag: something
+watches:
+  watch:
+
+    unknown:
+      key:
+        values:
+          - one
+          - two
+
+    start: exec something

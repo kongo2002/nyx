@@ -34,6 +34,7 @@ main(UNUSED int argc, UNUSED char **argv)
         cmocka_unit_test(test_list_add),
         cmocka_unit_test(test_hash_create),
         cmocka_unit_test(test_hash_add),
+        cmocka_unit_test(test_hash_remove),
         cmocka_unit_test(test_timestack_create),
         cmocka_unit_test(test_timestack_add),
         cmocka_unit_test(test_proc_system_info),

@@ -61,6 +61,8 @@ IMPL_TEST_CONFIG_PARSE(5, "single05")
 IMPL_TEST_CONFIG_PARSE(6, "single06")
 IMPL_TEST_CONFIG_PARSE(7, "single07")
 IMPL_TEST_CONFIG_PARSE(8, "single08")
+IMPL_TEST_CONFIG_PARSE(9, "single09")
+IMPL_TEST_CONFIG_PARSE(10, "single10")
 
 void
 test_config_parse_files(UNUSED void **state)
@@ -74,7 +76,9 @@ test_config_parse_files(UNUSED void **state)
         cmocka_unit_test(test_config_parse_5),
         cmocka_unit_test(test_config_parse_6),
         cmocka_unit_test(test_config_parse_7),
-        cmocka_unit_test(test_config_parse_8)
+        cmocka_unit_test(test_config_parse_8),
+        cmocka_unit_test(test_config_parse_9),
+        cmocka_unit_test(test_config_parse_10)
     };
 
     assert_int_equal(0, cmocka_run_group_tests_name("config tests", tests, NULL, NULL));

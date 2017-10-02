@@ -21,4 +21,7 @@ test_hash_create(void **state);
 void
 test_hash_add(void **state);
 
+void
+test_hash_remove(void **state);
+
 /* vim: set et sw=4 sts=4 tw=80: */

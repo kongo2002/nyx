@@ -1,0 +1,9 @@
+watches:
+  watch:
+    start: exec something
+  watch:
+    unknown:
+      key:
+        values:
+          - one
+          - two

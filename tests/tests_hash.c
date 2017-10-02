@@ -48,7 +48,7 @@ test_hash_add(UNUSED void **state)
         char *value = strdup(buffer);
 
         sprintf(buffer, "key%u", i);
-        assert_int_equal(1, hash_add(hash, buffer, value));
+        assert_true(hash_add(hash, buffer, value));
     }
 
     assert_int_equal(size, hash_count(hash));
@@ -66,6 +66,44 @@ test_hash_add(UNUSED void **state)
 
     /* test for duplicate entries */
     assert_int_equal(0, hash_add(hash, "key0", "value0"));
+
+    hash_destroy(hash);
+}
+
+void
+test_hash_remove(UNUSED void **state)
+{
+    uint32_t size = 10;
+    char buffer[512] = {0};
+
+    hash_t *hash = hash_new(free);
+
+    assert_int_equal(0, hash_count(hash));
+
+    /* fill hash with some values */
+    for (uint32_t i = 0; i < size; i++)
+    {
+        sprintf(buffer, "value%u", i);
+        char *value = strdup(buffer);
+
+        sprintf(buffer, "key%u", i);
+        assert_true(hash_add(hash, buffer, value));
+    }
+
+    assert_int_equal(size, hash_count(hash));
+
+    /* remove two values */
+    assert_true(hash_remove(hash, "key2"));
+    assert_true(hash_remove(hash, "key4"));
+
+    /* check size */
+    assert_int_equal(size - 2, hash_count(hash));
+
+    /* check removal of non-existing keys */
+    assert_false(hash_remove(hash, "non-existing"));
+    assert_false(hash_remove(hash, "key2"));
+
+    assert_int_equal(size - 2, hash_count(hash));
 
     hash_destroy(hash);
 }
