@@ -311,10 +311,10 @@ time.
 
 #### Configuration directory
 
-You may also specify a directory with the `-c` for nyx to read multiple YAML
-files in the given directory. You must not rely on the order in which the files
-should be read. Meaning in order to prevent surprises do not configure duplicate
-config values or watches at all.
+You may also specify a directory with the `-c` switch for nyx to read multiple
+YAML files in the given folder. You must not rely on the order in which the
+files should be read. Meaning in order to prevent surprises do not configure
+duplicate config values or watches at all.
 
 This feature may be especially useful in automated/provisioned environments like
 [ansible][ansible] deployments for example.
