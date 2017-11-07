@@ -309,6 +309,22 @@ You must not use both ad-hoc executable *and* configuration file at the same
 time.
 
 
+#### Configuration directory
+
+You may also specify a directory with the `-c` for nyx to read multiple YAML
+files in the given directory. You must not rely on the order in which the files
+should be read. Meaning in order to prevent surprises do not configure duplicate
+config values or watches at all.
+
+This feature may be especially useful in automated/provisioned environments like
+[ansible][ansible] deployments for example.
+
+```bash
+# this way nyx will try to load all yaml files in '/etc/nyx.d'
+$ nyx -c /etc/nyx.d
+```
+
+
 ### Command interface
 
 You can interact with a running *nyx* daemon instance using the same executable:
@@ -317,7 +333,6 @@ You can interact with a running *nyx* daemon instance using the same executable:
 $ nyx version
 <<< version
 >>> 1.8.0
-
 ```
 
 Right now the following commands are implemented:
@@ -463,3 +478,4 @@ The project is written by Gregor Uhlenheuer. You can reach me at
 [docker]: https://www.docker.com/
 [supervisor]: http://supervisord.org/
 [systemd]: https://github.com/systemd/systemd/
+[ansible]: https://www.ansible.com/
