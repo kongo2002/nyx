@@ -154,7 +154,7 @@ read_pipe(int32_t fd)
 }
 
 static void
-spawn_exec(watch_t *watch, bool start)
+spawn_exec(watch_t *watch, bool start, bool proxy_output)
 {
     uid_t uid = 0;
     gid_t gid = 0;
@@ -226,11 +226,12 @@ spawn_exec(watch_t *watch, bool start)
         exit(EXIT_FAILURE);
     };
 
-    /* stdout */
-    close(STDOUT_FILENO);
+    /* STDOUT */
 
     if (start && watch->log_file)
     {
+        close(STDOUT_FILENO);
+
         if (open(watch->log_file,
                     O_RDWR | O_APPEND | O_CREAT,
                     S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) == -1)
@@ -240,8 +241,14 @@ spawn_exec(watch_t *watch, bool start)
             exit(EXIT_FAILURE);
         }
     }
+    else if (start && proxy_output)
+    {
+        /* in this case we want to keep stdout open as it is */
+    }
     else
     {
+        close(STDOUT_FILENO);
+
         if (open("/dev/null", O_WRONLY) == -1)
         {
             fprintf(stderr, "Failed to open /dev/null");
@@ -249,11 +256,12 @@ spawn_exec(watch_t *watch, bool start)
         }
     }
 
-    /* stderr */
-    close(STDERR_FILENO);
+    /* STDERR */
 
     if (start && watch->error_file)
     {
+        close(STDERR_FILENO);
+
         if (open(watch->error_file,
                     O_RDWR | O_APPEND | O_CREAT,
                     S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) == -1)
@@ -263,8 +271,14 @@ spawn_exec(watch_t *watch, bool start)
             exit(EXIT_FAILURE);
         }
     }
+    else if (start && proxy_output)
+    {
+        /* in this case we want to keep stderr open as it is */
+    }
     else
     {
+        close(STDERR_FILENO);
+
         if (open("/dev/null", O_RDWR) == -1)
         {
             fprintf(stdout, "Failed to open /dev/null");
@@ -294,7 +308,7 @@ spawn_stop(watch_t *watch)
 
     if (pid == 0)
     {
-        spawn_exec(watch, false);
+        spawn_exec(watch, false, false);
     }
 
     return pid;
@@ -305,6 +319,12 @@ spawn_start(nyx_t *nyx, watch_t *watch)
 {
     int32_t pipes[2] = {0};
     bool double_fork = !nyx->is_init;
+
+    /* In 'init-mode' and quiet output we will probably proxy
+     * the service's stdout/stderr instead.
+     * This will be the desired effect if using nyx as the
+     * docker entrypoint for example */
+    bool proxy_output = nyx->is_init && nyx->options.quiet;
 
     /* in case of a 'double-fork' we need some way to retrieve the
      * resulting process' pid */
@@ -328,7 +348,7 @@ spawn_start(nyx_t *nyx, watch_t *watch)
         if (!double_fork)
         {
             /* this call won't return */
-            spawn_exec(watch, true);
+            spawn_exec(watch, true, proxy_output);
         }
         /* otherwise we want to 'double fork' */
         else
@@ -341,7 +361,7 @@ spawn_start(nyx_t *nyx, watch_t *watch)
             if (inner_pid == 0)
             {
                 /* this call won't return */
-                spawn_exec(watch, true);
+                spawn_exec(watch, true, proxy_output);
             }
 
             /* close the read end before */
