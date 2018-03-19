@@ -127,6 +127,26 @@ handle_sigpipe(UNUSED int32_t signum)
 }
 
 /**
+ * @brief Callback to receive child termination signals
+ * @param signum signal number
+ */
+static void
+handle_child_stop(UNUSED int32_t signum)
+{
+    int32_t last_errno = errno;
+
+    log_debug("Received child stop signal - waiting for termination");
+
+    /* wait for all child processes */
+    while (waitpid(-1, NULL, WNOHANG) > 0)
+    {
+        /* do nothing */
+    }
+
+    errno = last_errno;
+}
+
+/**
  * @brief Setup the main program signal handlers
  * @param nyx               nyx instance
  * @param terminate_handler program termination handler callback
@@ -152,6 +172,13 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int32_t))
     /* register SIGPIPE handler */
     action.sa_handler = handle_sigpipe;
     sigaction(SIGPIPE, &action, NULL);
+
+    /* register SIGCHLD handler (if in init-mode) */
+    if (nyx->is_init)
+    {
+        action.sa_handler = handle_child_stop;
+        sigaction(SIGCHLD, &action, NULL);
+    }
 
     nyx->terminate_handler = terminate_handler;
 }
