@@ -292,7 +292,8 @@ handle_process_event(int32_t nl_sock, nyx_t *nyx, process_handler_t handler)
                     break;
                 }
 
-                int32_t pid = set_event_data(event_data, &(nlcn_msg.data).proc_ev);
+                int32_t pid = set_event_data(event_data,
+                        (struct proc_event *)(void *)&(nlcn_msg.data.proc_ev));
 
                 if (pid > 0)
                     handler(pid, event_data, nyx);
