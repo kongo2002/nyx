@@ -371,10 +371,45 @@ spawn_start(nyx_t *nyx, watch_t *watch)
     return pid;
 }
 
+/**
+ * @brief Callback to receive child termination signals
+ * @param signum signal number
+ */
+static void
+handle_child_stop(UNUSED int32_t signum)
+{
+    int32_t last_errno = errno;
+
+    log_debug("Received child stop signal - waiting for termination");
+
+    /* wait for all child processes */
+    while (waitpid(-1, NULL, WNOHANG) > 0)
+    {
+        /* do nothing */
+    }
+
+    errno = last_errno;
+}
+
 static void
 forker(nyx_t *nyx, int32_t pipe_fd)
 {
     fork_info_t info = {0, 0};
+
+    /* register SIGCHLD handler */
+    if (nyx->is_init)
+    {
+        log_debug("Running in init-mode - listening for child termination");
+
+        struct sigaction action =
+        {
+            .sa_flags = SA_NOCLDSTOP | SA_RESTART,
+            .sa_handler = handle_child_stop
+        };
+
+        sigfillset(&action.sa_mask);
+        sigaction(SIGCHLD, &action, NULL);
+    }
 
     while (read(pipe_fd, &info, sizeof(fork_info_t)) != 0)
     {

@@ -120,26 +120,6 @@ static const struct option long_options[] =
     { NULL, 0, NULL, 0 }
 };
 
-/**
- * @brief Callback to recieve child termination signals
- * @param signum signal number
- */
-static void
-handle_child_stop(UNUSED int32_t signum)
-{
-    int32_t last_errno = errno;
-
-    log_debug("Received child stop signal - waiting for termination");
-
-    /* wait for all child processes */
-    while (waitpid(-1, NULL, WNOHANG) > 0)
-    {
-        /* do nothing */
-    }
-
-    errno = last_errno;
-}
-
 static void
 handle_sigpipe(UNUSED int32_t signum)
 {
@@ -172,13 +152,6 @@ setup_signals(UNUSED nyx_t *nyx, void (*terminate_handler)(int32_t))
     /* register SIGPIPE handler */
     action.sa_handler = handle_sigpipe;
     sigaction(SIGPIPE, &action, NULL);
-
-    /* register SIGCHLD handler */
-    if (nyx->is_init)
-    {
-        action.sa_handler = handle_child_stop;
-        sigaction(SIGCHLD, &action, NULL);
-    }
 
     nyx->terminate_handler = terminate_handler;
 }
