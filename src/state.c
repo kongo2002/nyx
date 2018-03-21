@@ -83,15 +83,44 @@ state_to_human_string(state_e state)
     return state_to_human_str[state];
 }
 
-void
+/**
+ * Try to set the state's state to the given value
+ *
+ * This function is guarded by the state's semaphore
+ * meaning this function will wait until the lock
+ * is freed.
+ */
+bool
 set_state(state_t *state, state_e value)
 {
+    if (sem_wait(state->states_sem) != 0)
+    {
+        return false;
+    }
+
     /* do not override QUIT signal */
     if (state->state == STATE_QUIT)
-        return;
+    {
+        log_debug("state %s is about to quit - skip setting updated state",
+                state->watch->name);
 
-    state->state = value;
-    sem_post(state->sem);
+        sem_post(state->states_sem);
+        sem_post(state->notify_sem);
+        return false;
+    }
+
+    /* we don't set the state immediately but rather put
+     * the 'requested' state into the states queue for the
+     * state-loop to process those one after the other */
+    list_add(state->states, (void *)value);
+
+    /* release states semaphore */
+    sem_post(state->states_sem);
+
+    /* trigger state change notification */
+    sem_post(state->notify_sem);
+
+    return true;
 }
 
 #define DEBUG_LOG_STATE_FUNC \
@@ -397,8 +426,7 @@ dispatch_event(pid_t pid, process_event_data_t *event_data, nyx_t *nyx)
 
             if (state != NULL)
             {
-                if (state->state != STATE_STOPPED)
-                    set_state(state, STATE_STOPPED);
+                set_state(state, STATE_STOPPED);
 
                 state->pid = 0;
                 clear_pid(state->watch->name, nyx);
@@ -427,6 +455,7 @@ dispatch_poll_result(pid_t pid, bool is_running, nyx_t *nyx)
 
         if (!is_running)
         {
+            /* TODO: secure this one by semaphore as well? */
             state->pid = 0;
             clear_pid(state->watch->name, nyx);
 
@@ -434,56 +463,51 @@ dispatch_poll_result(pid_t pid, bool is_running, nyx_t *nyx)
                 nyx_proc_remove(nyx->proc, pid);
         }
 
-        if (next_state != state->state)
-            set_state(state, next_state);
+        set_state(state, next_state);
     }
 
     return true;
 }
 
-state_t *
-state_new(watch_t *watch, nyx_t *nyx)
+#ifdef OSX
+static char *
+named_semaphore_name(watch_t *watch, uint32_t idx)
+{
+    size_t sem_name_len = strlen(watch->name) + 4;
+    char *sem_name = xcalloc(sem_name_len, sizeof(char));
+
+    snprintf(sem_name, sem_name_len, "%s_%u", watch->name, idx);
+
+    return sem_name;
+}
+
+static sem_t *
+init_named_semaphore(watch_t *watch, uint32_t idx)
 {
     sem_t *semaphore = NULL;
-    state_t *state = xcalloc1(sizeof(state_t));
+    char *sem_name = named_semaphore_name(watch, idx);
 
-    state->nyx = nyx;
-    state->watch = watch;
-    state->state = STATE_UNMONITORED;
-    state->history = timestack_new(MAX(nyx->options.history_size, 20));
-
-#ifndef OSX
-    /* initialize unnamed semaphore
-     * - process-local semaphore
-     * - initially unlocked (= 1) */
-    semaphore = xcalloc1(sizeof(sem_t));
-
-    int32_t init = sem_init(semaphore, 0, 1);
-
-    if (init == -1)
-        log_critical_perror("nyx: sem_init");
-#else
-    log_debug("Trying to create a new named semaphore (%s)", watch->name);
+    log_debug("Trying to create a new named semaphore (%s) for watch %s [%u]",
+            sem_name, watch->name, idx);
 
     /* initialize a named-semaphore as OSX does not support unnamed ones
      * - chmod of the semaphore (0644)
      * - initially unlocked (= 1) */
-    semaphore = sem_open(watch->name, O_CREAT | O_EXCL, 0644, 1);
+    semaphore = sem_open(sem_name, O_CREAT | O_EXCL, 0644, 1);
 
     if (semaphore == SEM_FAILED)
     {
-        log_debug("Semaphore (%s) already exists - trying to unlink",
-                watch->name);
+        log_debug("Semaphore (%s) already exists - trying to unlink", sem_name);
 
         /* the semaphore should not exist beforehand ->
          * try to remove and retry -> then fail */
-        int32_t err = sem_unlink(watch->name);
+        int32_t err = sem_unlink(sem_name);
         if (err == 0)
         {
-            log_debug("Try to create semaphore (%s) again", watch->name);
+            log_debug("Try to create semaphore (%s) again", sem_name);
 
             /* remove succeeded -> try again */
-            semaphore = sem_open(watch->name, O_CREAT | O_EXCL, 0644, 1);
+            semaphore = sem_open(sem_name, O_CREAT | O_EXCL, 0644, 1);
         }
         else
             log_critical_perror("nyx: sem_unlink");
@@ -491,9 +515,66 @@ state_new(watch_t *watch, nyx_t *nyx)
 
     if (semaphore == SEM_FAILED)
         log_critical_perror("nyx: sem_open");
+
+    free(sem_name);
+
+    return semaphore;
+}
+
+static void
+remove_named_semaphore(watch_t *watch, sem_t *sem, uint32_t idx)
+{
+    char *sem_name = named_semaphore_name(watch, idx);
+
+    sem_close(sem);
+    sem_unlink(sem_name);
+
+    free(sem_name);
+}
 #endif
 
-    state->sem = semaphore;
+state_t *
+state_new(watch_t *watch, nyx_t *nyx)
+{
+    sem_t *states_semaphore = NULL, *notify_semaphore = NULL;
+    state_t *state = xcalloc1(sizeof(state_t));
+
+    state->nyx = nyx;
+    state->watch = watch;
+    state->state = STATE_UNMONITORED;
+    state->history = timestack_new(MAX(nyx->options.history_size, 20));
+
+    /* initialize states queue and populate with
+     * 'initial' state of UNMONITORED */
+    state->states = list_new(NULL);
+    list_add(state->states, (void *)STATE_UNMONITORED);
+
+#ifndef OSX
+    /* initialize unnamed semaphore
+     * - process-local semaphore
+     * - initially unlocked (= 1) */
+    states_semaphore = xcalloc1(sizeof(sem_t));
+    notify_semaphore = xcalloc1(sizeof(sem_t));
+
+    int32_t init = sem_init(states_semaphore, 0, 1);
+
+    if (init == -1)
+        log_critical_perror("nyx: sem_init");
+
+    init = sem_init(notify_semaphore, 0, 1);
+
+    if (init == -1)
+        log_critical_perror("nyx: sem_init");
+#else
+    /* on OSX we have to create named semaphores
+     * that's why we create two semaphores with the
+     * names: '<watch-name>_1' and '<watch-name>_2' */
+    states_semaphore = init_named_semaphore(watch, 1);
+    notify_semaphore = init_named_semaphore(watch, 2);
+#endif
+
+    state->states_sem = states_semaphore;
+    state->notify_sem = notify_semaphore;
 
     return state;
 }
@@ -501,13 +582,14 @@ state_new(watch_t *watch, nyx_t *nyx)
 void
 state_destroy(state_t *state)
 {
-    sem_t *sem = state->sem;
+    sem_t *notify_sem = state->notify_sem;
 
-    if (sem != NULL)
+    if (notify_sem != NULL)
     {
         /* first we should unlock the semaphore
          * in case any process is still waiting on it */
-        set_state(state, STATE_QUIT);
+        state->state = STATE_QUIT;
+        sem_post(notify_sem);
     }
 
     if (state->thread != NULL)
@@ -550,14 +632,25 @@ state_destroy(state_t *state)
         free(state->thread);
     }
 
-    if (sem != NULL)
+    /* notify semaphore */
+    if (notify_sem != NULL)
     {
 #ifndef OSX
-        sem_destroy(sem);
-        free(sem);
+        sem_destroy(notify_sem);
+        free(notify_sem);
 #else
-        sem_close(sem);
-        sem_unlink(state->watch->name);
+        remove_named_semaphore(state->watch, notify_sem, 2);
+#endif
+    }
+
+    /* states semaphore */
+    if (state->states_sem != NULL)
+    {
+#ifndef OSX
+        sem_destroy(state->states_sem);
+        free(state->states_sem);
+#else
+        remove_named_semaphore(state->watch, state->states_sem, 1);
 #endif
     }
 
@@ -566,6 +659,8 @@ state_destroy(state_t *state)
         timestack_destroy(state->history);
         state->history = NULL;
     }
+
+    list_destroy(state->states);
 
     free(state);
 }
@@ -589,7 +684,7 @@ process_state(state_t *state, state_e old_state, state_e new_state)
                 state_to_string(old_state),
                 state_to_string(new_state));
 
-        return 0;
+        return false;
     }
 
     bool result = func(state, old_state, new_state);
@@ -674,9 +769,31 @@ state_loop(state_t *state)
 
     /* wait until the event manager triggers this
      * state semaphore */
-    while ((sem_fail = sem_wait(state->sem)) == 0)
+    while ((sem_fail = sem_wait(state->notify_sem)) == 0)
     {
-        state_e current_state = state->state;
+        state_e current_state;
+
+        /* QUIT is handled immediately */
+        if (state->state == STATE_QUIT)
+        {
+            log_info("Watch '%s' terminating", watch->name);
+            break;
+        }
+
+        /* acquire states semaphore */
+        if ((sem_fail = sem_wait(state->states_sem) != 0))
+            break;
+
+        /* check if there is a new state in the queue at all */
+        bool state_exists = list_pop(state->states, (void *)&current_state);
+
+        /* release states semaphore immediately after popping the first
+         * element (if set) */
+        sem_post(state->states_sem);
+
+        /* no new state found -> continue */
+        if (!state_exists)
+            continue;
 
         /* QUIT is handled immediately */
         if (current_state == STATE_QUIT)
@@ -685,24 +802,28 @@ state_loop(state_t *state)
             break;
         }
 
-        if (last_state != current_state)
-        {
-            timestack_add(state->history, current_state);
-
-#ifndef NDEBUG
-            timestack_dump(state->history, state_idx_to_string);
-#endif
-        }
-
         bool result = process_state(state, last_state, current_state);
 
-        if (!result && state->state != last_state)
+        if (result)
         {
-            /* the state transition failed
-             * so we have to restore the old state */
-            state->state = last_state;
+            if (last_state != current_state)
+            {
+                timestack_add(state->history, current_state);
 
-            timestack_add(state->history, last_state);
+#ifndef NDEBUG
+                timestack_dump(state->history, state_idx_to_string);
+#endif
+            }
+
+            if (state->state == STATE_QUIT)
+            {
+                log_info("Watch '%s' terminating", watch->name);
+                break;
+            }
+
+            /* the state transition succeeded ->
+             * set updated state now */
+            state->state = current_state;
         }
 
         /* check for flapping processes

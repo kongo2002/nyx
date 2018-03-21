@@ -16,6 +16,7 @@
 #pragma once
 
 #include "event.h"
+#include "list.h"
 #include "nyx.h"
 #include "timestack.h"
 #include "watch.h"
@@ -41,8 +42,10 @@ typedef struct
 {
     pid_t pid;
     state_e state;
+    list_t *states;
     uint32_t failed_counter;
-    sem_t *sem;
+    sem_t *states_sem;
+    sem_t *notify_sem;
     pthread_t *thread;
     watch_t *watch;
     timestack_t *history;
@@ -64,7 +67,7 @@ state_loop(state_t *state);
 void *
 state_loop_start(void *state);
 
-void
+bool
 set_state(state_t *state, state_e value);
 
 bool
