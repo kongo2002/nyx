@@ -588,8 +588,7 @@ state_destroy(state_t *state)
     {
         /* first we should unlock the semaphore
          * in case any process is still waiting on it */
-        state->state = STATE_QUIT;
-        sem_post(notify_sem);
+        set_state(state, STATE_QUIT);
     }
 
     if (state->thread != NULL)
@@ -750,11 +749,23 @@ is_flapping(state_t *state, uint32_t changes, int32_t within)
     return false;
 }
 
+static bool
+is_quit(void *data)
+{
+    state_e state = (state_e)data;
+    return state == STATE_QUIT;
+}
+
 static void
 safe_sleep(state_t *state, uint32_t seconds)
 {
     while (seconds-- > 0 && state->state != STATE_QUIT)
+    {
+        if (list_find(state->states, is_quit) != NULL)
+            break;
+
         sleep(1);
+    }
 }
 
 void

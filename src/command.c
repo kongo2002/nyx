@@ -263,8 +263,7 @@ handle_quit(sender_callback_t *cb, const char **input, nyx_t *nyx)
         {
             state_t *state = node->data;
 
-            if (state->state != STATE_STOPPED)
-                set_state(state, STATE_STOPPING);
+            set_state(state, STATE_STOPPING);
 
             node = node->next;
         }
