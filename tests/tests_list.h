@@ -21,4 +21,10 @@ test_list_create(void **state);
 void
 test_list_add(void **state);
 
+void
+test_list_pop(void **state);
+
+void
+test_list_pop_empty(void **state);
+
 /* vim: set et sw=4 sts=4 tw=80: */

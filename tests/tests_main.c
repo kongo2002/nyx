@@ -32,6 +32,8 @@ main(UNUSED int argc, UNUSED char **argv)
         cmocka_unit_test(test_config_parse_files),
         cmocka_unit_test(test_list_create),
         cmocka_unit_test(test_list_add),
+        cmocka_unit_test(test_list_pop),
+        cmocka_unit_test(test_list_pop_empty),
         cmocka_unit_test(test_hash_create),
         cmocka_unit_test(test_hash_add),
         cmocka_unit_test(test_hash_remove),

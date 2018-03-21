@@ -46,6 +46,31 @@ list_find(list_t *list, bool (*predicate)(void *))
     return NULL;
 }
 
+bool
+list_pop(list_t *list, void **data)
+{
+    if (list == NULL || list->count < 1)
+        return false;
+
+    list_node_t *head = list->head;
+
+    *data = head->data;
+
+    /* update list structure */
+    list->count = list->count - 1;
+    list->head = head->next;
+
+    if (list->head)
+        list->head->prev = NULL;
+
+    if (head == list->tail)
+        list->tail = NULL;
+
+    free(head);
+
+    return true;
+}
+
 void
 list_remove(list_t *list, list_node_t *node)
 {

@@ -50,4 +50,45 @@ test_list_add(UNUSED void **state)
     list_destroy(list);
 }
 
+void
+test_list_pop(UNUSED void **state)
+{
+    list_t *list = list_new(free);
+
+    assert_int_equal(0, list_size(list));
+
+    list_add(list, strdup("foo"));
+    list_add(list, strdup("bar"));
+    list_add(list, strdup("ham"));
+    list_add(list, strdup("eggs"));
+
+    assert_int_equal(4, list_size(list));
+
+    void *value = NULL;
+    bool found = list_pop(list, &value);
+
+    assert_true(found);
+    assert_string_equal("foo", value);
+    assert_int_equal(3, list_size(list));
+
+    free(value);
+
+    list_destroy(list);
+}
+
+void
+test_list_pop_empty(UNUSED void **state)
+{
+    list_t *list = list_new(free);
+
+    assert_int_equal(0, list_size(list));
+
+    void *value = NULL;
+    bool found = list_pop(list, &value);
+
+    assert_false(found);
+
+    list_destroy(list);
+}
+
 /* vim: set et sw=4 sts=4 tw=80: */

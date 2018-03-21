@@ -47,6 +47,9 @@ list_destroy(list_t *list);
 void
 list_add(list_t *list, void *data);
 
+bool
+list_pop(list_t *list, void **data);
+
 void
 list_remove(list_t *list, list_node_t *node);
 
