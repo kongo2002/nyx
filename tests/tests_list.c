@@ -88,6 +88,22 @@ test_list_pop_empty(UNUSED void **state)
 
     assert_false(found);
 
+    list_add(list, strdup("foo"));
+
+    assert_int_equal(1, list_size(list));
+
+    found = list_pop(list, &value);
+
+    assert_true(found);
+    assert_string_equal("foo", value);
+    free(value);
+
+    assert_int_equal(0, list_size(list));
+
+    list_add(list, strdup("foo"));
+
+    assert_int_equal(1, list_size(list));
+
     list_destroy(list);
 }
 
