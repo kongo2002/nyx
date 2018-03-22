@@ -750,6 +750,15 @@ shutdown_proc(nyx_t *nyx)
     }
 }
 
+static void
+state_push_quit(UNUSED uint64_t idx, void *data)
+{
+    state_t *state = data;
+
+    if (state)
+        set_state(state, STATE_QUIT);
+}
+
 void
 clear_watches(nyx_t *nyx)
 {
@@ -760,14 +769,19 @@ clear_watches(nyx_t *nyx)
 
     /* nyx's internal structures are immediately reset
      * so that the poll or event loops don't work on
-     * old state that is about to be cleared any moment */
+     * old state that is about to be cleared any moment
+     *
+     * this is especially important because the state destruction
+     * might take a while to complete due to the
+     * graceful state thread termination */
     nyx->state_map = NULL;
     nyx->watches = NULL;
     nyx->states = NULL;
 
-    /* this is especially important because the state destruction
-     * might take a while to complete due to the
-     * graceful state thread termination */
+    /* at first we will push the QUIT signal to all states
+     * so all states can start shutdown procedure concurrently */
+    list_foreach(states, state_push_quit);
+
     if (state_map)
         hash_destroy(state_map);
 

@@ -582,15 +582,6 @@ state_new(watch_t *watch, nyx_t *nyx)
 void
 state_destroy(state_t *state)
 {
-    sem_t *notify_sem = state->notify_sem;
-
-    if (notify_sem != NULL)
-    {
-        /* first we should unlock the semaphore
-         * in case any process is still waiting on it */
-        set_state(state, STATE_QUIT);
-    }
-
     if (state->thread != NULL)
     {
         int32_t join = 0, join_timeout = MAX(NYX_STATE_JOIN_TIMEOUT, state->watch->stop_timeout);
@@ -632,11 +623,11 @@ state_destroy(state_t *state)
     }
 
     /* notify semaphore */
-    if (notify_sem != NULL)
+    if (state->notify_sem != NULL)
     {
 #ifndef OSX
-        sem_destroy(notify_sem);
-        free(notify_sem);
+        sem_destroy(state->notify_sem);
+        free(state->notify_sem);
 #else
         remove_named_semaphore(state->watch, notify_sem, 2);
 #endif
@@ -826,6 +817,9 @@ state_loop(state_t *state)
 #endif
             }
 
+            /* the state might have been set to 'QUIT' during our
+             * process_state step - let's quit now instead of waiting
+             * one more iteration */
             if (state->state == STATE_QUIT)
             {
                 log_info("Watch '%s' terminating", watch->name);
