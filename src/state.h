@@ -71,6 +71,9 @@ bool
 set_state(state_t *state, state_e value);
 
 bool
+set_state_command(state_t *state, state_e value);
+
+bool
 dispatch_event(pid_t pid, process_event_data_t *event_data, nyx_t *nyx);
 
 bool

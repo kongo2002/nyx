@@ -37,6 +37,12 @@
 
 typedef bool (*transition_func_t)(state_t *, state_e, state_e);
 
+typedef struct
+{
+    state_e value;
+    bool is_command;
+} state_entry_t;
+
 #ifndef NDEBUG
 static const char *state_to_str[] =
 {
@@ -83,15 +89,19 @@ state_to_human_string(state_e state)
     return state_to_human_str[state];
 }
 
-/**
- * Try to set the state's state to the given value
- *
- * This function is guarded by the state's semaphore
- * meaning this function will wait until the lock
- * is freed.
- */
-bool
-set_state(state_t *state, state_e value)
+static state_entry_t *
+state_entry_new(state_e value, bool is_command)
+{
+    state_entry_t *entry = xcalloc1(sizeof(state_entry_t));
+
+    entry->value = value;
+    entry->is_command = is_command;
+
+    return entry;
+}
+
+static bool
+set_state_internal(state_t *state, state_e value, bool is_command)
 {
     if (sem_wait(state->states_sem) != 0)
     {
@@ -112,7 +122,8 @@ set_state(state_t *state, state_e value)
     /* we don't set the state immediately but rather put
      * the 'requested' state into the states queue for the
      * state-loop to process those one after the other */
-    list_add(state->states, (void *)value);
+    state_entry_t *entry = state_entry_new(value, is_command);
+    list_add(state->states, entry);
 
     /* release states semaphore */
     sem_post(state->states_sem);
@@ -121,6 +132,33 @@ set_state(state_t *state, state_e value)
     sem_post(state->notify_sem);
 
     return true;
+}
+
+/**
+ * Try to set the state's state to the given value
+ *
+ * This function is guarded by the state's semaphore
+ * meaning this function will wait until the lock
+ * is acquired.
+ */
+bool
+set_state(state_t *state, state_e value)
+{
+    return set_state_internal(state, value, false);
+}
+
+/**
+ * Try to set the state's state to the given value.
+ * This state is based on a user's command.
+ *
+ * This function is guarded by the state's semaphore
+ * meaning this function will wait until the lock
+ * is acquired.
+ */
+bool
+set_state_command(state_t *state, state_e value)
+{
+    return set_state_internal(state, value, true);
 }
 
 #define DEBUG_LOG_STATE_FUNC \
@@ -546,8 +584,8 @@ state_new(watch_t *watch, nyx_t *nyx)
 
     /* initialize states queue and populate with
      * 'initial' state of UNMONITORED */
-    state->states = list_new(NULL);
-    list_add(state->states, (void *)STATE_UNMONITORED);
+    state->states = list_new(free);
+    list_add(state->states, state_entry_new(STATE_UNMONITORED, false));
 
 #ifndef OSX
     /* initialize unnamed semaphore
@@ -741,10 +779,11 @@ is_flapping(state_t *state, uint32_t changes, int32_t within)
 }
 
 static bool
-is_quit(void *data)
+is_command(void *data)
 {
-    state_e state = (state_e)data;
-    return state == STATE_QUIT;
+    state_entry_t *entry = data;
+
+    return entry->is_command;
 }
 
 static void
@@ -752,7 +791,17 @@ safe_sleep(state_t *state, uint32_t seconds)
 {
     while (seconds-- > 0 && state->state != STATE_QUIT)
     {
-        if (list_find(state->states, is_quit) != NULL)
+        /* the 'sleep' may be interrupted by a user-command
+         * i.e. STARTING, STOPPING, RESTARTING or QUIT */
+
+        if (sem_wait(state->states_sem) != 0)
+            break;
+
+        void *command_found = list_find(state->states, is_command);
+
+        sem_post(state->states_sem);
+
+        if (command_found)
             break;
 
         sleep(1);
@@ -787,15 +836,21 @@ state_loop(state_t *state)
             break;
 
         /* check if there is a new state in the queue at all */
-        bool state_exists = list_pop(state->states, (void *)&current_state);
+        state_entry_t *state_entry = NULL;
+        bool state_exists = list_pop(state->states, (void *)&state_entry);
 
-        /* release states semaphore immediately after popping the first
-         * element (if set) */
+        /* release states semaphore immediately after popping the
+         * first element (if set) */
         sem_post(state->states_sem);
 
         /* no new state found -> continue */
-        if (!state_exists)
+        if (!state_exists || state_entry == NULL)
             continue;
+
+        /* free popped state entry as early as possible */
+        current_state = state_entry->value;
+        free(state_entry);
+        state_entry = NULL;
 
         /* QUIT is handled immediately */
         if (current_state == STATE_QUIT)

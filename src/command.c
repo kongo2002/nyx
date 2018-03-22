@@ -54,7 +54,7 @@ handle_status_change_all(sender_callback_t *cb, nyx_t *nyx, state_e new_state)
     {
         state_t *state = node->data;
 
-        set_state(state, new_state);
+        set_state_command(state, new_state);
         cb->sender(cb, "requested %s for watch '%s'",
                 state_to_human_string(new_state),
                 state->watch->name);
@@ -82,7 +82,7 @@ handle_status_change(sender_callback_t *cb, const char **input, nyx_t *nyx, stat
     }
 
     /* request state change */
-    set_state(state, new_state);
+    set_state_command(state, new_state);
     cb->sender(cb, "requested %s for watch '%s'",
             state_to_human_string(new_state),
             name);
@@ -263,7 +263,7 @@ handle_quit(sender_callback_t *cb, const char **input, nyx_t *nyx)
         {
             state_t *state = node->data;
 
-            set_state(state, STATE_STOPPING);
+            set_state_command(state, STATE_STOPPING);
 
             node = node->next;
         }
