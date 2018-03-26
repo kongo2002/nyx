@@ -20,6 +20,8 @@
 #include "utils.h"
 #include "watch.h"
 
+#include <inttypes.h>
+
 typedef void (* status_handler_t)(sender_callback_t *, nyx_t *, state_t *);
 
 static bool
@@ -167,7 +169,7 @@ handle_config(sender_callback_t *cb, const char **input, nyx_t *nyx)
         cb->sender(cb, "error_file: %s", watch->error_file);
 
     if (watch->max_memory)
-        cb->sender(cb, "max_memory: %lu", watch->max_memory);
+        cb->sender(cb, "max_memory: %" PRIu64, watch->max_memory);
 
     if (watch->max_cpu)
         cb->sender(cb, "max_cpu: %u", watch->max_cpu);

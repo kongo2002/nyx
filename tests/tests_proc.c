@@ -17,6 +17,7 @@
 #include "tests_proc.h"
 #include "../src/proc.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -41,7 +42,7 @@ test_proc_total_memory_size(UNUSED void **state)
 
     assert_int_not_equal(0, mem_size);
 
-    printf("Total memory: %lu kB\n", mem_size);
+    printf("Total memory: %" PRIu64 " kB\n", mem_size);
 }
 
 void
@@ -51,7 +52,7 @@ test_proc_page_size(UNUSED void **state)
 
     assert_int_not_equal(0, page_size);
 
-    printf("Page size: %ld\n", page_size);
+    printf("Page size: %" PRId64 "\n", page_size);
 }
 
 void
