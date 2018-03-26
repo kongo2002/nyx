@@ -667,7 +667,7 @@ state_destroy(state_t *state)
         sem_destroy(state->notify_sem);
         free(state->notify_sem);
 #else
-        remove_named_semaphore(state->watch, notify_sem, 2);
+        remove_named_semaphore(state->watch, state->notify_sem, 2);
 #endif
     }
 
