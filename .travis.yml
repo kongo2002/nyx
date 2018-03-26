@@ -18,6 +18,18 @@ env:
     - DEBUG=1 PLUGINS=0 SSL=0
     - DEBUG=0 PLUGINS=0 SSL=0
 
+matrix:
+    # exclude SSL builds on OSX
+    exclude:
+        - os: osx
+          env: DEBUG=1 PLUGINS=1 SSL=1
+        - os: osx
+          env: DEBUG=0 PLUGINS=1 SSL=1
+        - os: osx
+          env: DEBUG=1 PLUGINS=0 SSL=1
+        - os: osx
+          env: DEBUG=0 PLUGINS=0 SSL=1
+
 before_install:
     - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cmocka libyaml; fi
     - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then ./utils/install_cmocka.sh; fi
