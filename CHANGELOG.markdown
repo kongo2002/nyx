@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.9.2
+
+2018-05-22
+
+* feature: stop-commands receive the `$NYX_PID` environment variable to access
+  the PID of the process that is about to be terminated
+
+
 ## 1.9.1
 
 2018-03-26
