@@ -216,9 +216,18 @@ watches:
 ##### Program termination
 
 By default processes are stopped by sending a `SIGTERM` until after a timeout of
-5 seconds a `SIGKILL` will finally terminate the process. However you may
-configure a custom `stop` command that should handle the process' termination
-and a `stop_timeout` in seconds until the `SIGKILL` will be fired:
+5 seconds a `SIGKILL` will finally terminate the process.
+
+However you may configure a custom `stop` command that should handle the
+process' termination. Please remember to adjust the `stop_timeout` setting
+accordingly in case the stop process takes a while to finish because the
+process will be spawned asynchronously.
+
+For convenience the *magic* environment variable `$NYX_PID` will be passed to
+the spawned process that contains the pid of the process that is requested to be
+stopped. This makes writing of custom wrapper scripts that execute some
+pre-termination cleanup tasks especially easy.
+
 
 ```yaml
 watches:
@@ -227,6 +236,9 @@ watches:
         stop: /bin/app -terminate
         stop_timeout: 30
 ```
+
+In any case after `stop_timeout` seconds are elapsed the `SIGKILL` signal will
+be fired to finally terminate the process.
 
 
 ##### Watch process statistics
