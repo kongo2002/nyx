@@ -27,6 +27,7 @@ typedef struct
 {
     int32_t id;
     bool start;
+    pid_t pid;
 } fork_info_t;
 
 int32_t
@@ -39,6 +40,6 @@ fork_info_t *
 forker_start(int32_t id);
 
 fork_info_t *
-forker_stop(int32_t id);
+forker_stop(int32_t id, pid_t pid);
 
 /* vim: set et sw=4 sts=4 tw=80: */

@@ -233,7 +233,7 @@ stop(state_t *state, state_e from, state_e to)
     /* in case a custom stop command is specified we use that one */
     if (watch->stop)
     {
-        fork_info_t *stop_info = forker_stop(state->watch->id);
+        fork_info_t *stop_info = forker_stop(state->watch->id, pid);
 
         if (write(nyx->forker_pipe, stop_info, sizeof(fork_info_t)) == -1)
             log_perror("nyx: write");

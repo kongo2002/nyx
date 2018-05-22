@@ -85,6 +85,15 @@ set_environment(const watch_t *watch)
 }
 
 static void
+set_magic_pid(pid_t pid)
+{
+    char str[32] = {0};
+    snprintf(str, LEN(str)-1, "%d", pid);
+
+    setenv("NYX_PID", str, 1);
+}
+
+static void
 close_fds(pid_t pid)
 {
     char path[256] = {0};
@@ -154,7 +163,7 @@ read_pipe(int32_t fd)
 }
 
 static void
-spawn_exec(watch_t *watch, bool start, bool proxy_output)
+spawn_exec(watch_t *watch, bool start, bool proxy_output, pid_t stop_pid)
 {
     uid_t uid = 0;
     gid_t gid = 0;
@@ -286,7 +295,15 @@ spawn_exec(watch_t *watch, bool start, bool proxy_output)
         }
     }
 
+    /* set user defined environment variables */
     set_environment(watch);
+
+    /* set the 'magic' environment NYX_PID for custom stop-commands */
+    if (stop_pid)
+    {
+        set_magic_pid(stop_pid);
+    }
+
     close_fds(getpid());
 
     /* on success this call won't return */
@@ -299,7 +316,7 @@ spawn_exec(watch_t *watch, bool start, bool proxy_output)
 }
 
 static pid_t
-spawn_stop(watch_t *watch)
+spawn_stop(watch_t *watch, pid_t stop_pid)
 {
     pid_t pid = fork();
 
@@ -308,10 +325,12 @@ spawn_stop(watch_t *watch)
 
     if (pid == 0)
     {
-        spawn_exec(watch, false, false);
+        spawn_exec(watch, false, false, stop_pid);
     }
 
-    return pid;
+    /* the return value will be written into the process' pid file
+     * that's why the actual 'stop-process-pid' is not of interest here */
+    return 0;
 }
 
 static pid_t
@@ -348,7 +367,7 @@ spawn_start(nyx_t *nyx, watch_t *watch)
         if (!double_fork)
         {
             /* this call won't return */
-            spawn_exec(watch, true, proxy_output);
+            spawn_exec(watch, true, proxy_output, 0);
         }
         /* otherwise we want to 'double fork' */
         else
@@ -361,7 +380,7 @@ spawn_start(nyx_t *nyx, watch_t *watch)
             if (inner_pid == 0)
             {
                 /* this call won't return */
-                spawn_exec(watch, true, proxy_output);
+                spawn_exec(watch, true, proxy_output, 0);
             }
 
             /* close the read end before */
@@ -414,7 +433,7 @@ handle_child_stop(UNUSED int32_t signum)
 static void
 forker(nyx_t *nyx, int32_t pipe_fd)
 {
-    fork_info_t info = {0, 0};
+    fork_info_t info = {0, 0, 0};
 
     /* register SIGCHLD handler */
     if (nyx->is_init)
@@ -465,7 +484,7 @@ forker(nyx_t *nyx, int32_t pipe_fd)
 
         pid_t pid = (info.start)
             ? spawn_start(nyx, watch)
-            : spawn_stop(watch);
+            : spawn_stop(watch, info.pid);
 
         write_pid(pid, watch->name, nyx);
     }
@@ -478,32 +497,33 @@ forker(nyx_t *nyx, int32_t pipe_fd)
 }
 
 static fork_info_t *
-forker_new(int32_t id, bool start)
+forker_new(int32_t id, bool start, pid_t pid)
 {
     fork_info_t *info = xcalloc1(sizeof(fork_info_t));
 
     info->id = id;
     info->start = start;
+    info->pid = pid;
 
     return info;
 }
 
 fork_info_t *
-forker_stop(int32_t idx)
+forker_stop(int32_t idx, pid_t pid)
 {
-    return forker_new(idx, false);
+    return forker_new(idx, false, pid);
 }
 
 fork_info_t *
 forker_start(int32_t idx)
 {
-    return forker_new(idx, true);
+    return forker_new(idx, true, 0);
 }
 
 fork_info_t *
 forker_reload(void)
 {
-    return forker_new(NYX_FORKER_RELOAD, true);
+    return forker_new(NYX_FORKER_RELOAD, true, 0);
 }
 
 int32_t
