@@ -343,6 +343,25 @@ $ nyx -c /etc/nyx.d
 ```
 
 
+#### Local mode
+
+Usually nyx is expected to be run in a "one daemon per machine" fashion. In most
+cases this is the most intuitive user experience since it does not make any
+assumptions or requirements on the location of the executable or where it is run
+or started from.
+
+However there may be scenarios where you want to have multiple independent nyx
+instances to run separately from each other. This is where nyx's "local" mode
+comes into play: a "local" nyx daemon will spawn from the current working
+directory and will start all processes based on that directory (if not specified
+otherwise in the configuration).
+
+
+```bash
+$ nyx --local -c config.yaml
+```
+
+
 ### Command interface
 
 You can interact with a running *nyx* daemon instance using the same executable:
