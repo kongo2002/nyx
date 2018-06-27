@@ -26,6 +26,14 @@ clear_pid(const char *name, nyx_t *nyx)
     return remove_pid_file(nyx->pid_dir, name);
 }
 
+bool
+valid_pid(pid_t pid, nyx_t *nyx)
+{
+    return pid > 0 &&
+        pid != nyx->pid &&
+        pid != nyx->forker_pid;
+}
+
 pid_t
 determine_pid(const char *name, nyx_t *nyx)
 {

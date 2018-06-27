@@ -66,6 +66,7 @@ typedef struct
     hash_t *watches;
     list_t *states;
     hash_t *state_map;
+    pid_t forker_pid;
     int32_t forker_pipe;
 #ifdef USE_PLUGINS
     plugin_repository_t *plugins;

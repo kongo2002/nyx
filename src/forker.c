@@ -563,6 +563,9 @@ forker_init(nyx_t *nyx)
      * close the read end of the pipes */
     close(pipes[0]);
 
+    /* set/refresh forker's pid */
+    nyx->forker_pid = pid;
+
     /* return the write pipe descriptor */
     return pipes[1];
 }

@@ -183,9 +183,18 @@ to_unmonitored(state_t *state, state_e from, state_e to)
      * this should be usually the case on startup */
     if (pid < 1)
     {
-        /* try to read pid from an existing pid file */
+        /* try to read pid from an existing pid file
+         *
+         * in here it might get a little bit risky since
+         * we don't know how valid the pid file's contents
+         * are (e.g. being old or outdated even) */
         pid = determine_pid(watch->name, state->nyx);
     }
+
+    /* at least we can check if the pid is not the same
+     * as nyx itself or its forker process */
+    if (!valid_pid(pid, state->nyx))
+        pid = 0;
 
     if (pid > 0)
     {
@@ -309,6 +318,9 @@ start_state(state_t *state)
     usleep(500000);
 
     pid_t pid = determine_pid(state->watch->name, state->nyx);
+
+    if (!valid_pid(pid, state->nyx))
+        pid = 0;
 
     if (pid)
     {

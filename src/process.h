@@ -17,6 +17,9 @@
 
 #include "nyx.h"
 
+bool
+valid_pid(pid_t pid, nyx_t *nyx);
+
 pid_t
 determine_pid(const char *name, nyx_t *nyx);
 
