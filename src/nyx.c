@@ -326,7 +326,8 @@ initialize_daemon(nyx_t *nyx)
     nyx->pid = getpid();
     nyx->is_init = nyx->pid == 1;
 
-    /* try to check if a nyx instance is already running */
+    /* try to check if a nyx instance is already running
+     * TODO: consider local-mode */
     if ((pid = is_nyx_running(nyx)) > 0)
     {
         log_error("nyx instance appears to be running on PID %d - PID folder '%s'",
