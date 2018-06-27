@@ -49,6 +49,40 @@ get_homedir(void)
     return homedir;
 }
 
+const char *
+get_current_dir(void)
+{
+    int error = 0;
+    size_t size = 64;
+    char *buffer = NULL;
+
+    do
+    {
+        error = 0;
+        buffer = xcalloc(size, sizeof(char));
+
+        if (getcwd(buffer, size) == NULL)
+        {
+            error = errno;
+
+            size = size * 2;
+            free(buffer);
+            buffer = NULL;
+        }
+    } while (error == ERANGE);
+
+    /* in some rare cases we might get something
+     * like '(unreachable)...' instead of a regular
+     * path like '/some/where' */
+    if (buffer && *buffer != '/')
+    {
+        free(buffer);
+        return NULL;
+    }
+
+    return buffer;
+}
+
 bool
 get_user(const char *name, uid_t *uid, gid_t *gid)
 {
@@ -87,7 +121,7 @@ prepare_dir(const char *directory)
         /* clear buffer from previous runs */
         memset(buffer, 0, sizeof(buffer));
 
-        snprintf(buffer, sizeof(buffer), "%s%s",
+        snprintf(buffer, sizeof(buffer)-1, "%s%s",
                 get_homedir(),
                 directory + 1);
 
@@ -113,7 +147,7 @@ mkdir_p(const char *directory)
     if (directory == NULL || *directory == '\0')
         return false;
 
-    snprintf(buffer, sizeof(buffer), "%s", directory);
+    snprintf(buffer, sizeof(buffer)-1, "%s", directory);
     size_t length = strlen(buffer);
     size_t end = length - 1;
 
@@ -139,14 +173,31 @@ mkdir_p(const char *directory)
     return true;
 }
 
-const char *
-determine_pid_dir(void)
+static const char *
+local_pid_dir(const char *local_dir)
 {
-    const char **dir = pid_dir_defaults;
+    if (local_dir == NULL || *local_dir == '\0')
+        return NULL;
 
-    while (*dir)
+    const char pid_dir[] = "/.nyx/pid";
+    size_t len = strlen(local_dir) + LEN(pid_dir) + 1;
+    char *buffer = xcalloc(len, sizeof(char));
+
+    if (snprintf(buffer, len-1, "%s%s", local_dir, pid_dir) < 0)
     {
-        const char *prepared = strdup(prepare_dir(*dir));
+        free(buffer);
+        return NULL;
+    }
+
+    return buffer;
+}
+
+static const char *
+determine_pid_dir_from(const char **dir_candidates)
+{
+    while (*dir_candidates)
+    {
+        const char *prepared = strdup(prepare_dir(*dir_candidates));
 
         if (prepared == NULL)
         {
@@ -168,12 +219,33 @@ determine_pid_dir(void)
 
         free((void *)prepared);
 
-        dir++;
+        dir_candidates++;
     }
 
     log_error("Failed to determine a PID directory for nyx");
 
     return NULL;
+}
+
+const char *
+determine_pid_dir(void)
+{
+    return determine_pid_dir_from(pid_dir_defaults);
+}
+
+const char *
+determine_local_pid_dir(const char *local_dir)
+{
+    const char *dir = local_pid_dir(local_dir);
+
+    if (dir == NULL)
+        return NULL;
+
+    const char *candidates[] = { dir, NULL };
+    const char *result = determine_pid_dir_from(candidates);
+
+    free((char *)dir);
+    return result;
 }
 
 static char *

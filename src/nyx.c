@@ -86,6 +86,7 @@ print_help(void)
          "   -c  --config <file>    (path to configuration file)\n"
          "   -D  --no-daemon        (do not daemonize)\n"
          "       --run <executable> (specify an ad-hoc executable watch)\n"
+         "       --local            (run in the current directory)\n"
          "   -s  --syslog           (log into syslog)\n"
          "   -q  --quiet            (output error messages only)\n"
          "   -C  --no-color         (no terminal coloring)\n"
@@ -116,6 +117,7 @@ static const struct option long_options[] =
     { .name = "no-daemon", .has_arg = 0, .flag = NULL, .val = 'D'},
     { .name = "quiet",     .has_arg = 0, .flag = NULL, .val = 'q'},
     { .name = "syslog",    .has_arg = 0, .flag = NULL, .val = 's'},
+    { .name = "local",     .has_arg = 0, .flag = NULL, .val = 'l'},
     { .name = "version",   .has_arg = 0, .flag = NULL, .val = 'V'},
     { NULL, 0, NULL, 0 }
 };
@@ -312,7 +314,11 @@ initialize_daemon(nyx_t *nyx)
     nyx->options.history_size = 20;
     nyx->options.http_port = 0;
 
-    nyx->pid_dir = determine_pid_dir();
+    nyx->nyx_dir = get_current_dir();
+
+    nyx->pid_dir = nyx->options.local_mode
+        ? determine_local_pid_dir(nyx->nyx_dir)
+        : determine_pid_dir();
 
     if (nyx->pid_dir == NULL)
         return NYX_NO_PID_DIR;
@@ -427,6 +433,9 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
                 break;
             case 'D':
                 nyx->options.no_daemon = true;
+                break;
+            case 'l':
+                nyx->options.local_mode = true;
                 break;
             case 'c':
                 nyx->options.config_file = optarg;
@@ -945,6 +954,12 @@ nyx_destroy(nyx_t *nyx)
     {
         free((void *)nyx->pid_dir);
         nyx->pid_dir = NULL;
+    }
+
+    if (nyx->nyx_dir)
+    {
+        free((void *)nyx->nyx_dir);
+        nyx->nyx_dir = NULL;
     }
 
     free(nyx);

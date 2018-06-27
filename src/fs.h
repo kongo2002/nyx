@@ -31,11 +31,17 @@ dir_exists(const char *directory);
 const char *
 determine_pid_dir(void);
 
+const char *
+determine_local_pid_dir(const char *local_dir);
+
 FILE *
 open_pid_file(const char *pid_dir, const char *name, const char *mode);
 
 bool
 remove_pid_file(const char *pid_dir, const char *name);
+
+const char *
+get_current_dir(void);
 
 const char *
 get_homedir(void);

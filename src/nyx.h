@@ -34,6 +34,7 @@ typedef struct
     bool no_color;
     bool no_daemon;
     bool syslog;
+    bool local_mode;
     int32_t http_port;
     uint32_t def_start_timeout;
     uint32_t def_stop_timeout;
@@ -56,6 +57,7 @@ typedef struct
     bool is_init;
     bool is_daemon;
     const char *pid_dir;
+    const char *nyx_dir;
     int32_t event;
     int32_t event_pipe[2];
     void (*terminate_handler)(int32_t);
