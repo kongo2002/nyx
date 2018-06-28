@@ -58,6 +58,7 @@ typedef struct
     bool is_daemon;
     const char *pid_dir;
     const char *nyx_dir;
+    const char *socket_path;
     int32_t event;
     int32_t event_pipe[2];
     void (*terminate_handler)(int32_t);

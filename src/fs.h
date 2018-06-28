@@ -26,7 +26,16 @@ bool
 dir_writable(const char *directory);
 
 bool
+file_exists(const char *file);
+
+bool
 dir_exists(const char *directory);
+
+const char *
+local_socket_path(const char *local_dir);
+
+const char *
+determine_socket_path(const char *local_dir);
 
 const char *
 determine_pid_dir(void);

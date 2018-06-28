@@ -16,6 +16,7 @@
 #include "connector.h"
 #include "command.h"
 #include "event.h"
+#include "fs.h"
 #include "log.h"
 #include "nyx.h"
 #include "poll.h"
@@ -70,8 +71,12 @@ command_mode(nyx_t *nyx)
 
     if (parse_command(nyx->options.commands) != NULL)
     {
-        retcode = connector_call(nyx->options.commands,
+        const char *socket_path = determine_socket_path(nyx->nyx_dir);
+
+        retcode = connector_call(socket_path, nyx->options.commands,
                 nyx->options.quiet);
+
+        free((void *)socket_path);
     }
     else
     {

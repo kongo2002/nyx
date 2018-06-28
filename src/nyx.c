@@ -314,11 +314,13 @@ initialize_daemon(nyx_t *nyx)
     nyx->options.history_size = 20;
     nyx->options.http_port = 0;
 
-    nyx->nyx_dir = get_current_dir();
-
     nyx->pid_dir = nyx->options.local_mode
         ? determine_local_pid_dir(nyx->nyx_dir)
         : determine_pid_dir();
+
+    nyx->socket_path = nyx->options.local_mode
+        ? local_socket_path(nyx->nyx_dir)
+        : strdup(NYX_SOCKET_ADDR);
 
     if (nyx->pid_dir == NULL)
         return NYX_NO_PID_DIR;
@@ -326,8 +328,7 @@ initialize_daemon(nyx_t *nyx)
     nyx->pid = getpid();
     nyx->is_init = nyx->pid == 1;
 
-    /* try to check if a nyx instance is already running
-     * TODO: consider local-mode */
+    /* try to check if a nyx instance is already running */
     if ((pid = is_nyx_running(nyx)) > 0)
     {
         log_error("nyx instance appears to be running on PID %d - PID folder '%s'",
@@ -465,6 +466,8 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
 
     /* initialize logging */
     log_init(nyx);
+
+    nyx->nyx_dir = get_current_dir();
 
     /* either config file or adhoc watch, not both */
     if (adhoc_watch)
@@ -961,6 +964,12 @@ nyx_destroy(nyx_t *nyx)
     {
         free((void *)nyx->nyx_dir);
         nyx->nyx_dir = NULL;
+    }
+
+    if (nyx->socket_path)
+    {
+        free((void *)nyx->socket_path);
+        nyx->socket_path = NULL;
     }
 
     free(nyx);

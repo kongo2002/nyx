@@ -42,8 +42,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#define NYX_SOCKET_ADDR "/tmp/nyx.sock"
-
 #define NYX_MAX_MSG_LEN 128
 #define NYX_CONNECTOR_MAX_CONN 16
 
@@ -212,7 +210,7 @@ handle_response(char *buffer, size_t len, bool quiet)
 }
 
 nyx_error_e
-connector_call(const char **commands, bool quiet)
+connector_call(const char *socket_path, const char **commands, bool quiet)
 {
     nyx_error_e retcode = NYX_COMMAND_FAILED;
     int32_t sock = 0, res = 0;
@@ -231,7 +229,7 @@ connector_call(const char **commands, bool quiet)
 
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, NYX_SOCKET_ADDR, sizeof(addr.sun_path)-1);
+    strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path)-1);
 
     res = connect(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
 
@@ -326,11 +324,11 @@ handle_command(command_t *cmd, int32_t client, const char **input, nyx_t *nyx)
 }
 
 static void
-init_nyx_addr(struct sockaddr_un *addr)
+init_nyx_addr(const char *socket_path, struct sockaddr_un *addr)
 {
     memset(addr, 0, sizeof(struct sockaddr_un));
     addr->sun_family = AF_UNIX;
-    strncpy(addr->sun_path, NYX_SOCKET_ADDR, sizeof(addr->sun_path)-1);
+    strncpy(addr->sun_path, socket_path, sizeof(addr->sun_path)-1);
 }
 
 static bool
@@ -464,7 +462,7 @@ connector_run(nyx_t *nyx)
 
     struct sockaddr_un addr;
 
-    init_nyx_addr(&addr);
+    init_nyx_addr(nyx->socket_path, &addr);
 
     /* set umask before socket creation */
     mode_t old_mask = umask(0);
@@ -493,7 +491,7 @@ connector_run(nyx_t *nyx)
 #endif
 
     /* remove any existing nyx sockets */
-    unlink(NYX_SOCKET_ADDR);
+    unlink(nyx->socket_path);
 
     /* bind to specified socket location */
     error = bind(sock, (struct sockaddr *)&addr, sizeof(struct sockaddr_un));
@@ -678,7 +676,7 @@ teardown:
     if (epfd > 0)
         close(epfd);
 
-    unlink(NYX_SOCKET_ADDR);
+    unlink(nyx->socket_path);
 
     if (events)
     {

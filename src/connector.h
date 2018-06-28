@@ -17,8 +17,10 @@
 
 #include "nyx.h"
 
+#define NYX_SOCKET_ADDR "/tmp/nyx.sock"
+
 nyx_error_e
-connector_call(const char **commands, bool quiet);
+connector_call(const char *socket_path, const char **commands, bool quiet);
 
 void *
 connector_start(void *nyx);

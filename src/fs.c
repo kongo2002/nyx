@@ -16,6 +16,7 @@
 #define _GNU_SOURCE
 
 #include "def.h"
+#include "connector.h"
 #include "fs.h"
 #include "log.h"
 
@@ -192,6 +193,45 @@ local_pid_dir(const char *local_dir)
     return buffer;
 }
 
+const char *
+local_socket_path(const char *local_dir)
+{
+    if (local_dir == NULL || *local_dir == '\0')
+        return NULL;
+
+    const char pid_dir[] = "/.nyx/nyx.sock";
+    size_t len = strlen(local_dir) + LEN(pid_dir) + 1;
+    char *buffer = xcalloc(len, sizeof(char));
+
+    if (snprintf(buffer, len-1, "%s%s", local_dir, pid_dir) < 0)
+    {
+        free(buffer);
+        return NULL;
+    }
+
+    return buffer;
+}
+
+const char *
+determine_socket_path(const char *local_dir)
+{
+    /* at first we look for a local socket file as we want to
+     * 'detect' a local-mode nyx without having to specify '--local'
+     * on the nyx command invocation */
+    const char *local_socket = local_socket_path(local_dir);
+
+    if (local_socket)
+    {
+        if (file_exists(local_socket))
+            return local_socket;
+
+        free((void *)local_socket);
+        local_socket = NULL;
+    }
+
+    return strdup(NYX_SOCKET_ADDR);
+}
+
 static const char *
 determine_pid_dir_from(const char **dir_candidates)
 {
@@ -282,6 +322,17 @@ remove_pid_file(const char *pid_dir, const char *name)
 
     free(location);
     return success;
+}
+
+bool
+file_exists(const char *file)
+{
+    if (file == NULL || *file == '\0')
+        return false;
+
+    int32_t result = access(file, F_OK);
+
+    return result != -1;
 }
 
 bool
