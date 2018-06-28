@@ -31,7 +31,7 @@ matrix:
           env: DEBUG=0 PLUGINS=0 SSL=1
 
 before_install:
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cmocka libyaml; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install cmocka; fi
     - if [[ "$TRAVIS_OS_NAME" != "osx" ]]; then ./utils/install_cmocka.sh; fi
 
 script: make && make check
