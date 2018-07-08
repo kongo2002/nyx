@@ -1257,6 +1257,15 @@ parse_config(nyx_t *nyx, bool silent)
                 watch->startup_delay = nyx->options.startup_delay;
 
             dump_watch(watch);
+
+            /* let's emit a warning in case a relative directory is specified
+             * in non-local mode */
+            if (!silent && watch->dir && *watch->dir != '/' && !nyx->options.local_mode)
+            {
+                log_warn("%s: consider specifying relative paths in local mode only - "
+                         "as you don't want to rely on the directory that nyx was started in!",
+                         watch->name);
+            }
         }
 
         free(iter);

@@ -162,15 +162,29 @@ read_pipe(int32_t fd)
     return value;
 }
 
+static const char *
+get_exec_directory(watch_t *watch, nyx_t *nyx)
+{
+    /* no watch specific directory given */
+    if (watch->dir == NULL || *watch->dir == '\0')
+    {
+        /* either root dir ('/') or the current directory (in local-mode) */
+        if (nyx->options.local_mode)
+            return nyx->nyx_dir;
+        return "/";
+    }
+
+    return watch->dir;
+}
+
 static void
-spawn_exec(watch_t *watch, bool start, bool proxy_output, pid_t stop_pid)
+spawn_exec(watch_t *watch, const char *dir, bool start, bool proxy_output, pid_t stop_pid)
 {
     uid_t uid = 0;
     gid_t gid = 0;
 
     const char **args = start ? watch->start : watch->stop;
     const char *executable = *args;
-    const char *dir = (watch->dir == NULL || *watch->dir == '\0') ? "/" : watch->dir;
 
     /* determine user and group */
     if (watch->uid)
@@ -316,7 +330,7 @@ spawn_exec(watch_t *watch, bool start, bool proxy_output, pid_t stop_pid)
 }
 
 static pid_t
-spawn_stop(watch_t *watch, pid_t stop_pid)
+spawn_stop(nyx_t *nyx, watch_t *watch, pid_t stop_pid)
 {
     pid_t pid = fork();
 
@@ -325,7 +339,8 @@ spawn_stop(watch_t *watch, pid_t stop_pid)
 
     if (pid == 0)
     {
-        spawn_exec(watch, false, false, stop_pid);
+        const char *dir = get_exec_directory(watch, nyx);
+        spawn_exec(watch, dir, false, false, stop_pid);
     }
 
     /* the return value will be written into the process' pid file
@@ -363,11 +378,13 @@ spawn_start(nyx_t *nyx, watch_t *watch)
     /* child process */
     if (pid == 0)
     {
+        const char *dir = get_exec_directory(watch, nyx);
+
         /* in 'init mode' we have to fork only once */
         if (!double_fork)
         {
             /* this call won't return */
-            spawn_exec(watch, true, proxy_output, 0);
+            spawn_exec(watch, dir, true, proxy_output, 0);
         }
         /* otherwise we want to 'double fork' */
         else
@@ -380,7 +397,7 @@ spawn_start(nyx_t *nyx, watch_t *watch)
             if (inner_pid == 0)
             {
                 /* this call won't return */
-                spawn_exec(watch, true, proxy_output, 0);
+                spawn_exec(watch, dir, true, proxy_output, 0);
             }
 
             /* close the read end before */
@@ -484,7 +501,7 @@ forker(nyx_t *nyx, int32_t pipe_fd)
 
         pid_t pid = (info.start)
             ? spawn_start(nyx, watch)
-            : spawn_stop(watch, info.pid);
+            : spawn_stop(nyx, watch, info.pid);
 
         write_pid(pid, watch->name, nyx);
     }

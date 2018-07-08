@@ -174,6 +174,7 @@ watch_validate(watch_t *watch)
 
         result &= valid;
     }
+
     if (watch->error_file)
     {
         valid = dir_writable(watch->error_file);
@@ -182,6 +183,18 @@ watch_validate(watch_t *watch)
         {
             log_error("Error file directory '%s' does not exist and/or "
                       "is not writable", watch->error_file);
+        }
+
+        result &= valid;
+    }
+
+    if (watch->dir)
+    {
+        valid = dir_exists(watch->dir);
+
+        if (!valid)
+        {
+            log_error("Base directory '%s' does not exist", watch->dir);
         }
 
         result &= valid;
