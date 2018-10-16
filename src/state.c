@@ -289,6 +289,10 @@ stop(state_t *state, state_e from, state_e to)
              (watch->stop_timeout ? watch->stop_timeout : nyx->options.def_stop_timeout));
 
 end:
+    /* according to the 'kill -0' above we can safely assume
+     * we successfully terminated this watch */
+    clear_pid(watch->name, nyx);
+
     return true;
 }
 
