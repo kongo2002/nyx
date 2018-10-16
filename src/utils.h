@@ -19,6 +19,9 @@
 
 #include <stdint.h>
 
+bool
+empty_or_whitespace(const char *str);
+
 const char **
 strings_to_null_terminated(list_t *list);
 

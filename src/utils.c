@@ -28,7 +28,7 @@
 #include <sys/select.h>
 #include <wordexp.h>
 
-static bool
+bool
 empty_or_whitespace(const char *str)
 {
     char c;

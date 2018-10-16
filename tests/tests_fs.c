@@ -36,6 +36,7 @@ test_fs_parent_dir(UNUSED void **state)
     assert_null(parent_dir(".."));
     assert_null(parent_dir("../"));
     assert_null(parent_dir(NULL));
+    assert_null(parent_dir(" "));
     check_parent_dir("/foo/bar/file/", "/foo/bar");
     check_parent_dir("/foo/bar/file", "/foo/bar");
     check_parent_dir("/foo/bar/", "/foo");

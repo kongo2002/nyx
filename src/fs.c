@@ -19,6 +19,7 @@
 #include "connector.h"
 #include "fs.h"
 #include "log.h"
+#include "utils.h"
 
 #include <dirent.h>
 #include <errno.h>
@@ -434,7 +435,8 @@ parent_dir(const char *directory)
 
     free(input);
 
-    if (parent && *parent != '.')
+    /* GNU dirname might return an empty string */
+    if (parent && *parent != '.' && !empty_or_whitespace(parent))
     {
         return strdup(parent);
     }
