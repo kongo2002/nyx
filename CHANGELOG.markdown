@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 1.9.3
+
+2018-10-16
+
+* feature: `--local` launches the nyx daemon in a directory-local mode that is
+  based on the current working directory and evaluates all configured paths
+  relative to that directory
+* internal: prevent access to nyx's own pid
+* internal: more thorough resource handling in forker subprocess
+
+
 ## 1.9.2
 
 2018-05-22
