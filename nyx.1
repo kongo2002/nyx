@@ -1,4 +1,4 @@
-.TH "nyx" "1" "January 10, 2016" "nyx user manual" ""
+.TH "nyx" "1" "October 16, 2018" "nyx user manual" ""
 .SH NAME
 .PP
 nyx \- the lean, docker\-optimized linux process monitor
@@ -26,7 +26,7 @@ starting/stopping an instance of your application.
 .TP
 .B \-c \f[I]config\-file\f[], \-\-config=\f[I]config\-file\f[]
 Specify the YAML configuration which results in nyx to be run in
-server\-mode.
+server (daemon) mode.
 .RS
 .RE
 .TP
@@ -35,6 +35,16 @@ Pass a command that should be watched instead of specifying a
 configuration file.
 This is a simple shortcut to watch an application with the default
 options in an \[aq]adhoc\[aq] fashion.
+.RS
+.RE
+.TP
+.B \-\-local
+Start the nyx daemon in a directory-local mode based on the current
+working directory.
+You may connect to such a nyx instance only inside that specific
+directory in contrast to nyx's usual 'system-wide' behavior.
+All configured directories of executables and arguments are evaluated
+based on that specific directory as well.
 .RS
 .RE
 .TP
