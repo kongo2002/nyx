@@ -346,6 +346,14 @@ initialize_daemon(nyx_t *nyx)
     if (nyx->options.config_file && !parse_config(nyx, false))
         return NYX_INVALID_CONFIG;
 
+    /* print information about local-mode so the user won't
+     * be surprised about what that implies */
+    if (nyx->options.local_mode)
+    {
+        log_info("running in local-mode - every directory will be evaluated "
+                 "relative to the current directory '%s'", nyx->nyx_dir);
+    }
+
     /* nyx should run as a daemon process */
     if (!nyx->is_init && !nyx->options.no_daemon)
     {
