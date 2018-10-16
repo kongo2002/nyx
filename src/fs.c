@@ -1,4 +1,4 @@
-/* Copyright 2014-2017 Gregor Uhlenheuer
+/* Copyright 2014-2018 Gregor Uhlenheuer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -203,7 +203,11 @@ local_socket_path(const char *local_dir)
     size_t len = strlen(local_dir) + LEN(pid_dir) + 1;
     char *buffer = xcalloc(len, sizeof(char));
 
-    if (snprintf(buffer, len-1, "%s%s", local_dir, pid_dir) < 0)
+    /* adjust path for local_dir == '/' */
+    bool is_root = *local_dir == '/' && *(local_dir + 1) == '\0';
+    const char *pos = is_root ? local_dir + 1 : local_dir;
+
+    if (snprintf(buffer, len-1, "%s%s", pos, pid_dir) < 0)
     {
         free(buffer);
         return NULL;
@@ -213,12 +217,54 @@ local_socket_path(const char *local_dir)
 }
 
 const char *
+find_local_socket_path(const char *start_dir)
+{
+    if (start_dir == NULL || *start_dir == '\0')
+        return NULL;
+
+    /* max directory depth to walk up */
+    int max_depth = 8;
+
+    const char *dir = strdup(start_dir);
+    if (dir == NULL)
+        log_critical_perror("nyx: strdup");
+
+    while (max_depth-- > 0 && dir != NULL)
+    {
+        const char *local_dir = local_socket_path(dir);
+
+        if (file_exists(local_dir))
+        {
+            free((void *)dir);
+            return local_dir;
+        }
+
+        /* directory does not exist */
+        if (local_dir != NULL)
+        {
+            free((void *)local_dir);
+        }
+
+        /* walk up one directory */
+        const char *parent = parent_dir(dir);
+
+        free((void *)dir);
+        dir = parent;
+    }
+
+    if (dir)
+        free((void *)dir);
+
+    return NULL;
+}
+
+const char *
 determine_socket_path(const char *local_dir)
 {
     /* at first we look for a local socket file as we want to
      * 'detect' a local-mode nyx without having to specify '--local'
      * on the nyx command invocation */
-    const char *local_socket = local_socket_path(local_dir);
+    const char *local_socket = find_local_socket_path(local_dir);
 
     if (local_socket)
     {
@@ -371,6 +417,29 @@ is_directory(const char *path)
 
     free(copy);
     return is_dir;
+}
+
+const char *
+parent_dir(const char *directory)
+{
+    /* we require an absolute path in here */
+    if (directory == NULL || *directory != '/' || strlen(directory) <= 1)
+        return NULL;
+
+    char *input = strdup(directory);
+    if (input == NULL)
+        log_critical_perror("nyx: strdup");
+
+    const char *parent = dirname(input);
+
+    free(input);
+
+    if (parent && *parent != '.')
+    {
+        return strdup(parent);
+    }
+
+    return NULL;
 }
 
 bool

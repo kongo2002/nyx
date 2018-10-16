@@ -1,4 +1,4 @@
-/* Copyright 2014-2017 Gregor Uhlenheuer
+/* Copyright 2014-2018 Gregor Uhlenheuer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,13 @@ bool
 dir_exists(const char *directory);
 
 const char *
+parent_dir(const char *directory);
+
+const char *
 local_socket_path(const char *local_dir);
+
+const char *
+find_local_socket_path(const char *start_dir);
 
 const char *
 determine_socket_path(const char *local_dir);
