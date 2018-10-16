@@ -433,14 +433,15 @@ parent_dir(const char *directory)
 
     const char *parent = dirname(input);
 
-    free(input);
-
     /* GNU dirname might return an empty string */
     if (parent && *parent != '.' && !empty_or_whitespace(parent))
     {
-        return strdup(parent);
+        const char *result = strdup(parent);
+        free(input);
+        return result;
     }
 
+    free(input);
     return NULL;
 }
 
