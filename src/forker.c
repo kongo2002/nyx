@@ -348,6 +348,39 @@ spawn_stop(nyx_t *nyx, watch_t *watch, pid_t stop_pid)
     return 0;
 }
 
+static void
+reset_nyx(nyx_t *nyx)
+{
+    clear_watches(nyx);
+    destroy_options(nyx);
+}
+
+static void
+destroy_nyx(nyx_t *nyx)
+{
+    reset_nyx(nyx);
+
+    if (nyx->pid_dir)
+    {
+        free((void *)nyx->pid_dir);
+        nyx->pid_dir = NULL;
+    }
+
+    if (nyx->nyx_dir)
+    {
+        free((void *)nyx->nyx_dir);
+        nyx->nyx_dir = NULL;
+    }
+
+    if (nyx->socket_path)
+    {
+        free((void *)nyx->socket_path);
+        nyx->socket_path = NULL;
+    }
+
+    free(nyx);
+}
+
 static pid_t
 spawn_start(nyx_t *nyx, watch_t *watch)
 {
@@ -405,6 +438,10 @@ spawn_start(nyx_t *nyx, watch_t *watch)
 
             /* now we write the child pid into the pipe */
             write_pipe(pipes[1], inner_pid);
+
+            /* this process will be terminated just now but it's
+             * good practice to clean up after ourselves anyways */
+            destroy_nyx(nyx);
 
             exit(EXIT_SUCCESS);
         }
@@ -473,8 +510,7 @@ forker(nyx_t *nyx, int32_t pipe_fd)
         {
             log_debug("forker: received reload command");
 
-            clear_watches(nyx);
-            destroy_options(nyx);
+            reset_nyx(nyx);
             nyx->watches = hash_new(_watch_destroy);
 
             if (parse_config(nyx, true))
@@ -508,7 +544,7 @@ forker(nyx_t *nyx, int32_t pipe_fd)
 
     close(pipe_fd);
 
-    nyx_destroy(nyx);
+    destroy_nyx(nyx);
 
     log_debug("forker: terminated");
 }
