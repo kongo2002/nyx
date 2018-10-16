@@ -72,10 +72,10 @@ Instead of [building](#building) nyx by yourself you can download ready-to-use
 binaries for 64-bit Linux:
 
 
-#### 1.9.2
+#### 1.9.3
 
-- 64-bit static binary (built using musl libc): [nyx-1.9.2.tar.gz](http://uhlenheuer.net/files/nyx/static/nyx-1.9.2.tar.gz)
-  (SHA1: `a5b512265c18e484dd162eb18654b76bf33dea79`)
+- 64-bit static binary (built using musl libc): [nyx-1.9.3.tar.gz](http://uhlenheuer.net/files/nyx/static/nyx-1.9.3.tar.gz)
+  (SHA1: `14f44d6fb2f71c0924c4b5dba3702fefcba81fe3`)
 
 
 #### 1.8.0
