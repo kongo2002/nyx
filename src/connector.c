@@ -240,6 +240,8 @@ connector_call(const char *socket_path, const char **commands, bool quiet)
         if (errno == ENOENT)
         {
             log_error("Failed to connect to nyx - the daemon is probably not running");
+            log_error("In local-mode make sure you are in the base directory or one of its sub directories");
+
             return NYX_NO_DAEMON_FOUND;
         }
         else
