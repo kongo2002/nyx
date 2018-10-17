@@ -31,6 +31,9 @@ file_exists(const char *file);
 bool
 dir_exists(const char *directory);
 
+bool
+create_if_not_exists(const char *file);
+
 const char *
 parent_dir(const char *directory);
 

@@ -42,6 +42,7 @@ main(UNUSED int argc, UNUSED char **argv)
         cmocka_unit_test(test_timestack_add),
         cmocka_unit_test(test_fs_parent_dir),
         cmocka_unit_test(test_fs_find_local_socket_path),
+        cmocka_unit_test(test_fs_create_if_not_exists),
         cmocka_unit_test(test_proc_system_info),
         cmocka_unit_test(test_proc_total_memory_size),
         cmocka_unit_test(test_proc_stat),

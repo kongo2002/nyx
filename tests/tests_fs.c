@@ -29,6 +29,25 @@ check_parent_dir(const char *input, const char *expected)
 }
 
 void
+test_fs_create_if_not_exists(UNUSED void **state)
+{
+    assert_false(create_if_not_exists(NULL));
+    assert_false(create_if_not_exists(""));
+
+    assert_true(create_if_not_exists("/"));
+    assert_true(create_if_not_exists("."));
+    assert_true(create_if_not_exists(".."));
+    assert_true(create_if_not_exists("../"));
+    assert_true(create_if_not_exists("./test.txt"));
+    assert_true(create_if_not_exists("../test.txt"));
+    assert_true(create_if_not_exists("/tmp/test.txt"));
+    assert_true(create_if_not_exists("/tmp/foo/bar/ham/test.txt"));
+
+    assert_true(dir_exists("/tmp/foo/bar/ham"));
+    assert_true(dir_exists("/tmp/foo/bar/ham/"));
+}
+
+void
 test_fs_parent_dir(UNUSED void **state)
 {
     assert_null(parent_dir("/"));

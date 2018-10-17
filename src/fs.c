@@ -175,6 +175,44 @@ mkdir_p(const char *directory)
     return true;
 }
 
+bool
+create_if_not_exists(const char *file)
+{
+    bool success = false;
+
+    if (file == NULL || *file == '\0')
+        return false;
+
+    char *prepared = strdup(prepare_dir(file));
+
+    if (prepared == NULL)
+        log_critical_perror("nyx: strdup");
+
+    const char *dir = dirname(prepared);
+
+    if (dir && *dir != '.' && !empty_or_whitespace(dir))
+    {
+        const char *check = strdup(dir);
+
+        if (check == NULL)
+            log_critical_perror("nyx: strdup");
+
+        success = dir_exists(check) || mkdir_p(check);
+
+        free((void *)check);
+    }
+    /* there is no directory at all (e.g. current directory) */
+    else
+    {
+        success = true;
+    }
+
+    if (prepared)
+        free(prepared);
+
+    return success;
+}
+
 static const char *
 local_pid_dir(const char *local_dir)
 {

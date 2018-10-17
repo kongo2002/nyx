@@ -168,8 +168,22 @@ watch_validate(watch_t *watch)
 
         if (!valid)
         {
-            log_error("Log file directory '%s' does not exist and/or "
+            log_warn("Log file directory '%s' does not exist and/or "
                       "is not writable", watch->log_file);
+
+            valid = create_if_not_exists(watch->log_file);
+
+            if (valid)
+            {
+                log_warn("Created directory for error_file '%s' of watch '%s' - please "
+                         "make sure the directory looks like what you expect!",
+                         watch->log_file, watch->name);
+            }
+            else
+            {
+                log_error("Could not create directory for error_file '%s' for watch '%s'",
+                          watch->log_file, watch->name);
+            }
         }
 
         result &= valid;
@@ -181,8 +195,22 @@ watch_validate(watch_t *watch)
 
         if (!valid)
         {
-            log_error("Error file directory '%s' does not exist and/or "
+            log_warn("Error file directory '%s' does not exist and/or "
                       "is not writable", watch->error_file);
+
+            valid = create_if_not_exists(watch->error_file);
+
+            if (valid)
+            {
+                log_warn("Created directory for error_file '%s' of watch '%s' - please "
+                         "make sure the directory looks like what you expect!",
+                         watch->error_file, watch->name);
+            }
+            else
+            {
+                log_error("Could not create directory for error_file '%s' for watch '%s'",
+                          watch->error_file, watch->name);
+            }
         }
 
         result &= valid;

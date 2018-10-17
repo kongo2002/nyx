@@ -19,6 +19,9 @@ void
 test_fs_parent_dir(void **state);
 
 void
+test_fs_create_if_not_exists(void **state);
+
+void
 test_fs_find_local_socket_path(void **state);
 
 /* vim: set et sw=4 sts=4 tw=80: */
