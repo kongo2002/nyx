@@ -383,16 +383,22 @@ stopped(state_t *state, state_e from, state_e to)
 {
     DEBUG_LOG_STATE_FUNC;
 
+    bool is_initializing = from == STATE_UNMONITORED;
+
     /* restart if the stop wasn't requested via 'STOPPING' */
     if (from != STATE_STOPPING && from != STATE_STOPPED)
-        set_state(state, STATE_STARTING);
+    {
+        /* start after initialization only if we are not in passive mode */
+        if (!is_initializing || !state->nyx->options.passive_mode)
+            set_state(state, STATE_STARTING);
+    }
 
     /* reset failed counter in case the watch was running
      * for the maximum flapping time */
     if (was_running_for(state) > (NYX_FLAPPING_INTERVAL / NYX_FLAPPING_COUNT))
         state->failed_counter = 0;
 
-    if (from != STATE_UNMONITORED)
+    if (!is_initializing)
         log_info("Watch '%s' just stopped", state->watch->name);
 
     return true;

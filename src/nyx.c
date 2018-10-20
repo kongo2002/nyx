@@ -87,6 +87,7 @@ print_help(void)
          "   -D  --no-daemon        (do not daemonize)\n"
          "       --run <executable> (specify an ad-hoc executable watch)\n"
          "       --local            (run in the current directory)\n"
+         "   -p  --passive          (don't automatically start services)\n"
          "   -s  --syslog           (log into syslog)\n"
          "   -q  --quiet            (output error messages only)\n"
          "   -C  --no-color         (no terminal coloring)\n"
@@ -118,6 +119,7 @@ static const struct option long_options[] =
     { .name = "quiet",     .has_arg = 0, .flag = NULL, .val = 'q'},
     { .name = "syslog",    .has_arg = 0, .flag = NULL, .val = 's'},
     { .name = "local",     .has_arg = 0, .flag = NULL, .val = 'l'},
+    { .name = "passive",   .has_arg = 0, .flag = NULL, .val = 'p'},
     { .name = "version",   .has_arg = 0, .flag = NULL, .val = 'V'},
     { NULL, 0, NULL, 0 }
 };
@@ -428,7 +430,7 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
     }
 
     /* parse command line arguments */
-    while ((arg = getopt_long(argc, args, "hqsCDVc:", long_options, NULL)) != -1)
+    while ((arg = getopt_long(argc, args, "hqsCDVpc:", long_options, NULL)) != -1)
     {
         switch (arg)
         {
@@ -446,6 +448,9 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
                 break;
             case 'l':
                 nyx->options.local_mode = true;
+                break;
+            case 'p':
+                nyx->options.passive_mode = true;
                 break;
             case 'c':
                 nyx->options.config_file = optarg;

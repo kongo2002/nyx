@@ -35,6 +35,7 @@ typedef struct
     bool no_daemon;
     bool syslog;
     bool local_mode;
+    bool passive_mode;
     int32_t http_port;
     uint32_t def_start_timeout;
     uint32_t def_stop_timeout;
