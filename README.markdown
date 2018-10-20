@@ -362,6 +362,14 @@ $ nyx --local -c config.yaml
 ```
 
 
+#### Passive mode
+
+You may pass `--passive` to the nyx daemon in order to have it *not*
+automatically start all processes on startup. That way you are able to
+selectively start your services to your liking or delay and/or start the
+processes in a specific order.
+
+
 ### Command interface
 
 You can interact with a running *nyx* daemon instance using the same executable:
