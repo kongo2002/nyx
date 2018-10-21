@@ -1,5 +1,16 @@
 # CHANGELOG
 
+
+## 1.9.4
+
+2018-10-21
+
+* feature: nyx in `--passive` mode does not start services automatically on
+  startup
+* improvement: nyx will try to create the folders of the `log_file` and
+  `error_file` settings if necessary
+
+
 ## 1.9.3
 
 2018-10-16
