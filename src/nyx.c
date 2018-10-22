@@ -267,6 +267,16 @@ daemonize(nyx_t *nyx)
         if (!write_pid(pid, "nyx", nyx))
             log_warn("Failed to persist PID (%d) of running nyx instance", pid);
 
+        /* let's delay program termination for a bit (250 ms):
+         *
+         * this is not necessary but adjusts for the minor delay the
+         * forked process needs to initialize all configured watches
+         *
+         * this enables for a much nicer user experience if you want to
+         * immediately chain multiple nyx commands right after startup
+         * like 'nyx -c cfg.yaml && nyx start x && nyx stop y && ...' */
+        usleep(250000);
+
         log_info("Daemonized nyx on PID %d", pid);
         exit(EXIT_SUCCESS);
     }
