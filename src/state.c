@@ -531,21 +531,26 @@ dispatch_poll_result(pid_t pid, bool is_running, nyx_t *nyx)
 
 #ifdef OSX
 static char *
-named_semaphore_name(watch_t *watch, uint32_t idx)
+named_semaphore_name(watch_t *watch, pid_t nyx_pid, uint32_t idx)
 {
-    size_t sem_name_len = strlen(watch->name) + 4;
+    size_t sem_name_len = strlen(watch->name) + 16;
     char *sem_name = xcalloc(sem_name_len, sizeof(char));
 
-    snprintf(sem_name, sem_name_len, "%s_%u", watch->name, idx);
+    /* generate predictable semaphore name: <watch>_<nyx-pid>_<idx>
+     *
+     * we include nyx's pid in the semaphore name in order to
+     * allow multiple nyx instances on the same machine without
+     * collisions between semaphore names (e.g. local-mode) */
+    snprintf(sem_name, sem_name_len, "%s_%d_%u", watch->name, nyx_pid, idx);
 
     return sem_name;
 }
 
 static sem_t *
-init_named_semaphore(watch_t *watch, uint32_t idx)
+init_named_semaphore(watch_t *watch, pid_t nyx_pid, uint32_t idx)
 {
     sem_t *semaphore = NULL;
-    char *sem_name = named_semaphore_name(watch, idx);
+    char *sem_name = named_semaphore_name(watch, nyx_pid, idx);
 
     log_debug("Trying to create a new named semaphore (%s) for watch %s [%u]",
             sem_name, watch->name, idx);
@@ -582,9 +587,12 @@ init_named_semaphore(watch_t *watch, uint32_t idx)
 }
 
 static void
-remove_named_semaphore(watch_t *watch, sem_t *sem, uint32_t idx)
+remove_named_semaphore(state_t *state, sem_t *sem, uint32_t idx)
 {
-    char *sem_name = named_semaphore_name(watch, idx);
+    watch_t *watch = state->watch;
+    pid_t pid = state->nyx->pid;
+
+    char *sem_name = named_semaphore_name(watch, pid, idx);
 
     sem_close(sem);
     sem_unlink(sem_name);
@@ -628,9 +636,9 @@ state_new(watch_t *watch, nyx_t *nyx)
 #else
     /* on OSX we have to create named semaphores
      * that's why we create two semaphores with the
-     * names: '<watch-name>_1' and '<watch-name>_2' */
-    states_semaphore = init_named_semaphore(watch, 1);
-    notify_semaphore = init_named_semaphore(watch, 2);
+     * names: '<watch-name>_<nyx-pid>_1' and '<watch-name>_<nyx-pid>_2' */
+    states_semaphore = init_named_semaphore(watch, nyx->pid, 1);
+    notify_semaphore = init_named_semaphore(watch, nyx->pid, 2);
 #endif
 
     state->states_sem = states_semaphore;
@@ -689,7 +697,7 @@ state_destroy(state_t *state)
         sem_destroy(state->notify_sem);
         free(state->notify_sem);
 #else
-        remove_named_semaphore(state->watch, state->notify_sem, 2);
+        remove_named_semaphore(state, state->notify_sem, 2);
 #endif
     }
 
@@ -700,7 +708,7 @@ state_destroy(state_t *state)
         sem_destroy(state->states_sem);
         free(state->states_sem);
 #else
-        remove_named_semaphore(state->watch, state->states_sem, 1);
+        remove_named_semaphore(state, state->states_sem, 1);
 #endif
     }
 
