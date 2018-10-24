@@ -71,12 +71,20 @@ command_mode(nyx_t *nyx)
 
     if (parse_command(nyx->options.commands) != NULL)
     {
-        const char *socket_path = determine_socket_path(nyx->nyx_dir);
+        bool local_only = nyx->options.local_mode;
+        const char *socket_path = determine_socket_path(nyx->nyx_dir, local_only);
 
         retcode = connector_call(socket_path, nyx->options.commands,
                 nyx->options.quiet);
 
-        free((void *)socket_path);
+        if (retcode == NYX_NO_DAEMON_FOUND && local_only)
+        {
+            log_error("Failed to connect to nyx - the daemon is probably not running");
+            log_error("No local nyx daemon found - tried in '%s' and its parent directories", nyx->nyx_dir);
+        }
+
+        if (socket_path)
+            free((void *)socket_path);
     }
     else
     {

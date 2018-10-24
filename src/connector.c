@@ -218,6 +218,9 @@ connector_call(const char *socket_path, const char **commands, bool quiet)
     size_t total = 0;
     struct sockaddr_un addr;
 
+    if (socket_path == NULL)
+        return NYX_NO_DAEMON_FOUND;
+
     /* create a UNIX domain, connection based socket */
     sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
