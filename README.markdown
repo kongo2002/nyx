@@ -72,10 +72,10 @@ Instead of [building](#building) nyx by yourself you can download ready-to-use
 binaries for 64-bit Linux:
 
 
-#### 1.9.4
+#### 1.9.5
 
-- 64-bit static binary (built using musl libc): [nyx-1.9.4.tar.gz](http://uhlenheuer.net/files/nyx/static/nyx-1.9.4.tar.gz)
-  (SHA1: `8a00d77eafe44107cc06115a252d85781e845283`)
+- 64-bit static binary (built using musl libc): [nyx-1.9.5.tar.gz](http://uhlenheuer.net/files/nyx/static/nyx-1.9.5.tar.gz)
+  (SHA1: `3dc2534b5b22ea10efc7e41a4ee8e621ceea31fb`)
 
 
 #### 1.8.0
@@ -97,6 +97,14 @@ binaries for 64-bit Linux:
 
 - 64-bit static binary (built using musl libc): [nyx-1.6.1.tar.gz](http://uhlenheuer.net/files/nyx/static/nyx-1.6.1.tar.gz)
   (SHA1: `1c23bd10b3f5fe71476d527158f498cc0e294f7b`)
+
+
+### MacOS
+
+On MacOS you can also use [homebrew][homebrew] to install `nyx` via the custom
+tap:
+
+    $ brew install kongo2002/nyx/nyx
 
 
 ## Usage
@@ -524,3 +532,4 @@ The project is written by Gregor Uhlenheuer. You can reach me at
 [supervisor]: http://supervisord.org/
 [systemd]: https://github.com/systemd/systemd/
 [ansible]: https://www.ansible.com/
+[homebrew]: https://brew.sh/
