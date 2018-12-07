@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## 1.9.5
+
+2018-12-07
+
+* improvement: add `--local` to command mode
+* improvement: slight delay after daemon initialization
+
+
 ## 1.9.4
 
 2018-10-21
