@@ -190,7 +190,7 @@ create_if_not_exists(const char *file)
 
     const char *dir = dirname(prepared);
 
-    if (dir && *dir != '.' && !empty_or_whitespace(dir))
+    if (dir && !empty_or_whitespace(dir))
     {
         const char *check = strdup(dir);
 

@@ -175,13 +175,13 @@ watch_validate(watch_t *watch)
 
             if (valid)
             {
-                log_warn("Created directory for error_file '%s' of watch '%s' - please "
+                log_warn("Created directory for log_file '%s' of watch '%s' - please "
                          "make sure the directory looks like what you expect!",
                          watch->log_file, watch->name);
             }
             else
             {
-                log_error("Could not create directory for error_file '%s' for watch '%s'",
+                log_error("Could not create directory for log_file '%s' for watch '%s'",
                           watch->log_file, watch->name);
             }
         }
