@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 1.9.6
+
+2018-12-16
+
+* improvement: add fallback creation of relative log/error directories
+
+
 ## 1.9.5
 
 2018-12-07
