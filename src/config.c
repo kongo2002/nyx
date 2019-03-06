@@ -363,7 +363,7 @@ DECLARE_WATCH_STR_LIST_VALUE(stop)
 DECLARE_WATCH_STR_FUNC(max_memory, parse_size_unit)
 DECLARE_WATCH_STR_FUNC(max_cpu, uatoi)
 DECLARE_WATCH_STR_FUNC(stop_timeout, uatoi)
-DECLARE_WATCH_STR_FUNC(port_check, uatoi)
+DECLARE_WATCH_STR_FUNC(port_check, parse_endpoint)
 DECLARE_WATCH_STR_FUNC(startup_delay, uatoi)
 
 #undef DECLARE_WATCH_STR_VALUE

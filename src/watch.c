@@ -91,6 +91,9 @@ watch_destroy(watch_t *watch)
     if (watch->error_file) free((void *)watch->error_file);
     if (watch->http_check) free((void *)watch->http_check);
 
+    if (watch->port_check)
+        endpoint_free(watch->port_check);
+
     if (watch->env)
         hash_destroy(watch->env);
 
@@ -270,7 +273,17 @@ watch_dump(watch_t *watch)
         log_info("  stop_timeout: %u", watch->stop_timeout);
 
     if (watch->port_check)
-        log_info("  port_check: %u", watch->port_check);
+    {
+        if (watch->port_check->host)
+        {
+            log_info("  port_check: %s:%u",
+                    watch->port_check->host, watch->port_check->port);
+        }
+        else
+        {
+            log_info("  port_check: %u", watch->port_check->port);
+        }
+    }
 
     log_info("  startup_delay: %u", watch->startup_delay);
 

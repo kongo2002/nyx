@@ -18,4 +18,10 @@
 void
 test_check_http(void **state);
 
+void
+test_check_port(void **state);
+
+void
+test_parse_endpoint(void **state);
+
 /* vim: set et sw=4 sts=4 tw=80: */

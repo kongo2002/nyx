@@ -52,6 +52,18 @@ typedef struct
     uint32_t length;
 } epoll_extra_data_t;
 
+typedef struct
+{
+    uint16_t port;
+    const char *host;
+} endpoint_t;
+
+endpoint_t *
+parse_endpoint(const char *input);
+
+void
+endpoint_free(endpoint_t *endpoint);
+
 http_method_e
 http_method_from_string(const char *str);
 
@@ -65,7 +77,10 @@ ssize_t
 send_safe(int32_t sock, const void *buffer, size_t length);
 
 bool
-check_port(uint16_t port);
+check_local_port(uint16_t port);
+
+bool
+check_port(const char *host, uint16_t port);
 
 bool
 check_http(const char *url, uint16_t port, http_method_e method);

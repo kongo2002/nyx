@@ -33,7 +33,7 @@ typedef struct watch_t
     const char *http_check;
     uint32_t http_check_port;
     http_method_e http_check_method;
-    uint32_t port_check;
+    endpoint_t *port_check;
     uint32_t stop_timeout;
     uint32_t max_cpu;
     uint64_t max_memory;

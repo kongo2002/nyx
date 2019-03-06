@@ -664,7 +664,7 @@ proc_required(nyx_t *nyx)
 
         if (watch->max_cpu > 0 ||
             watch->max_memory > 0 ||
-            watch->port_check > 0 ||
+            watch->port_check != NULL ||
             watch->http_check != NULL)
         {
             required = true;

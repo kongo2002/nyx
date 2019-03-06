@@ -287,12 +287,25 @@ proc_port_check(proc_stat_t *proc, nyx_t *nyx)
     if (!watch->port_check)
         return true;
 
-    if (!check_port(watch->port_check))
+    if (watch->port_check->host)
     {
-        log_warn("Process '%s': port %u is not available",
-                proc->name, watch->port_check);
+        if (!check_port(watch->port_check->host, watch->port_check->port))
+        {
+            log_warn("Process '%s': %s:%u is not available",
+                    proc->name, watch->port_check->host, watch->port_check->port);
 
-        return nyx->proc->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
+            return nyx->proc->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
+        }
+    }
+    else
+    {
+        if (!check_local_port(watch->port_check->port))
+        {
+            log_warn("Process '%s': port %u is not available",
+                    proc->name, watch->port_check->port);
+
+            return nyx->proc->event_handler(PROC_PORT_NOT_OPEN, proc, nyx);
+        }
     }
 
     return true;

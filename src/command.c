@@ -175,7 +175,17 @@ handle_config(sender_callback_t *cb, const char **input, nyx_t *nyx)
         cb->sender(cb, "max_cpu: %u", watch->max_cpu);
 
     if (watch->port_check)
-        cb->sender(cb, "port_check: %u", watch->port_check);
+    {
+        if (watch->port_check->host)
+        {
+            cb->sender(cb, "port_check: %s:%u",
+                    watch->port_check->host, watch->port_check->port);
+        }
+        else
+        {
+            cb->sender(cb, "port_check: %u", watch->port_check->port);
+        }
+    }
 
     if (watch->http_check)
     {

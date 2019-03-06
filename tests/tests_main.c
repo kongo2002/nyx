@@ -52,6 +52,8 @@ main(UNUSED int argc, UNUSED char **argv)
         cmocka_unit_test(test_parse_command_string),
         cmocka_unit_test(test_substitute_env_string),
         cmocka_unit_test(test_check_http),
+        cmocka_unit_test(test_check_port),
+        cmocka_unit_test(test_parse_endpoint),
         cmocka_unit_test(test_strbuf_append),
         cmocka_unit_test(test_is_all)
     };

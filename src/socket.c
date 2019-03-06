@@ -21,6 +21,8 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include <unistd.h>
 
 http_method_e
@@ -67,6 +69,68 @@ http_method_to_string(http_method_e method)
         default:
             return "GET";
     }
+}
+
+static endpoint_t *
+endpoint_new(uint16_t port, const char *host)
+{
+    endpoint_t *endpoint = xcalloc1(sizeof(endpoint_t));
+
+    endpoint->port = port;
+    endpoint->host = host != NULL ? strdup(host) : NULL;
+
+    return endpoint;
+}
+
+void
+endpoint_free(endpoint_t *endpoint)
+{
+    if (endpoint == NULL)
+        return;
+
+    if (endpoint->host)
+        free((void *)endpoint->host);
+
+    free(endpoint);
+}
+
+endpoint_t *
+parse_endpoint(const char *input)
+{
+    uint16_t port = 0;
+    endpoint_t *endpoint = NULL;
+
+    if (input == NULL || *input == '\0')
+        return NULL;
+
+    char *copy = strdup(input);
+    char *to_free = copy;
+    char *host = strsep(&copy, ":");
+
+    /* there is no colon in the input
+     * this has to be a port number */
+    if (copy == NULL)
+    {
+        port = atoi(input);
+
+        if (port > 0)
+            endpoint = endpoint_new(port, NULL);
+    }
+    else
+    {
+        char *port_str = strsep(&copy, ":");
+        if (port_str != NULL)
+        {
+            port = atoi(port_str);
+
+            if (port > 0)
+                endpoint = endpoint_new(port, host);
+        }
+    }
+
+
+    free(to_free);
+    return endpoint;
 }
 
 ssize_t
@@ -241,7 +305,53 @@ end:
 }
 
 bool
-check_port(uint16_t port)
+check_port(const char *host, uint16_t port)
+{
+    bool success = false;
+    struct addrinfo hints;
+    struct addrinfo *result, *rp;
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    int32_t err = getaddrinfo(host, NULL, &hints, &result);
+    if (err != 0)
+    {
+        log_warn("nyx: getaddrinfo: %s", gai_strerror(err));
+        return false;
+    }
+
+    for (rp = result; rp != NULL; rp = rp->ai_next)
+    {
+        int32_t sock = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (sock == -1)
+        {
+            log_perror("nyx: socket");
+            continue;
+        }
+
+        /* overwrite port */
+        struct sockaddr_in *sin = (struct sockaddr_in *)rp->ai_addr;
+        sin->sin_port = htons(port);
+
+        if (connect(sock, rp->ai_addr, rp->ai_addrlen) != -1)
+        {
+            close(sock);
+            success = true;
+            break;
+        }
+
+        close(sock);
+    }
+
+    freeaddrinfo(result);
+
+    return success;
+}
+
+bool
+check_local_port(uint16_t port)
 {
     bool success = false;
     struct sockaddr_in srv;
