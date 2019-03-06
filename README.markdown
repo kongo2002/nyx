@@ -292,6 +292,16 @@ A process restart will be triggered if the port is not opened. This check will
 be active after `startup_delay` seconds only (`30` by default) in order to
 account for application initialization.
 
+In case the observed port is not listening on localhost, you may also specify an
+optional hostname or IP in the format `hostname:port` or `x.x.x.x:port`:
+
+```yaml
+watches:
+    app:
+        start: /usr/bin/mongod
+        port_check: dev.zone:27017
+```
+
 
 ##### Check HTTP endpoint
 
