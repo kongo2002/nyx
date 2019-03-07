@@ -25,6 +25,8 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#define NYX_PORT_CHECK_CONN_TIMEOUT_SECS 3
+
 http_method_e
 http_method_from_string(const char *str)
 {
@@ -335,11 +337,35 @@ check_port(const char *host, uint16_t port)
         struct sockaddr_in *sin = (struct sockaddr_in *)rp->ai_addr;
         sin->sin_port = htons(port);
 
-        if (connect(sock, rp->ai_addr, rp->ai_addrlen) != -1)
+        /* set socket into non blocking mode */
+        if (unblock_socket(sock))
         {
-            close(sock);
-            success = true;
-            break;
+            fd_set set;
+            struct timeval tv;
+
+            tv.tv_usec = 0;
+            tv.tv_sec = NYX_PORT_CHECK_CONN_TIMEOUT_SECS;
+
+            /* the connect will immediately return */
+            connect(sock, rp->ai_addr, rp->ai_addrlen);
+
+            FD_ZERO(&set);
+            FD_SET(sock, &set);
+
+            /* select will listen on the socket */
+            if (select(sock+1, NULL, &set, NULL, &tv) == 1)
+            {
+                int32_t so_error;
+                socklen_t len = sizeof(so_error);
+
+                /* determine if connection succeeded */
+                if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len) == 0 && so_error == 0)
+                {
+                    close(sock);
+                    success = true;
+                    break;
+                }
+            }
         }
 
         close(sock);
