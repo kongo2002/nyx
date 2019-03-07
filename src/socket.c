@@ -356,7 +356,7 @@ check_port(const char *host, uint16_t port)
             if (select(sock+1, NULL, &set, NULL, &tv) == 1)
             {
                 int32_t so_error;
-                socklen_t len = sizeof(so_error);
+                socklen_t len = sizeof(int32_t);
 
                 /* determine if connection succeeded */
                 if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_error, &len) == 0 && so_error == 0)
