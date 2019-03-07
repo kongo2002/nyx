@@ -214,7 +214,7 @@ check_http(const char *url, uint16_t port, http_method_e method)
 
     int32_t sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    if (sockfd < 1)
+    if (sockfd == -1)
     {
         log_perror("nyx: socket");
         return false;
