@@ -395,7 +395,7 @@ You can interact with a running *nyx* daemon instance using the same executable:
 ```bash
 $ nyx version
 <<< version
->>> 1.9.6
+>>> 1.9.7
 ```
 
 Right now the following commands are implemented:
@@ -425,7 +425,7 @@ $ curl localhost:8080/ping
 >>> pong
 
 $ curl localhost:8080/version
->>> 1.9.6
+>>> 1.9.7
 
 $ curl localhost:8080/stop/app
 >>> requested stop for watch 'app'
