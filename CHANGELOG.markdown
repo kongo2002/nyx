@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## 1.9.7
+
+2019-03-14
+
+* feature: `port_check` accepts an optional hostname to support ports that are
+  not bound on localhost
+* improvement: port checks have to succeed in a configured timeout - faster
+  detection of blocked/unresponsive ports
+
+
 ## 1.9.6
 
 2018-12-16
