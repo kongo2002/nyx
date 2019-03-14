@@ -20,11 +20,13 @@
 void
 test_check_http(UNUSED void **state)
 {
+#ifdef TEST_HTTP
     if (check_local_port(80))
     {
         assert_true(check_http(NULL, 80, HTTP_GET));
         assert_false(check_http("foo/bar", 80, HTTP_GET));
     }
+#endif
 }
 
 void
