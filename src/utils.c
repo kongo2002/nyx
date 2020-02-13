@@ -46,7 +46,7 @@ empty_or_whitespace(const char *str)
     return true;
 }
 
-#define ONE_M 1024UL
+#define ONE_M 1024ULL
 #define ONE_G (ONE_M * ONE_M)
 #define ONE_T (ONE_G * ONE_G)
 
