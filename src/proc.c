@@ -583,8 +583,8 @@ sys_info_read_proc(sys_info_t *sys, pid_t pid, int64_t page_size)
         return false;
     }
 
-    if (fscanf(proc, "%*d %*256s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
-               "%lu %ld %ld %*d %*d %*d %*d %*u %lu %ld",
+    if (fscanf(proc, "%*d %*256s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %" PRIu64
+               "%" PRIu64 " %" PRId64 " %" PRId64 " %*d %*d %*d %*d %*u %" PRIu64 " %" PRId64,
                &sys->user_time,
                &sys->system_time,
                &sys->child_user_time,

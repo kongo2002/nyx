@@ -128,7 +128,7 @@ get_message(const char **commands, uint32_t count)
     char *start = message + 2;
 
     /* write header = message length */
-    sprintf(message, "%2lu", length);
+    sprintf(message, "%2zu", length);
 
     /* write commands itself */
     while (count-- > 0)
