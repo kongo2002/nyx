@@ -206,9 +206,9 @@ nyx:
 
 ##### Program arguments
 
-The program arguments of the `start` configuration value may be specified in a
-YAML list style as well (which is especially useful with arguments containing
-whitespace):
+The program arguments of the `start` and `stop` configuration values may be
+specified in a YAML list style as well (which is especially useful with
+arguments containing whitespace):
 
 ```yaml
 watches:
@@ -219,6 +219,15 @@ watches:
             '/etc/app/config.file'
         ]
 ```
+
+In order to prevent surprises in terms of e.g. escaping or whitespace it is even
+recommended to use above YAML list style in favor of the more simple string
+syntax.
+
+When providing the program and its arguments for `start` and `stop`, keep in
+mind that you have to specify a binary executable or an execuable shell script
+file (starting with the interpreter script notation commonly known as
+*shebang*).  Please refer to [`execve(2)`][execve] documentation for details.
 
 
 ##### Program termination
@@ -543,3 +552,4 @@ The project is written by Gregor Uhlenheuer. You can reach me at
 [systemd]: https://github.com/systemd/systemd/
 [ansible]: https://www.ansible.com/
 [homebrew]: https://brew.sh/
+[execve]: http://man7.org/linux/man-pages/man2/execve.2.html
