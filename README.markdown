@@ -423,6 +423,25 @@ Right now the following commands are implemented:
 - `quit`: stop the nyx daemon and all watched processes
 
 
+#### Domain socket interface
+
+The nyx command-line interface communicates with the daemon process via a UNIX
+domain socket which is by default located at `/tmp/nyx.sock` (if not using
+[local-mode](#local-mode)). In case you want or have to configure that file to
+be located somewhere different you have to pass the `--socket` option for both
+the daemon start and the command interface.
+
+```bash
+# start the daemon
+$ nyx -c config.yaml --socket /opt/nyx.sock
+
+# use the command interface
+$ nyx --socket /opt/nyx.sock ping
+<<< ping
+>>> pong
+```
+
+
 ### HTTP command interface
 
 Similar to the default unix domain socket command interface you may configure
