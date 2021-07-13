@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## 1.9.8
+
+2021-07-14
+
+* feature: add `--socket` command line option to specify an alternative location
+  for the UNIX domain socket (usually stored at `/tmp/nyx.sock`)
+* improvement: fix warnings on 32-bit builds
+
+
 ## 1.9.7
 
 2019-03-14
