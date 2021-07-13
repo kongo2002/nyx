@@ -298,7 +298,7 @@ find_local_socket_path(const char *start_dir)
 }
 
 const char *
-determine_socket_path(const char *local_dir, bool local_only)
+determine_socket_path(const char *local_dir, const char *socket_file, bool local_only)
 {
     /* at first we look for a local socket file as we want to
      * 'detect' a local-mode nyx without having to specify '--local'
@@ -319,7 +319,7 @@ determine_socket_path(const char *local_dir, bool local_only)
     if (local_only)
         return NULL;
 
-    return strdup(NYX_SOCKET_ADDR);
+    return strdup(socket_file);
 }
 
 static const char *

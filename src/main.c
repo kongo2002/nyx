@@ -72,7 +72,8 @@ command_mode(nyx_t *nyx)
     if (parse_command(nyx->options.commands) != NULL)
     {
         bool local_only = nyx->options.local_mode;
-        const char *socket_path = determine_socket_path(nyx->nyx_dir, local_only);
+        const char *socket_path = determine_socket_path(nyx->nyx_dir,
+                nyx->socket_path, local_only);
 
         retcode = connector_call(socket_path, nyx->options.commands,
                 nyx->options.quiet);
