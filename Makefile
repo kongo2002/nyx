@@ -14,7 +14,7 @@ LIBS     := -lyaml -lpthread -lm
 
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
-    CXXFLAGS+= -O0 -g -Werror -Wshadow
+    CXXFLAGS+= -O0 -g -Werror -Wshadow -Wno-address-of-packed-member
     BUILD=DEBUG
 else
     CXXFLAGS+= -O2 -DNDEBUG -Wno-unused-parameter
