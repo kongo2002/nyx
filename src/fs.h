@@ -44,7 +44,7 @@ const char *
 find_local_socket_path(const char *start_dir);
 
 const char *
-determine_socket_path(const char *local_dir, bool local_only);
+determine_socket_path(const char *local_dir, const char *socket_file, bool local_only);
 
 const char *
 determine_pid_dir(void);

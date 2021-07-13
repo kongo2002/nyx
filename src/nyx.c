@@ -87,6 +87,7 @@ print_help(void)
          "   -D  --no-daemon        (do not daemonize)\n"
          "       --run <executable> (specify an ad-hoc executable watch)\n"
          "       --local            (run in the current directory)\n"
+         "       --socket <file>    (domain socket location - default: /tmp/nyx.sock)\n"
          "   -p  --passive          (don't automatically start services)\n"
          "   -s  --syslog           (log into syslog)\n"
          "   -q  --quiet            (output error messages only)\n"
@@ -119,6 +120,7 @@ static const struct option long_options[] =
     { .name = "quiet",     .has_arg = 0, .flag = NULL, .val = 'q'},
     { .name = "syslog",    .has_arg = 0, .flag = NULL, .val = 's'},
     { .name = "local",     .has_arg = 0, .flag = NULL, .val = 'l'},
+    { .name = "socket",    .has_arg = 1, .flag = NULL, .val = 'S'},
     { .name = "passive",   .has_arg = 0, .flag = NULL, .val = 'p'},
     { .name = "version",   .has_arg = 0, .flag = NULL, .val = 'V'},
     { NULL, 0, NULL, 0 }
@@ -330,10 +332,6 @@ initialize_daemon(nyx_t *nyx)
         ? determine_local_pid_dir(nyx->nyx_dir)
         : determine_pid_dir();
 
-    nyx->socket_path = nyx->options.local_mode
-        ? local_socket_path(nyx->nyx_dir)
-        : strdup(NYX_SOCKET_ADDR);
-
     if (nyx->pid_dir == NULL)
         return NYX_NO_PID_DIR;
 
@@ -430,6 +428,7 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
 {
     int32_t arg = 0;
     const char **adhoc_watch = NULL;
+    const char *socket_file = NULL;
 
     nyx_t *nyx = calloc(1, sizeof(nyx_t));
 
@@ -465,6 +464,9 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
             case 'c':
                 nyx->options.config_file = optarg;
                 break;
+            case 'S':
+                socket_file = optarg;
+                break;
             case 'r':
                 adhoc_watch = split_string_whitespace(optarg);
                 break;
@@ -491,6 +493,11 @@ nyx_initialize(int32_t argc, char **args, nyx_error_e *error)
     log_init(nyx);
 
     nyx->nyx_dir = get_current_dir();
+
+    /* determine nyx socket file location */
+    nyx->socket_path = nyx->options.local_mode
+        ? local_socket_path(nyx->nyx_dir)
+        : strdup(socket_file != NULL ? socket_file : NYX_SOCKET_ADDR);
 
     /* either config file or adhoc watch, not both */
     if (adhoc_watch)
