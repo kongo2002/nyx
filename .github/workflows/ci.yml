@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        debug: [0, 1]
+        ssl: [0, 1]
+        plugins: [0, 1]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: install dependencies
+      run: sudo apt-get install libyaml-dev
+
+    - name: make
+      run: make
+      env:
+        DEBUG: ${{ matrix.debug }}
+        SSL: ${{ matrix.ssl }}
+        PLUGINS: ${{ matrix.plugins }}
+
+    - name: cache cmocka
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-cmocka
+      with:
+        path: |
+          ./cmocka-1.1.1/build/src/libcmocka.so*
+          ./cmocka-1.1.1/include/cmocka.h
+        key: cmocka
+
+    - name: install cmocka
+      run: ./utils/install_cmocka.sh
+
+    - name: make check
+      run: make check
+      env:
+        DEBUG: ${{ matrix.debug }}
+        SSL: ${{ matrix.ssl }}
+        PLUGINS: ${{ matrix.plugins }}
+
+# vim: set et sw=2 sts=2:

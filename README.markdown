@@ -3,7 +3,7 @@
 
 *nyx* is a lean process monitoring tool written in *C*.
 
-[![build status](https://api.travis-ci.org/kongo2002/nyx.svg)][travis]
+[![jobvision](https://github.com/kongo2002/nyx/actions/workflows/ci.yml/badge.svg)][actions]
 
 You can easily configure numerous processes that should be monitored and watched
 to be in a running and healthy state and restarted if necessary. You should be
@@ -542,7 +542,7 @@ The project is written by Gregor Uhlenheuer. You can reach me at
 
 
 [plugins]: https://github.com/kongo2002/nyx/tree/master/plugins/
-[travis]: https://travis-ci.org/kongo2002/nyx/
+[actions]: https://github.com/kongo2002/nyx/actions/
 [god]: https://github.com/mojombo/god/
 [mail]: mailto:kongo2002@gmail.com
 [apache]: http://www.apache.org/licenses/LICENSE-2.0
